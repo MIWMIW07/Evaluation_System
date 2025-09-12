@@ -1,34 +1,107 @@
 <?php
-// Include database connection
-require_once 'db_connection.php';
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-// Get summary data
-$summary_sql = "SELECT 
-                t.name as teacher_name,
-                t.subject,
-                COUNT(e.id) as evaluation_count,
-                COALESCE(AVG((e.q1_1 + e.q1_2 + e.q1_3 + e.q1_4 + e.q1_5 + e.q1_6 +
-                     e.q2_1 + e.q2_2 + e.q2_3 + e.q2_4 +
-                     e.q3_1 + e.q3_2 + e.q3_3 + e.q3_4 +
-                     e.q4_1 + e.q4_2 + e.q4_3 + e.q4_4 + e.q4_5 + e.q4_6) / 20), 0) as average_rating
-                FROM teachers t
-                LEFT JOIN evaluations e ON t.id = e.teacher_id
-                GROUP BY t.id, t.name, t.subject
-                ORDER BY average_rating DESC";
-$summary_result = $conn->query($summary_sql);
+// Include database connection with error handling
+try {
+    require_once 'db_connection.php';
+    
+    if (!isset($conn)) {
+        throw new Exception("Database connection not established");
+    }
+} catch (Exception $e) {
+    // Show error page with database connection issue
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Database Connection Error</title>
+        <style>
+            body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+            .error-container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+            .error-header { color: #e74c3c; text-align: center; margin-bottom: 20px; }
+            .error-details { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
+            .btn { display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 5px; }
+        </style>
+    </head>
+    <body>
+        <div class="error-container">
+            <h1 class="error-header">🔧 Database Connection Required</h1>
+            <p>The admin dashboard cannot load because the database connection is not available.</p>
+            
+            <div class="error-details">
+                <h3>Possible Solutions:</h3>
+                <ul>
+                    <li>Ensure MySQL database service is running on Railway</li>
+                    <li>Check that environment variables are properly set</li>
+                    <li>Run database setup to create required tables</li>
+                </ul>
+            </div>
+            
+            <p><strong>Error:</strong> <?php echo htmlspecialchars($e->getMessage()); ?></p>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="database_setup.php" class="btn">🔧 Database Setup</a>
+                <a href="index.php" class="btn">← Back to Main</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
 
-// Get total statistics
-$total_teachers_sql = "SELECT COUNT(*) as total_teachers FROM teachers";
-$total_teachers_result = $conn->query($total_teachers_sql);
-$total_teachers = $total_teachers_result->fetch_assoc()['total_teachers'];
+// Initialize variables
+$summary_result = null;
+$total_teachers = 0;
+$total_evaluations = 0;
+$unique_students = 0;
 
-$total_evaluations_sql = "SELECT COUNT(*) as total_evaluations FROM evaluations";
-$total_evaluations_result = $conn->query($total_evaluations_sql);
-$total_evaluations = $total_evaluations_result->fetch_assoc()['total_evaluations'];
+try {
+    // Get summary data
+    $summary_sql = "SELECT 
+                    t.name as teacher_name,
+                    t.subject,
+                    COUNT(e.id) as evaluation_count,
+                    COALESCE(AVG((e.q1_1 + e.q1_2 + e.q1_3 + e.q1_4 + e.q1_5 + e.q1_6 +
+                         e.q2_1 + e.q2_2 + e.q2_3 + e.q2_4 +
+                         e.q3_1 + e.q3_2 + e.q3_3 + e.q3_4 +
+                         e.q4_1 + e.q4_2 + e.q4_3 + e.q4_4 + e.q4_5 + e.q4_6) / 20), 0) as average_rating
+                    FROM teachers t
+                    LEFT JOIN evaluations e ON t.id = e.teacher_id
+                    GROUP BY t.id, t.name, t.subject
+                    ORDER BY average_rating DESC";
+    $summary_result = $conn->query($summary_sql);
 
-$unique_students_sql = "SELECT COUNT(DISTINCT student_id) as unique_students FROM evaluations";
-$unique_students_result = $conn->query($unique_students_sql);
-$unique_students = $unique_students_result->fetch_assoc()['unique_students'];
+    if (!$summary_result) {
+        throw new Exception("Error fetching summary data: " . $conn->error);
+    }
+
+    // Get total statistics
+    $total_teachers_sql = "SELECT COUNT(*) as total_teachers FROM teachers";
+    $total_teachers_result = $conn->query($total_teachers_sql);
+    if ($total_teachers_result) {
+        $total_teachers = $total_teachers_result->fetch_assoc()['total_teachers'];
+    }
+
+    $total_evaluations_sql = "SELECT COUNT(*) as total_evaluations FROM evaluations";
+    $total_evaluations_result = $conn->query($total_evaluations_sql);
+    if ($total_evaluations_result) {
+        $total_evaluations = $total_evaluations_result->fetch_assoc()['total_evaluations'];
+    }
+
+    $unique_students_sql = "SELECT COUNT(DISTINCT student_id) as unique_students FROM evaluations";
+    $unique_students_result = $conn->query($unique_students_sql);
+    if ($unique_students_result) {
+        $unique_students = $unique_students_result->fetch_assoc()['unique_students'];
+    }
+
+} catch (Exception $e) {
+    $db_error = $e->getMessage();
+}
 ?>
 
 <!DOCTYPE html>
@@ -239,6 +312,15 @@ $unique_students = $unique_students_result->fetch_assoc()['unique_students'];
             color: #6c757d;
             font-style: italic;
         }
+
+        .error-alert {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            padding: 20px;
+            border-left: 5px solid #dc3545;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
         
         @media (max-width: 768px) {
             .container {
@@ -286,6 +368,14 @@ $unique_students = $unique_students_result->fetch_assoc()['unique_students'];
             <p>Comprehensive overview of teacher evaluations and performance metrics</p>
         </header>
         
+        <?php if (isset($db_error)): ?>
+            <div class="error-alert">
+                <h3>⚠️ Database Error</h3>
+                <p>There was an issue loading the dashboard data: <?php echo htmlspecialchars($db_error); ?></p>
+                <p>Please check your database connection and try again.</p>
+            </div>
+        <?php endif; ?>
+        
         <div class="stats-container">
             <div class="stat-card">
                 <h3><?php echo $total_teachers; ?></h3>
@@ -300,7 +390,7 @@ $unique_students = $unique_students_result->fetch_assoc()['unique_students'];
                 <p>Participating Students</p>
             </div>
             <div class="stat-card">
-                <h3><?php echo $total_evaluations > 0 ? round($total_evaluations / $total_teachers, 1) : '0'; ?></h3>
+                <h3><?php echo $total_evaluations > 0 && $total_teachers > 0 ? round($total_evaluations / $total_teachers, 1) : '0'; ?></h3>
                 <p>Avg Evaluations per Teacher</p>
             </div>
         </div>
@@ -326,7 +416,7 @@ $unique_students = $unique_students_result->fetch_assoc()['unique_students'];
                 </thead>
                 <tbody>
                     <?php
-                    if ($summary_result->num_rows > 0) {
+                    if ($summary_result && $summary_result->num_rows > 0) {
                         $rank = 1;
                         while($row = $summary_result->fetch_assoc()) {
                             $avg_rating = $row['average_rating'];
@@ -355,8 +445,8 @@ $unique_students = $unique_students_result->fetch_assoc()['unique_students'];
                             
                             echo "<tr>
                                     <td><strong>$rank</strong></td>
-                                    <td><strong>{$row['teacher_name']}</strong></td>
-                                    <td>{$row['subject']}</td>
+                                    <td><strong>" . htmlspecialchars($row['teacher_name']) . "</strong></td>
+                                    <td>" . htmlspecialchars($row['subject']) . "</td>
                                     <td><span style='background: #e3f2fd; padding: 3px 8px; border-radius: 10px; color: #1976D2; font-weight: bold;'>{$row['evaluation_count']}</span></td>
                                     <td><span class='rating $rating_class'>" . number_format($avg_rating, 2) . "</span></td>
                                     <td><strong>$performance_level</strong></td>
@@ -446,5 +536,7 @@ $unique_students = $unique_students_result->fetch_assoc()['unique_students'];
 </html>
 
 <?php
-$conn->close();
+if (isset($conn)) {
+    $conn->close();
+}
 ?>
