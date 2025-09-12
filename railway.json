@@ -7,12 +7,5 @@
     "startCommand": "php -S 0.0.0.0:${PORT:-8000} -t .",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
-  },
-  "environments": {
-    "production": {
-      "variables": {
-        "PHP_VERSION": "8.1"
-      }
-    }
   }
 }
