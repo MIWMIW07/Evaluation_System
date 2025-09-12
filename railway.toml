@@ -1,17 +1,16 @@
-[build]
-builder = "dockerfile"
+# railway.toml - Railway deployment configuration
 
-[deploy]
-startCommand = "/usr/local/bin/start.sh"
+[[services]]
+name = "evaluation-app"
+source = "."
+
+[services.evaluation-app.build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[services.evaluation-app.deploy]
+startCommand = "start.sh"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-
-[env]
-# These will be automatically provided by Railway's MySQL service
-# MYSQLHOST will be set by Railway
-# MYSQLPORT will be set by Railway  
-# MYSQLDATABASE will be set by Railway
-# MYSQLUSER will be set by Railway
-# MYSQLPASSWORD will be set by Railway
