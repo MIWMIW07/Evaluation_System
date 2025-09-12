@@ -1,3 +1,69 @@
+<?php
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Process the form submission
+    include 'db_connection.php';
+
+    // Collect all form data
+    $studentId = $_POST['studentId'];
+    $studentName = $_POST['studentName'];
+    $section = $_POST['section'];
+    $program = $_POST['program'];
+    $teacherId = $_POST['teacher'];
+    $subject = $_POST['subject'];
+    $comments = $_POST['comments'];
+
+    // Collect all the question ratings
+    $ratings = [];
+    for ($i=1; $i<=4; $i++) {
+        for ($j=1; $j<=6; $j++) {
+            $qName = "q{$i}_{$j}";
+            if (isset($_POST[$qName])) {
+                $ratings[$qName] = $_POST[$qName];
+            }
+        }
+    }
+
+    // Prepare SQL statement
+    // We are going to insert into evaluations table
+    // Note: Adjust the SQL according to your table structure
+
+    $sql = "INSERT INTO evaluations (teacher_id, student_id, student_name, section, program, subject, comments, 
+             q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
+             q2_1, q2_2, q2_3, q2_4,
+             q3_1, q3_2, q3_3, q3_4,
+             q4_1, q4_2, q4_3, q4_4, q4_5, q4_6)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?)";
+
+    $stmt = $conn->prepare($sql);
+    if ($stmt === false) {
+        die("Error preparing statement: " . $conn->error);
+    }
+
+    // Bind parameters
+    $stmt->bind_param("issssssiiiiiiiiiiiiiiiiiii", 
+        $teacherId, $studentId, $studentName, $section, $program, $subject, $comments,
+        $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
+        $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
+        $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
+        $ratings['q4_1'], $ratings['q4_2'], $ratings['q4_3'], $ratings['q4_4'], $ratings['q4_5'], $ratings['q4_6']
+    );
+
+    if ($stmt->execute()) {
+        echo "<h2>Thank you for your evaluation!</h2>";
+    } else {
+        echo "Error: " . $stmt->error;
+    }
+
+    $stmt->close();
+    $conn->close();
+    exit; // Stop rendering the form
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
