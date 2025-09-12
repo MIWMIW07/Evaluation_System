@@ -5,51 +5,78 @@ session_start();
 // Include database connection
 require_once 'db_connection.php';
 
+$success = '';
+$error = '';
+
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Collect form data
-    $student_id = $_POST['student_id'];
-    $student_name = $_POST['student_name'];
-    $section = $_POST['section'];
-    $program = $_POST['program'];
-    $teacher_id = $_POST['teacher'];
-    $subject = $_POST['subject'];
-    
-    // Initialize an array to store all question ratings
-    $ratings = [];
-    
-    // Section 1: Teaching Competence (6 questions)
-    for ($i = 1; $i <= 6; $i++) {
-        $ratings["q1_$i"] = $_POST["q1_$i"];
-    }
-    
-    // Section 2: Management Skills (4 questions)
-    for ($i = 1; $i <= 4; $i++) {
-        $ratings["q2_$i"] = $_POST["q2_$i"];
-    }
-    
-    // Section 3: Guidance Skills (4 questions)
-    for ($i = 1; $i <= 4; $i++) {
-        $ratings["q3_$i"] = $_POST["q3_$i"];
-    }
-    
-    // Section 4: Personal and Social Characteristics (6 questions)
-    for ($i = 1; $i <= 6; $i++) {
-        $ratings["q4_$i"] = $_POST["q4_$i"];
-    }
-    
-    $comments = $_POST['comments'];
-    
-    // Check if student has already evaluated this teacher using prepared statement
-    $check_stmt = $conn->prepare("SELECT id FROM evaluations WHERE student_id = ? AND teacher_id = ?");
-    $check_stmt->bind_param("si", $student_id, $teacher_id);
-    $check_stmt->execute();
-    $result = $check_stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        $error = "You have already evaluated this teacher.";
-    } else {
-        // Prepare and bind
+    try {
+        // Collect and sanitize form data
+        $student_id = trim($_POST['student_id']);
+        $student_name = trim($_POST['student_name']);
+        $section = trim($_POST['section']);
+        $program = trim($_POST['program']);
+        $teacher_id = intval($_POST['teacher']);
+        $subject = trim($_POST['subject']);
+        
+        // Validate required fields
+        if (empty($student_id) || empty($student_name) || empty($section) || 
+            empty($program) || empty($teacher_id) || empty($subject)) {
+            throw new Exception("All fields are required.");
+        }
+        
+        // Initialize an array to store all question ratings
+        $ratings = [];
+        
+        // Section 1: Teaching Competence (6 questions)
+        for ($i = 1; $i <= 6; $i++) {
+            $rating = intval($_POST["q1_$i"]);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 1.$i");
+            }
+            $ratings["q1_$i"] = $rating;
+        }
+        
+        // Section 2: Management Skills (4 questions)
+        for ($i = 1; $i <= 4; $i++) {
+            $rating = intval($_POST["q2_$i"]);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 2.$i");
+            }
+            $ratings["q2_$i"] = $rating;
+        }
+        
+        // Section 3: Guidance Skills (4 questions)
+        for ($i = 1; $i <= 4; $i++) {
+            $rating = intval($_POST["q3_$i"]);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 3.$i");
+            }
+            $ratings["q3_$i"] = $rating;
+        }
+        
+        // Section 4: Personal and Social Characteristics (6 questions)
+        for ($i = 1; $i <= 6; $i++) {
+            $rating = intval($_POST["q4_$i"]);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 4.$i");
+            }
+            $ratings["q4_$i"] = $rating;
+        }
+        
+        $comments = trim($_POST['comments'] ?? '');
+        
+        // Check if student has already evaluated this teacher
+        $check_stmt = $conn->prepare("SELECT id FROM evaluations WHERE student_id = ? AND teacher_id = ?");
+        $check_stmt->bind_param("si", $student_id, $teacher_id);
+        $check_stmt->execute();
+        $result = $check_stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            throw new Exception("You have already evaluated this teacher.");
+        }
+        
+        // Insert evaluation
         $stmt = $conn->prepare("INSERT INTO evaluations (student_id, student_name, section, program, teacher_id, subject, 
                                 q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
                                 q2_1, q2_2, q2_3, q2_4,
@@ -67,23 +94,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $comments);
         
         if ($stmt->execute()) {
-            $success = "Evaluation submitted successfully!";
-            // Set session variable to prevent multiple submissions
-            $_SESSION['evaluated_'.$teacher_id] = true;
+            $success = "✅ Evaluation submitted successfully! Thank you for your feedback.";
+            // Clear form data after successful submission
+            $_POST = [];
         } else {
-            $error = "Error: " . $stmt->error;
+            throw new Exception("Database error occurred while saving your evaluation.");
         }
         
         $stmt->close();
+        $check_stmt->close();
+        
+    } catch (Exception $e) {
+        $error = "❌ " . $e->getMessage();
     }
-    $check_stmt->close();
 }
 
 // Fetch teachers for dropdown
-$teachers_sql = "SELECT id, name FROM teachers";
+$teachers_sql = "SELECT id, name, subject FROM teachers ORDER BY name";
 $teachers_result = $conn->query($teachers_sql);
 
-$conn->close();
+if (!$teachers_result) {
+    $error = "❌ Could not load teachers list. Please contact administrator.";
+}
 ?>
 
 <!DOCTYPE html>
@@ -97,13 +129,14 @@ $conn->close();
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             line-height: 1.6;
+            min-height: 100vh;
         }
         
         .container {
@@ -111,49 +144,69 @@ $conn->close();
             margin: 0 auto;
             padding: 20px;
             background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-top: 20px;
+            margin-bottom: 20px;
         }
         
         header {
             text-align: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 2px solid #4CAF50;
+            border-bottom: 3px solid #4CAF50;
         }
         
         header h1 {
             color: #2c3e50;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+            font-size: 1.8em;
         }
         
         header p {
             color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+        
+        header h2 {
+            color: #4CAF50;
+            font-size: 1.5em;
         }
         
         .instruction-box {
-            background-color: #e7f3fe;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
             border-left: 6px solid #2196F3;
-            padding: 15px;
-            margin-bottom: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .rating-scale {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            background-color: #f9f9f9;
-            padding: 10px;
-            border-radius: 5px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #f9f9f9 0%, #e8f5e8 100%);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .scale-item {
             text-align: center;
-            flex: 1;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
         .scale-item span {
             font-weight: bold;
             display: block;
+            color: #4CAF50;
+            font-size: 1.2em;
+            margin-bottom: 5px;
         }
         
         .evaluation-form {
@@ -162,23 +215,30 @@ $conn->close();
         
         .form-section {
             margin-bottom: 30px;
-            padding: 15px;
+            padding: 20px;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 10px;
+            background: #fafafa;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
         .section-title {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             color: white;
-            padding: 10px;
-            margin: -15px -15px 15px -15px;
-            border-radius: 3px 3px 0 0;
+            padding: 15px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+            font-size: 1.2em;
+            font-weight: bold;
         }
         
         .question {
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px dashed #eee;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .question:last-child {
@@ -186,13 +246,16 @@ $conn->close();
         }
         
         .question-text {
-            margin-bottom: 10px;
-            font-weight: bold;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95em;
         }
         
         .rating-options {
             display: flex;
             justify-content: space-between;
+            max-width: 400px;
         }
         
         .rating-options label {
@@ -200,100 +263,173 @@ $conn->close();
             flex-direction: column;
             align-items: center;
             cursor: pointer;
+            padding: 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .rating-options label:hover {
+            background-color: #e8f5e8;
+            transform: translateY(-2px);
         }
         
         .rating-options input[type="radio"] {
-            margin-top: 5px;
+            margin-top: 8px;
+            transform: scale(1.2);
         }
         
         textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
             resize: vertical;
-            min-height: 100px;
+            min-height: 120px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        textarea:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
         }
         
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
         }
         
         .form-group select, .form-group input {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group select:focus, .form-group input:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
         }
         
         .submit-btn {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             color: white;
-            padding: 12px 20px;
+            padding: 15px 30px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: bold;
             display: block;
             margin: 30px auto;
-            width: 200px;
+            width: 250px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
         }
         
         .submit-btn:hover {
-            background-color: #45a049;
+            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
         }
         
         .required {
-            color: red;
+            color: #e74c3c;
         }
         
         footer {
             text-align: center;
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid #ddd;
+            border-top: 2px solid #ddd;
             color: #7f8c8d;
         }
         
         .alert {
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid transparent;
-            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
         .alert-success {
-            color: #3c763d;
-            background-color: #dff0d8;
-            border-color: #d6e9c6;
+            color: #155724;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-left: 5px solid #28a745;
         }
         
         .alert-error {
-            color: #a94442;
-            background-color: #f2dede;
-            border-color: #ebccd1;
+            color: #721c24;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border-left: 5px solid #dc3545;
+        }
+        
+        .admin-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2196F3;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .admin-link:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
         }
         
         @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .rating-scale {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
             .rating-options {
                 flex-direction: column;
+                max-width: 100%;
             }
             
             .rating-options label {
                 flex-direction: row;
                 justify-content: space-between;
-                margin-bottom: 5px;
+                margin-bottom: 8px;
+                padding: 8px 12px;
+            }
+            
+            .admin-link {
+                position: relative;
+                display: block;
+                width: fit-content;
+                margin: 10px auto;
             }
         }
     </style>
 </head>
 <body>
+    <a href="admin.php" class="admin-link">📊 Admin Dashboard</a>
+    
     <div class="container">
         <header>
             <h1>Philippine Technological Institute of Science Arts and Trade, Inc.</h1>
@@ -302,7 +438,7 @@ $conn->close();
         </header>
         
         <div class="instruction-box">
-            <p><strong>Directions:</strong> The following items describe aspects of the teacher's characteristics inside and outside the classroom. 
+            <p><strong>📋 Directions:</strong> The following items describe aspects of the teacher's characteristics inside and outside the classroom. 
             Choose the appropriate number that fits your observation. Your score will help the teacher further develop their dedication to the field of teaching.</p>
         </div>
         
@@ -314,44 +450,59 @@ $conn->close();
             <div class="scale-item"><span>1</span> Unsatisfactory</div>
         </div>
         
-        <?php if (isset($success)): ?>
-            <div class="alert alert-success"><?php echo $success; ?></div>
+        <?php if (!empty($success)): ?>
+            <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
         <?php endif; ?>
         
-        <?php if (isset($error)): ?>
-            <div class="alert alert-error"><?php echo $error; ?></div>
+        <?php if (!empty($error)): ?>
+            <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
         
         <form method="POST" action="" class="evaluation-form">
             <div class="form-group">
                 <label for="student_id">Student ID <span class="required">*</span></label>
-                <input type="text" id="student_id" name="student_id" required>
+                <input type="text" id="student_id" name="student_id" required 
+                       value="<?php echo htmlspecialchars($_POST['student_id'] ?? ''); ?>"
+                       placeholder="Enter your student ID">
             </div>
             
             <div class="form-group">
                 <label for="student_name">Student Name <span class="required">*</span></label>
-                <input type="text" id="student_name" name="student_name" required>
+                <input type="text" id="student_name" name="student_name" required 
+                       value="<?php echo htmlspecialchars($_POST['student_name'] ?? ''); ?>"
+                       placeholder="Enter your full name">
             </div>
             
             <div class="form-group">
                 <label for="section">Section <span class="required">*</span></label>
-                <input type="text" id="section" name="section" required>
+                <input type="text" id="section" name="section" required 
+                       value="<?php echo htmlspecialchars($_POST['section'] ?? ''); ?>"
+                       placeholder="Enter your section (e.g., A, B, C)">
             </div>
             
             <div class="form-group">
                 <label for="program">Program/Strand <span class="required">*</span></label>
                 <select id="program" name="program" required>
                     <option value="">Select Program/Strand</option>
-                    <option value="STEM">STEM (Science, Technology, Engineering, and Mathematics)</option>
-                    <option value="HUMSS">HUMSS (Humanities and Social Sciences)</option>
-                    <option value="ABM">ABM (Accountancy, Business, and Management)</option>
-                    <option value="GAS">GAS (General Academic Strand)</option>
-                    <option value="TVL">TVL (Technical-Vocational-Livelihood)</option>
-                    <option value="BSIT">BS Information Technology</option>
-                    <option value="BSCS">BS Computer Science</option>
-                    <option value="BSBA">BS Business Administration</option>
-                    <option value="BSE">BS Education</option>
-                    <option value="BSHM">BS Hospitality Management</option>
+                    <?php 
+                    $programs = [
+                        'STEM' => 'STEM (Science, Technology, Engineering, and Mathematics)',
+                        'HUMSS' => 'HUMSS (Humanities and Social Sciences)',
+                        'ABM' => 'ABM (Accountancy, Business, and Management)',
+                        'GAS' => 'GAS (General Academic Strand)',
+                        'TVL' => 'TVL (Technical-Vocational-Livelihood)',
+                        'BSIT' => 'BS Information Technology',
+                        'BSCS' => 'BS Computer Science',
+                        'BSBA' => 'BS Business Administration',
+                        'BSE' => 'BS Education',
+                        'BSHM' => 'BS Hospitality Management'
+                    ];
+                    
+                    foreach ($programs as $key => $value) {
+                        $selected = (isset($_POST['program']) && $_POST['program'] === $key) ? 'selected' : '';
+                        echo "<option value='$key' $selected>$value</option>";
+                    }
+                    ?>
                 </select>
             </div>
             
@@ -359,15 +510,24 @@ $conn->close();
                 <label for="teacher">Teacher <span class="required">*</span></label>
                 <select id="teacher" name="teacher" required>
                     <option value="">Select Teacher</option>
-                    <?php while($row = $teachers_result->fetch_assoc()): ?>
-                        <option value="<?php echo $row['id']; ?>"><?php echo htmlspecialchars($row['name']); ?></option>
-                    <?php endwhile; ?>
+                    <?php if ($teachers_result && $teachers_result->num_rows > 0): ?>
+                        <?php while($row = $teachers_result->fetch_assoc()): ?>
+                            <?php 
+                            $selected = (isset($_POST['teacher']) && $_POST['teacher'] == $row['id']) ? 'selected' : '';
+                            ?>
+                            <option value="<?php echo $row['id']; ?>" <?php echo $selected; ?>>
+                                <?php echo htmlspecialchars($row['name']) . ' - ' . htmlspecialchars($row['subject']); ?>
+                            </option>
+                        <?php endwhile; ?>
+                    <?php endif; ?>
                 </select>
             </div>
             
             <div class="form-group">
                 <label for="subject">Subject <span class="required">*</span></label>
-                <input type="text" id="subject" name="subject" required>
+                <input type="text" id="subject" name="subject" required 
+                       value="<?php echo htmlspecialchars($_POST['subject'] ?? ''); ?>"
+                       placeholder="Enter the subject name">
             </div>
             
             <div class="form-section">
@@ -608,15 +768,54 @@ $conn->close();
             
             <div class="form-section">
                 <h3 class="section-title">5. Comments/Suggestions</h3>
-                <textarea id="comments" name="comments" placeholder="Please provide any comments or suggestions about the teacher..."></textarea>
+                <textarea id="comments" name="comments" 
+                          placeholder="Please provide any comments or suggestions about the teacher..."><?php echo htmlspecialchars($_POST['comments'] ?? ''); ?></textarea>
             </div>
             
-            <button type="submit" class="submit-btn">Submit Evaluation</button>
+            <button type="submit" class="submit-btn">✅ Submit Evaluation</button>
         </form>
         
         <footer>
             <p>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc. - Evaluation System</p>
         </footer>
     </div>
+
+    <script>
+        // Auto-populate subject when teacher is selected
+        document.getElementById('teacher').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                const teacherText = selectedOption.text;
+                const subject = teacherText.split(' - ')[1];
+                if (subject) {
+                    document.getElementById('subject').value = subject;
+                }
+            }
+        });
+        
+        // Form validation enhancement
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const requiredRadioGroups = [
+                'q1_1', 'q1_2', 'q1_3', 'q1_4', 'q1_5', 'q1_6',
+                'q2_1', 'q2_2', 'q2_3', 'q2_4',
+                'q3_1', 'q3_2', 'q3_3', 'q3_4',
+                'q4_1', 'q4_2', 'q4_3', 'q4_4', 'q4_5', 'q4_6'
+            ];
+            
+            for (let group of requiredRadioGroups) {
+                const radios = document.getElementsByName(group);
+                const checked = Array.from(radios).some(radio => radio.checked);
+                if (!checked) {
+                    e.preventDefault();
+                    alert(`Please answer question ${group.replace('_', '.')}`);
+                    return;
+                }
+            }
+        });
+    </script>
 </body>
 </html>
+
+<?php
+$conn->close();
+?>
