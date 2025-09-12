@@ -2,19 +2,8 @@
 // Start session to track if a student has already submitted an evaluation
 session_start();
 
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "evaluation_db";
-
-// Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+// Include database connection
+require_once 'db_connection.php';
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -51,9 +40,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     $comments = $_POST['comments'];
     
-    // Check if student has already evaluated this teacher
-    $check_sql = "SELECT id FROM evaluations WHERE student_id = '$student_id' AND teacher_id = $teacher_id";
-    $result = $conn->query($check_sql);
+    // Check if student has already evaluated this teacher using prepared statement
+    $check_stmt = $conn->prepare("SELECT id FROM evaluations WHERE student_id = ? AND teacher_id = ?");
+    $check_stmt->bind_param("si", $student_id, $teacher_id);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result();
     
     if ($result->num_rows > 0) {
         $error = "You have already evaluated this teacher.";
@@ -85,6 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         $stmt->close();
     }
+    $check_stmt->close();
 }
 
 // Fetch teachers for dropdown
@@ -368,7 +360,7 @@ $conn->close();
                 <select id="teacher" name="teacher" required>
                     <option value="">Select Teacher</option>
                     <?php while($row = $teachers_result->fetch_assoc()): ?>
-                        <option value="<?php echo $row['id']; ?>"><?php echo $row['name']; ?></option>
+                        <option value="<?php echo $row['id']; ?>"><?php echo htmlspecialchars($row['name']); ?></option>
                     <?php endwhile; ?>
                 </select>
             </div>
