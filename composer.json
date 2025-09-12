@@ -1,6 +1,10 @@
-
 {
     "require": {
         "php": ">=8.1"
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "php database_setup.php"
+        ]
     }
-}
+}   
