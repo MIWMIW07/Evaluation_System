@@ -1,15 +1,26 @@
 <?php
-// Database connection using environment variables for Railway deployment
+// Database connection using Railway's environment variables
+
+// Function to get environment variable with multiple fallbacks
+function getEnvVar($keys, $default = null) {
+    foreach ($keys as $key) {
+        $value = $_ENV[$key] ?? getenv($key);
+        if ($value !== false && $value !== '') {
+            return $value;
+        }
+    }
+    return $default;
+}
 
 // Try Railway's common MySQL environment variable patterns
-$db_host = $_ENV['MYSQL_HOST'] ?? $_ENV['DB_HOST'] ?? getenv('MYSQL_HOST') ?: getenv('DB_HOST') ?: 'localhost';
-$db_name = $_ENV['MYSQL_DATABASE'] ?? $_ENV['DB_NAME'] ?? getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: 'railway';
-$db_user = $_ENV['MYSQL_USER'] ?? $_ENV['DB_USER'] ?? getenv('MYSQL_USER') ?: getenv('DB_USER') ?: 'root';
-$db_pass = $_ENV['MYSQL_PASSWORD'] ?? $_ENV['DB_PASS'] ?? getenv('MYSQL_PASSWORD') ?: getenv('DB_PASS') ?: '';
-$db_port = $_ENV['MYSQL_PORT'] ?? $_ENV['DB_PORT'] ?? getenv('MYSQL_PORT') ?: getenv('DB_PORT') ?: 3306;
+$db_host = getEnvVar(['MYSQLHOST', 'MYSQL_HOST', 'DB_HOST'], 'localhost');
+$db_name = getEnvVar(['MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME'], 'railway');
+$db_user = getEnvVar(['MYSQLUSER', 'MYSQL_USER', 'DB_USER'], 'root');
+$db_pass = getEnvVar(['MYSQLPASSWORD', 'MYSQL_PASSWORD', 'DB_PASS'], '');
+$db_port = getEnvVar(['MYSQLPORT', 'MYSQL_PORT', 'DB_PORT'], '3306');
 
-// Also try Railway's DATABASE_URL format
-$database_url = $_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL');
+// Also try Railway's DATABASE_URL format (mysql://user:pass@host:port/db)
+$database_url = getEnvVar(['DATABASE_URL', 'MYSQL_URL']);
 if ($database_url) {
     $url_parts = parse_url($database_url);
     if ($url_parts) {
@@ -21,28 +32,48 @@ if ($database_url) {
     }
 }
 
-// Log connection attempt for debugging
-error_log("Attempting to connect to MySQL: Host=$db_host, Database=$db_name, User=$db_user, Port=$db_port");
+// Ensure port is integer
+$db_port = (int)$db_port;
 
-// Create connection
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
-
-// Check connection
-if ($conn->connect_error) {
-    error_log("MySQL Connection failed: " . $conn->connect_error);
-    
-    // Don't expose sensitive info in production
-    if (getenv('RAILWAY_ENVIRONMENT') === 'production' || !empty($_ENV['RAILWAY_ENVIRONMENT'])) {
-        die("Database connection failed. Please check configuration.");
-    } else {
-        die("Connection failed: " . $conn->connect_error . 
-            "<br>Host: $db_host<br>Database: $db_name<br>User: $db_user<br>Port: $db_port");
-    }
+// Log connection attempt for debugging (only in development)
+if (!getEnvVar(['RAILWAY_ENVIRONMENT', 'RAILWAY_ENVIRONMENT_NAME'])) {
+    error_log("MySQL Connection Attempt: Host=$db_host, Database=$db_name, User=$db_user, Port=$db_port");
 }
 
-// Set charset
-$conn->set_charset("utf8mb4");
-
-// Log successful connection
-error_log("MySQL connection successful to database: $db_name");
+try {
+    // Create connection with error reporting
+    $conn = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
+    
+    // Check connection
+    if ($conn->connect_error) {
+        throw new Exception("Connection failed: " . $conn->connect_error);
+    }
+    
+    // Set charset for proper Unicode support
+    if (!$conn->set_charset("utf8mb4")) {
+        error_log("MySQL charset error: " . $conn->error);
+    }
+    
+    // Log successful connection (only in development)
+    if (!getEnvVar(['RAILWAY_ENVIRONMENT', 'RAILWAY_ENVIRONMENT_NAME'])) {
+        error_log("MySQL connection successful to database: $db_name");
+    }
+    
+} catch (Exception $e) {
+    // Log the error
+    error_log("MySQL Connection Error: " . $e->getMessage());
+    
+    // Don't expose sensitive info in production
+    if (getEnvVar(['RAILWAY_ENVIRONMENT', 'RAILWAY_ENVIRONMENT_NAME'])) {
+        die("Database connection failed. Please check configuration.");
+    } else {
+        die("Connection failed: " . $e->getMessage() . 
+            "<br><br>Connection Details:<br>Host: $db_host<br>Database: $db_name<br>User: $db_user<br>Port: $db_port<br><br>" .
+            "Available Environment Variables:<br>" . 
+            "DATABASE_URL: " . (getEnvVar(['DATABASE_URL']) ? 'Set' : 'Not set') . "<br>" .
+            "MYSQLHOST: " . (getEnvVar(['MYSQLHOST']) ? getEnvVar(['MYSQLHOST']) : 'Not set') . "<br>" .
+            "MYSQL_HOST: " . (getEnvVar(['MYSQL_HOST']) ? getEnvVar(['MYSQL_HOST']) : 'Not set') . "<br>" .
+            "RAILWAY_ENVIRONMENT: " . (getEnvVar(['RAILWAY_ENVIRONMENT']) ? getEnvVar(['RAILWAY_ENVIRONMENT']) : 'Not set'));
+    }
+}
 ?>
