@@ -1,11 +1,12 @@
 <?php
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
+// Database connection using environment variables
+$db_host = getenv('DB_HOST') ?: 'localhost';
+$db_name = getenv('DB_NAME') ?: 'evaluation_db';
+$db_user = getenv('DB_USER') ?: 'root';
+$db_pass = getenv('DB_PASS') ?: '';
 
-// Create connection
-$conn = new mysqli($servername, $username, $password);
+// Create connection without database first
+$conn = new mysqli($db_host, $db_user, $db_pass);
 
 // Check connection
 if ($conn->connect_error) {
@@ -13,7 +14,7 @@ if ($conn->connect_error) {
 }
 
 // Create database
-$sql = "CREATE DATABASE IF NOT EXISTS evaluation_db";
+$sql = "CREATE DATABASE IF NOT EXISTS `$db_name`";
 if ($conn->query($sql)) {
     echo "Database created successfully<br>";
 } else {
@@ -21,7 +22,7 @@ if ($conn->query($sql)) {
 }
 
 // Select database
-$conn->select_db("evaluation_db");
+$conn->select_db($db_name);
 
 // Create teachers table
 $sql = "CREATE TABLE IF NOT EXISTS teachers (
@@ -33,7 +34,7 @@ $sql = "CREATE TABLE IF NOT EXISTS teachers (
 if ($conn->query($sql)) {
     echo "Teachers table created successfully<br>";
 } else {
-    echo "Error creating table: " . $conn->error . "<br>";
+    echo "Error creating teachers table: " . $conn->error . "<br>";
 }
 
 // Create evaluations table
@@ -66,26 +67,41 @@ $sql = "CREATE TABLE IF NOT EXISTS evaluations (
     q4_5 INT NOT NULL,
     q4_6 INT NOT NULL,
     comments TEXT,
-    evaluation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    evaluation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
 )";
 
 if ($conn->query($sql)) {
     echo "Evaluations table created successfully<br>";
 } else {
-    echo "Error creating table: " . $conn->error . "<br>";
+    echo "Error creating evaluations table: " . $conn->error . "<br>";
 }
 
-// Insert sample teachers
-$sql = "INSERT IGNORE INTO teachers (name, subject) VALUES
-    ('ABSALON, JIMMY P.', 'Computer Science'),
-    ('CRUZ, MARIA SANTOS', 'Mathematics'),
-    ('REYES, JUAN DELA', 'English'),
-    ('SANTOS, ANNA LOPEZ', 'Science')";
+// Check if teachers already exist
+$check_sql = "SELECT COUNT(*) as count FROM teachers";
+$result = $conn->query($check_sql);
+$row = $result->fetch_assoc();
 
-if ($conn->query($sql)) {
+if ($row['count'] == 0) {
+    // Insert sample teachers only if none exist
+    $teachers = [
+        ['ABSALON, JIMMY P.', 'Computer Science'],
+        ['CRUZ, MARIA SANTOS', 'Mathematics'],
+        ['REYES, JUAN DELA', 'English'],
+        ['SANTOS, ANNA LOPEZ', 'Science']
+    ];
+    
+    $stmt = $conn->prepare("INSERT INTO teachers (name, subject) VALUES (?, ?)");
+    
+    foreach ($teachers as $teacher) {
+        $stmt->bind_param("ss", $teacher[0], $teacher[1]);
+        $stmt->execute();
+    }
+    
+    $stmt->close();
     echo "Sample teachers inserted successfully<br>";
 } else {
-    echo "Error inserting teachers: " . $conn->error . "<br>";
+    echo "Teachers already exist, skipping insertion<br>";
 }
 
 echo "Database setup completed!";
