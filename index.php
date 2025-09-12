@@ -474,23 +474,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             alert('Evaluation submitted successfully! (This will be connected to PHP later)');
             
             // In the final version, you'll send this data to your PHP script
-            // fetch('submit_evaluation.php', {
-            //     method: 'POST',
-            //     body: formData
-            // })
-            // .then(response => response.json())
-            // .then(data => {
-            //     if (data.success) {
-            //         alert('Evaluation submitted successfully!');
-            //         this.reset();
-            //     } else {
-            //         alert('Error: ' + data.message);
-            //     }
-            // })
-            // .catch(error => {
-            //     console.error('Error:', error);
-            //     alert('An error occurred while submitting the evaluation.');
-            // });
+             fetch('submit_evaluation.php', {
+                 method: 'POST',
+                 body: formData
+             })
+             .then(response => response.json())
+             .then(data => {
+                 if (data.success) {
+                     alert('Evaluation submitted successfully!');
+                     this.reset();
+                 } else {
+                     alert('Error: ' + data.message);
+                 }
+             })
+             .catch(error => {
+                 console.error('Error:', error);
+                 alert('An error occurred while submitting the evaluation.');
+             });
         });
     </script>
 </body>
