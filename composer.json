@@ -1,1 +1,14 @@
-{}
+{
+    "name": "philtech/teacher-evaluation-system",
+    "description": "A system for students to evaluate their teachers",
+    "type": "project",
+    "require": {
+        "php": ">=7.4"
+    },
+    "authors": [
+        {
+            "name": "Your Name",
+            "email": "your.email@example.com"
+        }
+    ]
+}
