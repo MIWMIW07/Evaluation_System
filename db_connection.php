@@ -13,11 +13,11 @@ function getEnvVar($keys, $default = null) {
 }
 
 // Try Railway's common MySQL environment variable patterns
-$db_host = getEnvVar(['MYSQLHOST', 'MYSQL_HOST', 'DB_HOST'], 'localhost');
+$db_host = getEnvVar(['MYSQLHOST', 'MYSQL_HOST', 'DB_HOST'], 'yamabiko.proxy.rlwy.net');
 $db_name = getEnvVar(['MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME'], 'railway');
 $db_user = getEnvVar(['MYSQLUSER', 'MYSQL_USER', 'DB_USER'], 'root');
-$db_pass = getEnvVar(['MYSQLPASSWORD', 'MYSQL_PASSWORD', 'DB_PASS'], '');
-$db_port = getEnvVar(['MYSQLPORT', 'MYSQL_PORT', 'DB_PORT'], '3306');
+$db_pass = getEnvVar(['MYSQLPASSWORD', 'MYSQL_PASSWORD', 'NaOBYEtLNyinxkzyTHvUptcdoNVqDBJY'], '');
+$db_port = getEnvVar(['MYSQLPORT', 'MYSQL_PORT', 'DB_PORT'], '30205');
 
 // Also try Railway's DATABASE_URL format (mysql://user:pass@host:port/db)
 $database_url = getEnvVar(['DATABASE_URL', 'MYSQL_URL']);
@@ -77,3 +77,4 @@ try {
     }
 }
 ?>
+
