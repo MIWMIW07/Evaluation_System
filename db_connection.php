@@ -1,7 +1,6 @@
 <?php
-// Database connection for Railway deployment
+// Flexible database connection for Railway (supports both MySQL and PostgreSQL)
 
-// Function to get environment variable with multiple fallbacks
 function getEnvVar($keys, $default = null) {
     foreach ($keys as $key) {
         $value = $_ENV[$key] ?? getenv($key);
@@ -12,91 +11,100 @@ function getEnvVar($keys, $default = null) {
     return $default;
 }
 
-// Railway MySQL service provides these environment variables
-$db_host = getEnvVar(['MYSQLHOST', 'MYSQL_HOST', 'DB_HOST'], 'localhost');
-$db_name = getEnvVar(['MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME'], 'railway');
-$db_user = getEnvVar(['MYSQLUSER', 'MYSQL_USER', 'DB_USER'], 'root');
-$db_pass = getEnvVar(['MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASS'], '');
-$db_port = getEnvVar(['MYSQLPORT', 'MYSQL_PORT', 'DB_PORT'], '3306');
+// Check if PostgreSQL is available (Railway often works better with PostgreSQL)
+$postgres_url = getEnvVar(['DATABASE_URL', 'POSTGRES_URL']);
+$mysql_host = getEnvVar(['MYSQLHOST', 'MYSQL_HOST']);
 
-// Also try Railway's DATABASE_URL format
-$database_url = getEnvVar(['DATABASE_URL', 'MYSQL_URL']);
-if ($database_url) {
-    $url_parts = parse_url($database_url);
-    if ($url_parts) {
-        $db_host = $url_parts['host'] ?? $db_host;
-        $db_user = $url_parts['user'] ?? $db_user;
-        $db_pass = $url_parts['pass'] ?? $db_pass;
-        $db_name = ltrim($url_parts['path'] ?? '', '/') ?: $db_name;
-        $db_port = $url_parts['port'] ?? $db_port;
-    }
-}
-
-// Convert port to integer
-$db_port = (int)$db_port;
-
-// Check if we're in Railway environment
-$is_production = !empty(getEnvVar(['RAILWAY_ENVIRONMENT', 'RAILWAY_PROJECT_ID']));
-
-// Log connection details for debugging (only in development)
-if (!$is_production) {
-    error_log("Database connection attempt:");
-    error_log("Host: $db_host");
-    error_log("Database: $db_name");
-    error_log("User: $db_user");
-    error_log("Port: $db_port");
-    error_log("Password: " . (empty($db_pass) ? 'EMPTY' : 'SET'));
-}
+$conn = null;
+$db_type = '';
 
 try {
-    // Create connection
-    $conn = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
-    
-    // Check connection
-    if ($conn->connect_error) {
-        throw new Exception("MySQL connection failed: " . $conn->connect_error);
+    // Try PostgreSQL first (if DATABASE_URL exists)
+    if ($postgres_url) {
+        $url_parts = parse_url($postgres_url);
+        if ($url_parts && isset($url_parts['scheme']) && $url_parts['scheme'] === 'postgres') {
+            $db_host = $url_parts['host'];
+            $db_user = $url_parts['user'];
+            $db_pass = $url_parts['pass'];
+            $db_name = ltrim($url_parts['path'], '/');
+            $db_port = $url_parts['port'] ?? 5432;
+            
+            $dsn = "pgsql:host=$db_host;port=$db_port;dbname=$db_name";
+            $conn = new PDO($dsn, $db_user, $db_pass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            ]);
+            $db_type = 'postgresql';
+            
+            // Test connection
+            $conn->query("SELECT 1");
+            error_log("Connected to PostgreSQL successfully");
+        }
     }
     
-    // Set charset for proper Unicode support
-    if (!$conn->set_charset("utf8mb4")) {
-        error_log("Warning: Could not set MySQL charset: " . $conn->error);
+    // Fallback to MySQL if PostgreSQL not available
+    if (!$conn && $mysql_host) {
+        $db_host = getEnvVar(['MYSQLHOST', 'MYSQL_HOST'], 'localhost');
+        $db_name = getEnvVar(['MYSQLDATABASE', 'MYSQL_DATABASE'], 'railway');
+        $db_user = getEnvVar(['MYSQLUSER', 'MYSQL_USER'], 'root');
+        $db_pass = getEnvVar(['MYSQLPASSWORD', 'MYSQL_PASSWORD'], '');
+        $db_port = getEnvVar(['MYSQLPORT', 'MYSQL_PORT'], '3306');
+        
+        $conn = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
+        
+        if ($conn->connect_error) {
+            throw new Exception("MySQL connection failed: " . $conn->connect_error);
+        }
+        
+        $conn->set_charset("utf8mb4");
+        $db_type = 'mysql';
+        error_log("Connected to MySQL successfully");
     }
     
-    // Test connection with a simple query
-    $test_result = $conn->query("SELECT 1 as test");
-    if (!$test_result) {
-        throw new Exception("MySQL connection test failed: " . $conn->error);
-    }
-    
-    // Log success (only in development)
-    if (!$is_production) {
-        error_log("MySQL connection successful!");
+    if (!$conn) {
+        throw new Exception("No database configuration found");
     }
     
 } catch (Exception $e) {
-    error_log("Database Error: " . $e->getMessage());
+    $is_production = !empty(getEnvVar(['RAILWAY_ENVIRONMENT']));
+    error_log("Database connection error: " . $e->getMessage());
     
     if ($is_production) {
-        // In production, show generic error
-        throw new Exception("Database connection unavailable. Please try again later.");
+        throw new Exception("Database service unavailable. Please try again later.");
     } else {
-        // In development, show detailed error
-        $error_details = "Database connection failed!\n\n";
-        $error_details .= "Error: " . $e->getMessage() . "\n\n";
-        $error_details .= "Connection Details:\n";
-        $error_details .= "- Host: $db_host\n";
-        $error_details .= "- Database: $db_name\n";
-        $error_details .= "- User: $db_user\n";
-        $error_details .= "- Port: $db_port\n";
-        $error_details .= "- Password: " . (empty($db_pass) ? 'NOT SET' : 'SET') . "\n\n";
-        $error_details .= "Environment Variables:\n";
-        $error_details .= "- MYSQLHOST: " . getEnvVar(['MYSQLHOST']) . "\n";
-        $error_details .= "- MYSQLDATABASE: " . getEnvVar(['MYSQLDATABASE']) . "\n";
-        $error_details .= "- MYSQLUSER: " . getEnvVar(['MYSQLUSER']) . "\n";
-        $error_details .= "- MYSQLPASSWORD: " . (getEnvVar(['MYSQLPASSWORD']) ? 'SET' : 'NOT SET') . "\n";
-        $error_details .= "- DATABASE_URL: " . (getEnvVar(['DATABASE_URL']) ? 'SET' : 'NOT SET') . "\n";
+        $error_msg = "Database Connection Failed!\n\n";
+        $error_msg .= "Error: " . $e->getMessage() . "\n\n";
+        $error_msg .= "Available Environment Variables:\n";
+        $error_msg .= "- DATABASE_URL: " . (getEnvVar(['DATABASE_URL']) ? 'SET' : 'NOT SET') . "\n";
+        $error_msg .= "- POSTGRES_URL: " . (getEnvVar(['POSTGRES_URL']) ? 'SET' : 'NOT SET') . "\n";
+        $error_msg .= "- MYSQLHOST: " . (getEnvVar(['MYSQLHOST']) ? getEnvVar(['MYSQLHOST']) : 'NOT SET') . "\n";
+        $error_msg .= "- Current DB Type Attempt: " . ($postgres_url ? 'PostgreSQL' : 'MySQL') . "\n";
         
-        throw new Exception($error_details);
+        throw new Exception($error_msg);
     }
 }
+
+// Helper function to execute queries (works with both MySQL and PostgreSQL)
+function executeQuery($query, $params = []) {
+    global $conn, $db_type;
+    
+    if ($db_type === 'postgresql') {
+        $stmt = $conn->prepare($query);
+        $stmt->execute($params);
+        return $stmt;
+    } else {
+        // MySQL
+        if (!empty($params)) {
+            $stmt = $conn->prepare($query);
+            $types = str_repeat('s', count($params)); // Assume all strings for simplicity
+            $stmt->bind_param($types, ...$params);
+            $stmt->execute();
+            return $stmt->get_result();
+        } else {
+            return $conn->query($query);
+        }
+    }
+}
+
+error_log("Database connection established: $db_type");
 ?>
