@@ -1,8 +1,11 @@
 # Use PHP with Apache
 FROM php:8.1-apache
 
-# Install required PHP extensions
-RUN docker-php-ext-install mysqli pdo pdo_mysql
+# Install required packages and PHP extensions
+RUN apt-get update && apt-get install -y \
+    gettext-base \
+    && docker-php-ext-install mysqli pdo pdo_mysql \
+    && rm -rf /var/lib/apt/lists/*
 
 # Enable Apache mod_rewrite and headers
 RUN a2enmod rewrite headers
