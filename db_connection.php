@@ -16,7 +16,7 @@ function getEnvVar($keys, $default = null) {
 $db_host = getEnvVar(['MYSQLHOST', 'MYSQL_HOST', 'DB_HOST'], 'yamabiko.proxy.rlwy.net');
 $db_name = getEnvVar(['MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME'], 'railway');
 $db_user = getEnvVar(['MYSQLUSER', 'MYSQL_USER', 'DB_USER'], 'root');
-$db_pass = getEnvVar(['MYSQLPASSWORD', 'MYSQL_PASSWORD', 'NaOBYEtLNyinxkzyTHvUptcdoNVqDBJY'], '');
+$db_pass = getEnvVar(['MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASSWORD'], '');
 $db_port = getEnvVar(['MYSQLPORT', 'MYSQL_PORT', 'DB_PORT'], '30205');
 
 // Also try Railway's DATABASE_URL format (mysql://user:pass@host:port/db)
@@ -35,8 +35,15 @@ if ($database_url) {
 // Ensure port is integer
 $db_port = (int)$db_port;
 
+// Validate required connection parameters
+if (empty($db_pass)) {
+    error_log("MySQL Error: No password found in environment variables");
+    die("Database configuration error: Missing password");
+}
+
 // Log connection attempt for debugging (only in development)
-if (!getEnvVar(['RAILWAY_ENVIRONMENT', 'RAILWAY_ENVIRONMENT_NAME'])) {
+$is_production = getEnvVar(['RAILWAY_ENVIRONMENT', 'RAILWAY_ENVIRONMENT_NAME']) === 'production';
+if (!$is_production) {
     error_log("MySQL Connection Attempt: Host=$db_host, Database=$db_name, User=$db_user, Port=$db_port");
 }
 
@@ -54,8 +61,14 @@ try {
         error_log("MySQL charset error: " . $conn->error);
     }
     
+    // Test the connection with a simple query
+    $test_query = $conn->query("SELECT 1");
+    if (!$test_query) {
+        throw new Exception("Connection test failed: " . $conn->error);
+    }
+    
     // Log successful connection (only in development)
-    if (!getEnvVar(['RAILWAY_ENVIRONMENT', 'RAILWAY_ENVIRONMENT_NAME'])) {
+    if (!$is_production) {
         error_log("MySQL connection successful to database: $db_name");
     }
     
@@ -64,7 +77,7 @@ try {
     error_log("MySQL Connection Error: " . $e->getMessage());
     
     // Don't expose sensitive info in production
-    if (getEnvVar(['RAILWAY_ENVIRONMENT', 'RAILWAY_ENVIRONMENT_NAME'])) {
+    if ($is_production) {
         die("Database connection failed. Please check configuration.");
     } else {
         die("Connection failed: " . $e->getMessage() . 
@@ -73,8 +86,8 @@ try {
             "DATABASE_URL: " . (getEnvVar(['DATABASE_URL']) ? 'Set' : 'Not set') . "<br>" .
             "MYSQLHOST: " . (getEnvVar(['MYSQLHOST']) ? getEnvVar(['MYSQLHOST']) : 'Not set') . "<br>" .
             "MYSQL_HOST: " . (getEnvVar(['MYSQL_HOST']) ? getEnvVar(['MYSQL_HOST']) : 'Not set') . "<br>" .
+            "MYSQL_PASSWORD: " . (getEnvVar(['MYSQL_PASSWORD']) ? 'Set (hidden)' : 'Not set') . "<br>" .
             "RAILWAY_ENVIRONMENT: " . (getEnvVar(['RAILWAY_ENVIRONMENT']) ? getEnvVar(['RAILWAY_ENVIRONMENT']) : 'Not set'));
     }
 }
 ?>
-
