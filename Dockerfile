@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y \
 # Enable Apache mod_rewrite and headers
 RUN a2enmod rewrite headers
 
+# Set ServerName to prevent the warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
 # Copy application files
 COPY . /var/www/html/
 
