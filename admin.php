@@ -35,7 +35,7 @@ try {
             <div class="error-details">
                 <h3>Possible Solutions:</h3>
                 <ul>
-                    <li>Ensure MySQL database service is running on Railway</li>
+                    <li>Ensure PostgreSQL database service is running on Railway</li>
                     <li>Check that environment variables are properly set</li>
                     <li>Run database setup to create required tables</li>
                 </ul>
@@ -61,7 +61,7 @@ $total_evaluations = 0;
 $unique_students = 0;
 
 try {
-    // Get summary data
+    // Get summary data - Fixed for PostgreSQL
     $summary_sql = "SELECT 
                     t.name as teacher_name,
                     t.subject,
@@ -69,34 +69,34 @@ try {
                     COALESCE(AVG((e.q1_1 + e.q1_2 + e.q1_3 + e.q1_4 + e.q1_5 + e.q1_6 +
                          e.q2_1 + e.q2_2 + e.q2_3 + e.q2_4 +
                          e.q3_1 + e.q3_2 + e.q3_3 + e.q3_4 +
-                         e.q4_1 + e.q4_2 + e.q4_3 + e.q4_4 + e.q4_5 + e.q4_6) / 20), 0) as average_rating
+                         e.q4_1 + e.q4_2 + e.q4_3 + e.q4_4 + e.q4_5 + e.q4_6) / 20.0), 0) as average_rating
                     FROM teachers t
                     LEFT JOIN evaluations e ON t.id = e.teacher_id
                     GROUP BY t.id, t.name, t.subject
                     ORDER BY average_rating DESC";
-    $summary_result = $conn->query($summary_sql);
+    $summary_result = query($summary_sql);
 
     if (!$summary_result) {
-        throw new Exception("Error fetching summary data: " . $conn->error);
+        throw new Exception("Error fetching summary data");
     }
 
     // Get total statistics
-    $total_teachers_sql = "SELECT COUNT(*) as total_teachers FROM teachers";
-    $total_teachers_result = $conn->query($total_teachers_sql);
-    if ($total_teachers_result) {
-        $total_teachers = $total_teachers_result->fetch_assoc()['total_teachers'];
+    $total_teachers_stmt = query("SELECT COUNT(*) as total_teachers FROM teachers");
+    $total_teachers_row = fetch_assoc($total_teachers_stmt);
+    if ($total_teachers_row) {
+        $total_teachers = $total_teachers_row['total_teachers'];
     }
 
-    $total_evaluations_sql = "SELECT COUNT(*) as total_evaluations FROM evaluations";
-    $total_evaluations_result = $conn->query($total_evaluations_sql);
-    if ($total_evaluations_result) {
-        $total_evaluations = $total_evaluations_result->fetch_assoc()['total_evaluations'];
+    $total_evaluations_stmt = query("SELECT COUNT(*) as total_evaluations FROM evaluations");
+    $total_evaluations_row = fetch_assoc($total_evaluations_stmt);
+    if ($total_evaluations_row) {
+        $total_evaluations = $total_evaluations_row['total_evaluations'];
     }
 
-    $unique_students_sql = "SELECT COUNT(DISTINCT student_id) as unique_students FROM evaluations";
-    $unique_students_result = $conn->query($unique_students_sql);
-    if ($unique_students_result) {
-        $unique_students = $unique_students_result->fetch_assoc()['unique_students'];
+    $unique_students_stmt = query("SELECT COUNT(DISTINCT student_id) as unique_students FROM evaluations");
+    $unique_students_row = fetch_assoc($unique_students_stmt);
+    if ($unique_students_row) {
+        $unique_students = $unique_students_row['unique_students'];
     }
 
 } catch (Exception $e) {
@@ -416,42 +416,54 @@ try {
                 </thead>
                 <tbody>
                     <?php
-                    if ($summary_result && $summary_result->num_rows > 0) {
-                        $rank = 1;
-                        while($row = $summary_result->fetch_assoc()) {
-                            $avg_rating = $row['average_rating'];
-                            $rating_class = '';
-                            $performance_level = '';
-                            
-                            if ($avg_rating >= 4.5) {
-                                $rating_class = 'rating-high';
-                                $performance_level = 'Outstanding';
-                            } else if ($avg_rating >= 4.0) {
-                                $rating_class = 'rating-high';
-                                $performance_level = 'Very Satisfactory';
-                            } else if ($avg_rating >= 3.5) {
-                                $rating_class = 'rating-medium';
-                                $performance_level = 'Good/Satisfactory';
-                            } else if ($avg_rating >= 2.5) {
-                                $rating_class = 'rating-medium';
-                                $performance_level = 'Fair';
-                            } else if ($avg_rating > 0) {
-                                $rating_class = 'rating-low';
-                                $performance_level = 'Needs Improvement';
-                            } else {
-                                $rating_class = 'rating-none';
-                                $performance_level = 'Not Evaluated';
+                    if ($summary_result) {
+                        $results = fetch_all($summary_result);
+                        if (count($results) > 0) {
+                            $rank = 1;
+                            foreach($results as $row) {
+                                $avg_rating = floatval($row['average_rating']);
+                                $rating_class = '';
+                                $performance_level = '';
+                                
+                                if ($avg_rating >= 4.5) {
+                                    $rating_class = 'rating-high';
+                                    $performance_level = 'Outstanding';
+                                } else if ($avg_rating >= 4.0) {
+                                    $rating_class = 'rating-high';
+                                    $performance_level = 'Very Satisfactory';
+                                } else if ($avg_rating >= 3.5) {
+                                    $rating_class = 'rating-medium';
+                                    $performance_level = 'Good/Satisfactory';
+                                } else if ($avg_rating >= 2.5) {
+                                    $rating_class = 'rating-medium';
+                                    $performance_level = 'Fair';
+                                } else if ($avg_rating > 0) {
+                                    $rating_class = 'rating-low';
+                                    $performance_level = 'Needs Improvement';
+                                } else {
+                                    $rating_class = 'rating-none';
+                                    $performance_level = 'Not Evaluated';
+                                }
+                                
+                                echo "<tr>
+                                        <td><strong>$rank</strong></td>
+                                        <td><strong>" . htmlspecialchars($row['teacher_name']) . "</strong></td>
+                                        <td>" . htmlspecialchars($row['subject']) . "</td>
+                                        <td><span style='background: #e3f2fd; padding: 3px 8px; border-radius: 10px; color: #1976D2; font-weight: bold;'>{$row['evaluation_count']}</span></td>
+                                        <td><span class='rating $rating_class'>" . number_format($avg_rating, 2) . "</span></td>
+                                        <td><strong>$performance_level</strong></td>
+                                      </tr>";
+                                $rank++;
                             }
-                            
-                            echo "<tr>
-                                    <td><strong>$rank</strong></td>
-                                    <td><strong>" . htmlspecialchars($row['teacher_name']) . "</strong></td>
-                                    <td>" . htmlspecialchars($row['subject']) . "</td>
-                                    <td><span style='background: #e3f2fd; padding: 3px 8px; border-radius: 10px; color: #1976D2; font-weight: bold;'>{$row['evaluation_count']}</span></td>
-                                    <td><span class='rating $rating_class'>" . number_format($avg_rating, 2) . "</span></td>
-                                    <td><strong>$performance_level</strong></td>
-                                  </tr>";
-                            $rank++;
+                        } else {
+                            echo "<tr><td colspan='6' class='no-data'>
+                                    <div>
+                                        <h3>📋 No evaluations found</h3>
+                                        <p>No teacher evaluations have been submitted yet.</p>
+                                        <br>
+                                        <a href='index.php' class='btn'>Start First Evaluation</a>
+                                    </div>
+                                  </td></tr>";
                         }
                     } else {
                         echo "<tr><td colspan='6' class='no-data'>
@@ -534,9 +546,3 @@ try {
     </script>
 </body>
 </html>
-
-<?php
-if (isset($conn)) {
-    $conn->close();
-}
-?>
