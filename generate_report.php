@@ -8,15 +8,15 @@ if (!isset($conn)) {
 }
 
 try {
-    // Get all evaluations with teacher names
+    // Get all evaluations with teacher names - Fixed for PostgreSQL
     $sql = "SELECT e.*, t.name as teacher_name 
             FROM evaluations e 
             JOIN teachers t ON e.teacher_id = t.id 
             ORDER BY e.teacher_id, e.section, e.program";
-    $result = $conn->query($sql);
+    $result = query($sql);
 
     if (!$result) {
-        throw new Exception("Query failed: " . $conn->error);
+        throw new Exception("Query failed");
     }
 
     // Set headers for CSV download
@@ -56,9 +56,11 @@ try {
         'Comments', 'Evaluation Date', 'Average Rating'
     ));
 
-    // Add data rows
-    if ($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
+    // Get all results and add data rows
+    $results = fetch_all($result);
+    
+    if (count($results) > 0) {
+        foreach($results as $row) {
             // Calculate average rating
             $total_rating = $row['q1_1'] + $row['q1_2'] + $row['q1_3'] + $row['q1_4'] + $row['q1_5'] + $row['q1_6'] +
                            $row['q2_1'] + $row['q2_2'] + $row['q2_3'] + $row['q2_4'] +
@@ -98,6 +100,4 @@ try {
     echo "<p><a href='admin.php'>← Back to Admin Dashboard</a></p>";
     echo "</body></html>";
 }
-
-$conn->close();
 ?>
