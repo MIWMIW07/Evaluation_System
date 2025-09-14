@@ -1,9 +1,8 @@
 # Use PHP with Apache
-FROM php:8.1-apache
+FROM php:8.2-apache
 
-# Install required packages and PHP extensions
+# Install required packages and PHP extensions for PostgreSQL
 RUN apt-get update && apt-get install -y \
-    gettext-base \
     libpq-dev \
     && docker-php-ext-install pdo pdo_pgsql \
     && rm -rf /var/lib/apt/lists/*
