@@ -4,7 +4,8 @@ FROM php:8.1-apache
 # Install required packages and PHP extensions
 RUN apt-get update && apt-get install -y \
     gettext-base \
-    && docker-php-ext-install mysqli pdo pdo_mysql \
+    libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql \
     && rm -rf /var/lib/apt/lists/*
 
 # Enable Apache mod_rewrite and headers
