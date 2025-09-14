@@ -1,97 +1,122 @@
 <?php
-// PostgreSQL database connection for Railway
+// PostgreSQL database setup for Railway deployment
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-function getEnvVar($keys, $default = null) {
-    foreach ($keys as $key) {
-        $value = $_ENV[$key] ?? getenv($key);
-        if ($value !== false && $value !== '') {
-            return $value;
-        }
-    }
-    return $default;
+echo "<h2>PostgreSQL Database Setup for Teacher Evaluation System</h2>";
+
+// Use the same connection logic as db_connection.php
+require_once 'db_connection.php';
+
+if (!isset($conn)) {
+    die("<p style='color:red;'>❌ Could not establish database connection. Please check your Railway PostgreSQL service.</p>");
 }
 
-// Railway PostgreSQL provides DATABASE_URL
-$database_url = getEnvVar(['DATABASE_URL', 'POSTGRES_URL']);
-
-$is_production = !empty(getEnvVar(['RAILWAY_ENVIRONMENT']));
-
-if (!$database_url) {
-    $error_msg = "No DATABASE_URL found. Make sure PostgreSQL service is connected.";
-    error_log($error_msg);
-    throw new Exception($error_msg);
-}
+echo "<p style='color:green;'>✅ Connected to PostgreSQL database successfully!</p>";
 
 try {
-    // Parse the DATABASE_URL
-    $url_parts = parse_url($database_url);
-    
-    if (!$url_parts) {
-        throw new Exception("Invalid DATABASE_URL format");
-    }
-    
-    $db_host = $url_parts['host'];
-    $db_user = $url_parts['user'];
-    $db_pass = $url_parts['pass'];
-    $db_name = ltrim($url_parts['path'], '/');
-    $db_port = $url_parts['port'] ?? 5432;
-    
-    // Create PDO connection
-    $dsn = "pgsql:host=$db_host;port=$db_port;dbname=$db_name;sslmode=require";
-    $conn = new PDO($dsn, $db_user, $db_pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_TIMEOUT => 10
-    ]);
-    
-    // Test connection
-    $test = $conn->query("SELECT 1 as test");
-    if (!$test) {
-        throw new Exception("Connection test failed");
-    }
-    
-    if (!$is_production) {
-        error_log("PostgreSQL connection successful!");
-        error_log("Host: $db_host, Database: $db_name, Port: $db_port");
-    }
-    
-} catch (Exception $e) {
-    error_log("PostgreSQL Connection Error: " . $e->getMessage());
-    
-    if ($is_production) {
-        throw new Exception("Database connection unavailable. Please try again later.");
-    } else {
-        $error_details = "PostgreSQL Connection Failed!\n\n";
-        $error_details .= "Error: " . $e->getMessage() . "\n\n";
-        $error_details .= "DATABASE_URL: " . ($database_url ? 'SET' : 'NOT SET') . "\n";
-        if ($database_url) {
-            $safe_url = preg_replace('/:[^:@]*@/', ':***@', $database_url);
-            $error_details .= "URL (safe): " . $safe_url . "\n";
+    // Create teachers table
+    $sql = "CREATE TABLE IF NOT EXISTS teachers (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        subject VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )";
+
+    $conn->exec($sql);
+    echo "<p style='color:green;'>✅ Teachers table created successfully</p>";
+
+    // Create evaluations table
+    $sql = "CREATE TABLE IF NOT EXISTS evaluations (
+        id SERIAL PRIMARY KEY,
+        student_id VARCHAR(50) NOT NULL,
+        student_name VARCHAR(100) NOT NULL,
+        section VARCHAR(50) NOT NULL,
+        program VARCHAR(100) NOT NULL,
+        teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+        subject VARCHAR(100) NOT NULL,
+        q1_1 INTEGER NOT NULL CHECK (q1_1 BETWEEN 1 AND 5),
+        q1_2 INTEGER NOT NULL CHECK (q1_2 BETWEEN 1 AND 5),
+        q1_3 INTEGER NOT NULL CHECK (q1_3 BETWEEN 1 AND 5),
+        q1_4 INTEGER NOT NULL CHECK (q1_4 BETWEEN 1 AND 5),
+        q1_5 INTEGER NOT NULL CHECK (q1_5 BETWEEN 1 AND 5),
+        q1_6 INTEGER NOT NULL CHECK (q1_6 BETWEEN 1 AND 5),
+        q2_1 INTEGER NOT NULL CHECK (q2_1 BETWEEN 1 AND 5),
+        q2_2 INTEGER NOT NULL CHECK (q2_2 BETWEEN 1 AND 5),
+        q2_3 INTEGER NOT NULL CHECK (q2_3 BETWEEN 1 AND 5),
+        q2_4 INTEGER NOT NULL CHECK (q2_4 BETWEEN 1 AND 5),
+        q3_1 INTEGER NOT NULL CHECK (q3_1 BETWEEN 1 AND 5),
+        q3_2 INTEGER NOT NULL CHECK (q3_2 BETWEEN 1 AND 5),
+        q3_3 INTEGER NOT NULL CHECK (q3_3 BETWEEN 1 AND 5),
+        q3_4 INTEGER NOT NULL CHECK (q3_4 BETWEEN 1 AND 5),
+        q4_1 INTEGER NOT NULL CHECK (q4_1 BETWEEN 1 AND 5),
+        q4_2 INTEGER NOT NULL CHECK (q4_2 BETWEEN 1 AND 5),
+        q4_3 INTEGER NOT NULL CHECK (q4_3 BETWEEN 1 AND 5),
+        q4_4 INTEGER NOT NULL CHECK (q4_4 BETWEEN 1 AND 5),
+        q4_5 INTEGER NOT NULL CHECK (q4_5 BETWEEN 1 AND 5),
+        q4_6 INTEGER NOT NULL CHECK (q4_6 BETWEEN 1 AND 5),
+        comments TEXT,
+        evaluation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(student_id, teacher_id)
+    )";
+
+    $conn->exec($sql);
+    echo "<p style='color:green;'>✅ Evaluations table created successfully</p>";
+
+    // Check if teachers already exist
+    $check_stmt = query("SELECT COUNT(*) as count FROM teachers");
+    $row = fetch_assoc($check_stmt);
+
+    if ($row['count'] == 0) {
+        // Insert sample teachers
+        $teachers = [
+            ['ABSALON, JIMMY P.', 'Computer Science'],
+            ['CRUZ, MARIA SANTOS', 'Mathematics'],
+            ['REYES, JUAN DELA', 'English Literature'],
+            ['SANTOS, ANNA LOPEZ', 'General Science'],
+            ['GARCIA, PEDRO MANUEL', 'Physics'],
+            ['TORRES, ELENA ROSE', 'Chemistry'],
+            ['VALDEZ, ROBERTO CARLOS', 'History'],
+            ['MENDOZA, SARAH JANE', 'Filipino']
+        ];
+        
+        $inserted = 0;
+        foreach ($teachers as $teacher) {
+            try {
+                query("INSERT INTO teachers (name, subject) VALUES (?, ?)", [$teacher[0], $teacher[1]]);
+                $inserted++;
+            } catch (Exception $e) {
+                echo "<p style='color:orange;'>⚠️ Error inserting {$teacher[0]}: " . $e->getMessage() . "</p>";
+            }
         }
         
-        throw new Exception($error_details);
+        echo "<p style='color:green;'>✅ $inserted sample teachers inserted successfully</p>";
+    } else {
+        echo "<p style='color:blue;'>ℹ️ Teachers already exist ({$row['count']} found), skipping insertion</p>";
     }
-}
 
-// Helper function for PostgreSQL queries
-function query($sql, $params = []) {
-    global $conn;
-    try {
-        $stmt = $conn->prepare($sql);
-        $stmt->execute($params);
-        return $stmt;
-    } catch (Exception $e) {
-        error_log("Query error: " . $e->getMessage());
-        throw $e;
+    // Show current teachers
+    echo "<h3>Current Teachers in Database:</h3>";
+    $teachers_stmt = query("SELECT id, name, subject FROM teachers ORDER BY name");
+    $teachers = fetch_all($teachers_stmt);
+
+    if (count($teachers) > 0) {
+        echo "<table border='1' style='border-collapse:collapse; width:100%; margin:10px 0;'>";
+        echo "<tr><th>ID</th><th>Name</th><th>Subject</th></tr>";
+        foreach($teachers as $row) {
+            echo "<tr><td>{$row['id']}</td><td>{$row['name']}</td><td>{$row['subject']}</td></tr>";
+        }
+        echo "</table>";
+    } else {
+        echo "<p>No teachers found in database.</p>";
     }
+
+    echo "<p style='color:green; font-weight:bold; margin:20px 0;'>🎉 PostgreSQL database setup completed successfully!</p>";
+
+} catch (Exception $e) {
+    echo "<p style='color:red;'>❌ Error during setup: " . $e->getMessage() . "</p>";
 }
 
-// Helper function to get results as associative array (like mysqli)
-function fetch_assoc($stmt) {
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
-
-function fetch_all($stmt) {
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+echo "<p><a href='index.php' style='background:#4CAF50; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;'>Go to Evaluation Form</a></p>";
+echo "<p><a href='admin.php' style='background:#2196F3; color:white; padding:10px 20px; text-decoration:none; border-radius:5px; margin-left:10px;'>Go to Admin Dashboard</a></p>";
 ?>
