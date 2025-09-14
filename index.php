@@ -67,33 +67,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $comments = trim($_POST['comments'] ?? '');
         
         // Check if student has already evaluated this teacher
-        $check_stmt = $conn->prepare("SELECT id FROM evaluations WHERE student_id = ? AND teacher_id = ?");
-        $check_stmt->bind_param("si", $student_id, $teacher_id);
-        $check_stmt->execute();
-        $result = $check_stmt->get_result();
+        $check_stmt = query("SELECT id FROM evaluations WHERE student_id = ? AND teacher_id = ?", 
+                           [$student_id, $teacher_id]);
+        $existing = fetch_assoc($check_stmt);
         
-        if ($result->num_rows > 0) {
+        if ($existing) {
             throw new Exception("You have already evaluated this teacher.");
         }
         
-        // Insert evaluation
-        $stmt = $conn->prepare("INSERT INTO evaluations (student_id, student_name, section, program, teacher_id, subject, 
-                                q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
-                                q2_1, q2_2, q2_3, q2_4,
-                                q3_1, q3_2, q3_3, q3_4,
-                                q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
-                                comments) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        // Insert evaluation using PostgreSQL syntax
+        $insert_sql = "INSERT INTO evaluations (student_id, student_name, section, program, teacher_id, subject, 
+                      q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
+                      q2_1, q2_2, q2_3, q2_4,
+                      q3_1, q3_2, q3_3, q3_4,
+                      q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
+                      comments) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
-        $stmt->bind_param("ssssisiiiiiiiiiiiiiiiiiiis", 
+        $params = [
             $student_id, $student_name, $section, $program, $teacher_id, $subject,
             $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
             $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
             $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
             $ratings['q4_1'], $ratings['q4_2'], $ratings['q4_3'], $ratings['q4_4'], $ratings['q4_5'], $ratings['q4_6'],
-            $comments);
+            $comments
+        ];
         
-        if ($stmt->execute()) {
+        $stmt = query($insert_sql, $params);
+        
+        if ($stmt) {
             $success = "✅ Evaluation submitted successfully! Thank you for your feedback.";
             // Clear form data after successful submission
             $_POST = [];
@@ -101,20 +103,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             throw new Exception("Database error occurred while saving your evaluation.");
         }
         
-        $stmt->close();
-        $check_stmt->close();
-        
     } catch (Exception $e) {
         $error = "❌ " . $e->getMessage();
     }
 }
 
 // Fetch teachers for dropdown
-$teachers_sql = "SELECT id, name, subject FROM teachers ORDER BY name";
-$teachers_result = $conn->query($teachers_sql);
-
-if (!$teachers_result) {
+try {
+    $teachers_stmt = query("SELECT id, name, subject FROM teachers ORDER BY name");
+    $teachers_result = fetch_all($teachers_stmt);
+} catch (Exception $e) {
     $error = "❌ Could not load teachers list. Please contact administrator.";
+    $teachers_result = [];
 }
 ?>
 
@@ -510,15 +510,15 @@ if (!$teachers_result) {
                 <label for="teacher">Teacher <span class="required">*</span></label>
                 <select id="teacher" name="teacher" required>
                     <option value="">Select Teacher</option>
-                    <?php if ($teachers_result && $teachers_result->num_rows > 0): ?>
-                        <?php while($row = $teachers_result->fetch_assoc()): ?>
+                    <?php if (!empty($teachers_result)): ?>
+                        <?php foreach($teachers_result as $row): ?>
                             <?php 
                             $selected = (isset($_POST['teacher']) && $_POST['teacher'] == $row['id']) ? 'selected' : '';
                             ?>
                             <option value="<?php echo $row['id']; ?>" <?php echo $selected; ?>>
                                 <?php echo htmlspecialchars($row['name']) . ' - ' . htmlspecialchars($row['subject']); ?>
                             </option>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </select>
             </div>
@@ -815,7 +815,3 @@ if (!$teachers_result) {
     </script>
 </body>
 </html>
-
-<?php
-$conn->close();
-?>
