@@ -3,10 +3,10 @@
 # Enable mod_rewrite
 RewriteEngine On
 
-# Force HTTPS (if not already enabled on server)
-RewriteCond %{HTTPS} !=on
-RewriteCond %{REQUEST_URI} !^/healthcheck.php
-RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# Force HTTPS (disabled for Railway/proxy environments to prevent redirect loops)
+# RewriteCond %{HTTPS} !=on
+# RewriteCond %{REQUEST_URI} !^/healthcheck.php
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Security headers
 <IfModule mod_headers.c>
