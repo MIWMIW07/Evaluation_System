@@ -1,6 +1,11 @@
 <?php
 // security.php - Security utility functions
 
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Generate CSRF token
 function generate_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
@@ -11,7 +16,10 @@ function generate_csrf_token() {
 
 // Validate CSRF token
 function validate_csrf_token($token) {
-    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+    if (!isset($_SESSION['csrf_token']) || empty($token)) {
+        return false;
+    }
+    return hash_equals($_SESSION['csrf_token'], $token);
 }
 
 // Sanitize input
@@ -25,14 +33,5 @@ function sanitize_input($data) {
     $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
     
     return $data;
-}
-
-// Input validation functions
-function validate_email($email) {
-    return filter_var($email, FILTER_VALIDATE_EMAIL);
-}
-
-function validate_alphanumeric($input) {
-    return preg_match('/^[a-zA-Z0-9_]+$/', $input);
 }
 ?>
