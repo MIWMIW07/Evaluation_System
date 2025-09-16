@@ -1,5 +1,7 @@
 <?php
 
+require_once 'security.php';
+
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     header('Location: login.php');
     exit;
@@ -238,6 +240,7 @@ if (count(fetch_all($check_column)) == 0) {
 echo "<p><a href='login.php' style='background:#4CAF50; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;'>Go to Login Page</a></p>";
 echo "<p><a href='admin.php' style='background:#2196F3; color:white; padding:10px 20px; text-decoration:none; border-radius:5px; margin-left:10px;'>Go to Admin Dashboard</a></p>";
 ?>
+
 
 
 
