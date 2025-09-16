@@ -23,6 +23,9 @@ $success = '';
 
 // Handle login form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (!validate_csrf_token($_POST['csrf_token'])) {
+    die('CSRF token validation failed');
+        }
     try {
         $username = trim($_POST['username']);
         $password = trim($_POST['password']);
@@ -371,6 +374,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <?php endif; ?>
         
         <form method="POST" action="" id="loginForm">
+            <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <div class="form-group">
                 <label for="username">👤 Username</label>
                 <input type="text" 
