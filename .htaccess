@@ -18,8 +18,8 @@ RewriteEngine On
     Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:;"
 </IfModule>
 
-# Prevent access to sensitive files
-<FilesMatch "\\.(env|log|htaccess|htpasswd|ini|php|sql|tpl|txt|xml)$">
+# Prevent access to sensitive files (but allow regular PHP files)
+<FilesMatch "\\.(env|log|htaccess|htpasswd|ini|sql|tpl|txt|xml)$">
     Order allow,deny
     Deny from all
 </FilesMatch>
