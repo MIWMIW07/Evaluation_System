@@ -57,6 +57,23 @@ try {
         echo "<p style='color:red;'>❌ Error creating users table</p>";
     }
 
+
+// Add this to your database setup script
+$sql = "CREATE TABLE IF NOT EXISTS login_attempts (
+    id SERIAL PRIMARY KEY,
+    ip_address VARCHAR(45) NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    attempts INT DEFAULT 1,
+    last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    locked_until TIMESTAMP NULL
+)";
+
+if (query($sql)) {
+    echo "<p style='color:green;'>✅ Login attempts table created successfully</p>";
+} else {
+    echo "<p style='color:red;'>❌ Error creating login attempts table</p>";
+}
+    
     // Enhanced teachers table with program field
     $sql = "CREATE TABLE IF NOT EXISTS teachers (
         id SERIAL PRIMARY KEY,
@@ -240,6 +257,7 @@ if (count(fetch_all($check_column)) == 0) {
 echo "<p><a href='login.php' style='background:#4CAF50; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;'>Go to Login Page</a></p>";
 echo "<p><a href='admin.php' style='background:#2196F3; color:white; padding:10px 20px; text-decoration:none; border-radius:5px; margin-left:10px;'>Go to Admin Dashboard</a></p>";
 ?>
+
 
 
 
