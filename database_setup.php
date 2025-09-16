@@ -1,21 +1,49 @@
 <?php
-
-require_once 'security.php';
-
-// Enhanced database setup for Teacher Evaluation System with Login
+// database_setup.php - Fixed version (no admin check for initial setup)
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-echo "<h2>Enhanced Database Setup for Teacher Evaluation System</h2>";
+echo "<!DOCTYPE html>
+<html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>Database Setup - Teacher Evaluation System</title>
+<style>
+body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+.container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+.success { color: #155724; background: #d4edda; border: 1px solid #c3e6cb; padding: 10px; margin: 10px 0; border-radius: 5px; }
+.error { color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; margin: 10px 0; border-radius: 5px; }
+.warning { color: #856404; background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin: 10px 0; border-radius: 5px; }
+.info { color: #0c5460; background: #d1ecf1; border: 1px solid #bee5eb; padding: 10px; margin: 10px 0; border-radius: 5px; }
+table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background: #f8f9fa; }
+.btn { display: inline-block; padding: 10px 20px; margin: 5px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+.btn:hover { background: #0056b3; }
+.btn-success { background: #28a745; }
+.btn-success:hover { background: #218838; }
+</style></head><body><div class='container'>";
 
-// Use the same connection logic as db_connection.php
+echo "<h1>🔧 Database Setup - Teacher Evaluation System</h1>";
+echo "<p>Setting up database for Railway PostgreSQL deployment...</p>";
+
+// Include database connection
 require_once 'db_connection.php';
 
 if (!isset($conn)) {
-    die("<p style='color:red;'>❌ Could not establish database connection. Please check your Railway PostgreSQL service.</p>");
+    echo "<div class='error'>❌ Could not establish database connection. Please check your Railway PostgreSQL service configuration.</div>";
+    echo "<div class='info'><h4>Environment Variables Check:</h4>";
+    echo "<ul>";
+    echo "<li><strong>DATABASE_URL:</strong> " . (getenv('DATABASE_URL') ? 'Set' : 'Not Set') . "</li>";
+    echo "<li><strong>PGHOST:</strong> " . (getenv('PGHOST') ? getenv('PGHOST') : 'Not Set') . "</li>";
+    echo "<li><strong>PGDATABASE:</strong> " . (getenv('PGDATABASE') ? getenv('PGDATABASE') : 'Not Set') . "</li>";
+    echo "<li><strong>PGUSER:</strong> " . (getenv('PGUSER') ? getenv('PGUSER') : 'Not Set') . "</li>";
+    echo "<li><strong>PGPASSWORD:</strong> " . (getenv('PGPASSWORD') ? 'Set' : 'Not Set') . "</li>";
+    echo "</ul></div>";
+    echo "<p><a href='login.php' class='btn'>← Go to Login</a></p>";
+    echo "</div></body></html>";
+    exit;
 }
 
-echo "<p style='color:green;'>✅ Connected to PostgreSQL database successfully!</p>";
+echo "<div class='success'>✅ Connected to PostgreSQL database successfully!</div>";
 
 try {
     // Create users table for login system
@@ -25,52 +53,32 @@ try {
         password VARCHAR(255) NOT NULL,
         user_type VARCHAR(20) NOT NULL CHECK (user_type IN ('student', 'admin')),
         full_name VARCHAR(100) NOT NULL,
-        student_id VARCHAR(50), -- Only for students
-        program VARCHAR(50), -- Only for students (SHS or COLLEGE)
-        section VARCHAR(50), -- Only for students
+        student_id VARCHAR(50),
+        program VARCHAR(50),
+        section VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_login TIMESTAMP
     )";
 
-    // Add this code to database_setup.php after table creation
-try {
-    // Check if program column exists in teachers table
-    $check_column = query("SELECT column_name FROM information_schema.columns WHERE table_name='teachers' AND column_name='program'");
-    $column_exists = fetch_assoc($check_column);
-    
-    if (!$column_exists) {
-        // Add the program column to teachers table
-        query("ALTER TABLE teachers ADD COLUMN program VARCHAR(20) NOT NULL DEFAULT 'SHS' CHECK (program IN ('SHS', 'COLLEGE'))");
-        echo "<p style='color:green;'>✅ Added 'program' column to teachers table</p>";
+    if (query($sql)) {
+        echo "<div class='success'>✅ Users table created successfully</div>";
     }
-} catch (Exception $e) {
-    echo "<p style='color:orange;'>⚠️ Could not check/add 'program' column: " . $e->getMessage() . "</p>";
-}
+
+    // Create login attempts table for security
+    $sql = "CREATE TABLE IF NOT EXISTS login_attempts (
+        id SERIAL PRIMARY KEY,
+        ip_address VARCHAR(45) NOT NULL,
+        username VARCHAR(255) NOT NULL,
+        attempts INT DEFAULT 1,
+        last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        locked_until TIMESTAMP NULL
+    )";
 
     if (query($sql)) {
-        echo "<p style='color:green;'>✅ Users table created successfully</p>";
-    } else {
-        echo "<p style='color:red;'>❌ Error creating users table</p>";
+        echo "<div class='success'>✅ Login attempts table created successfully</div>";
     }
-
-
-// Add this to your database setup script
-$sql = "CREATE TABLE IF NOT EXISTS login_attempts (
-    id SERIAL PRIMARY KEY,
-    ip_address VARCHAR(45) NOT NULL,
-    username VARCHAR(255) NOT NULL,
-    attempts INT DEFAULT 1,
-    last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    locked_until TIMESTAMP NULL
-)";
-
-if (query($sql)) {
-    echo "<p style='color:green;'>✅ Login attempts table created successfully</p>";
-} else {
-    echo "<p style='color:red;'>❌ Error creating login attempts table</p>";
-}
     
-    // Enhanced teachers table with program field
+    // Create teachers table with program field
     $sql = "CREATE TABLE IF NOT EXISTS teachers (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -80,12 +88,10 @@ if (query($sql)) {
     )";
 
     if (query($sql)) {
-        echo "<p style='color:green;'>✅ Teachers table created/updated successfully</p>";
-    } else {
-        echo "<p style='color:red;'>❌ Error creating teachers table</p>";
+        echo "<div class='success'>✅ Teachers table created successfully</div>";
     }
 
-    // Enhanced evaluations table
+    // Create evaluations table
     $sql = "CREATE TABLE IF NOT EXISTS evaluations (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -120,17 +126,8 @@ if (query($sql)) {
         UNIQUE(user_id, teacher_id)
     )";
 
-    // Add user_id column to evaluations table if it doesn't exist
-$check_column = query("SELECT column_name FROM information_schema.columns 
-                      WHERE table_name='evaluations' AND column_name='user_id'");
-if (count(fetch_all($check_column)) == 0) {
-    query("ALTER TABLE evaluations ADD COLUMN user_id INTEGER REFERENCES users(id)");
-    echo "✅ Added user_id column to evaluations table";
-}
     if (query($sql)) {
-        echo "<p style='color:green;'>✅ Evaluations table created/updated successfully</p>";
-    } else {
-        echo "<p style='color:red;'>❌ Error creating evaluations table</p>";
+        echo "<div class='success'>✅ Evaluations table created successfully</div>";
     }
 
     // Check if default admin exists
@@ -142,9 +139,10 @@ if (count(fetch_all($check_column)) == 0) {
         $admin_password = password_hash('admin123', PASSWORD_DEFAULT);
         query("INSERT INTO users (username, password, user_type, full_name) VALUES (?, ?, 'admin', 'System Administrator')", 
               ['admin', $admin_password]);
-        echo "<p style='color:green;'>✅ Default admin account created (Username: admin, Password: admin123)</p>";
+        echo "<div class='success'>✅ Default admin account created</div>";
+        echo "<div class='info'><strong>Admin Login:</strong> Username: <code>admin</code> | Password: <code>admin123</code></div>";
     } else {
-        echo "<p style='color:blue;'>ℹ️ Admin account already exists</p>";
+        echo "<div class='info'>ℹ️ Admin account already exists</div>";
     }
 
     // Check if teachers already exist
@@ -154,17 +152,12 @@ if (count(fetch_all($check_column)) == 0) {
     if ($row['count'] == 0) {
         // Insert sample teachers with programs
         $teachers = [
-            // SHS Teachers
             ['ABSALON, JIMMY P.', 'Computer Science', 'SHS'],
             ['CRUZ, MARIA SANTOS', 'Mathematics', 'SHS'],
             ['REYES, JUAN DELA', 'English Literature', 'SHS'],
             ['SANTOS, ANNA LOPEZ', 'General Science', 'SHS'],
             ['GARCIA, PEDRO MANUEL', 'Physics', 'SHS'],
             ['TORRES, ELENA ROSE', 'Chemistry', 'SHS'],
-            ['VALDEZ, ROBERTO CARLOS', 'History', 'SHS'],
-            ['MENDOZA, SARAH JANE', 'Filipino', 'SHS'],
-            
-            // College Teachers
             ['DR. JOHNSON, MICHAEL', 'Data Structures', 'COLLEGE'],
             ['PROF. WILLIAMS, JENNIFER', 'Calculus', 'COLLEGE'],
             ['DR. BROWN, ROBERT', 'Database Systems', 'COLLEGE'],
@@ -180,25 +173,25 @@ if (count(fetch_all($check_column)) == 0) {
                       [$teacher[0], $teacher[1], $teacher[2]]);
                 $inserted++;
             } catch (Exception $e) {
-                echo "<p style='color:orange;'>⚠️ Error inserting {$teacher[0]}: " . $e->getMessage() . "</p>";
+                echo "<div class='warning'>⚠️ Error inserting {$teacher[0]}: " . $e->getMessage() . "</div>";
             }
         }
         
-        echo "<p style='color:green;'>✅ $inserted sample teachers inserted successfully</p>";
+        echo "<div class='success'>✅ $inserted sample teachers inserted successfully</div>";
     } else {
-        echo "<p style='color:blue;'>ℹ️ Teachers already exist ({$row['count']} found), skipping insertion</p>";
+        echo "<div class='info'>ℹ️ Teachers already exist ({$row['count']} found)</div>";
     }
 
-    // Create some sample student accounts
+    // Create sample student accounts
     $check_students = query("SELECT COUNT(*) as count FROM users WHERE user_type = 'student'");
     $student_row = fetch_assoc($check_students);
 
     if ($student_row['count'] == 0) {
         $sample_students = [
-            ['student1', 'pass123', 'Juan Dela Cruz', 'STU001', 'SHS', 'A'],
-            ['student2', 'pass123', 'Maria Santos', 'STU002', 'SHS', 'B'],
+            ['student1', 'pass123', 'Juan Dela Cruz', 'STU001', 'SHS', 'Grade 11-A'],
+            ['student2', 'pass123', 'Maria Santos', 'STU002', 'SHS', 'Grade 12-B'],
             ['student3', 'pass123', 'Pedro Garcia', 'STU003', 'COLLEGE', 'BSIT-1A'],
-            ['student4', 'pass123', 'Ana Reyes', 'STU004', 'COLLEGE', 'BSCS-2B']
+            ['student4', 'pass123', 'Ana Reyes', 'STU004', 'COLLEGE', 'BSCS-2A']
         ];
 
         $inserted_students = 0;
@@ -209,53 +202,57 @@ if (count(fetch_all($check_column)) == 0) {
                       [$student[0], $hashed_password, $student[2], $student[3], $student[4], $student[5]]);
                 $inserted_students++;
             } catch (Exception $e) {
-                echo "<p style='color:orange;'>⚠️ Error inserting student {$student[0]}: " . $e->getMessage() . "</p>";
+                echo "<div class='warning'>⚠️ Error inserting student {$student[0]}: " . $e->getMessage() . "</div>";
             }
         }
         
-        echo "<p style='color:green;'>✅ $inserted_students sample student accounts created</p>";
-        echo "<p style='color:blue;'>Sample Student Logins: student1/pass123, student2/pass123, student3/pass123, student4/pass123</p>";
+        echo "<div class='success'>✅ $inserted_students sample student accounts created</div>";
+        echo "<div class='info'><strong>Sample Student Logins:</strong> student1/pass123, student2/pass123, student3/pass123, student4/pass123</div>";
     }
 
-    // Show current data
-    echo "<h3>Current Users in Database:</h3>";
-    $users_stmt = query("SELECT id, username, user_type, full_name, program, section FROM users ORDER BY user_type, full_name");
-    $users = fetch_all($users_stmt);
-
-    if (count($users) > 0) {
-        echo "<table border='1' style='border-collapse:collapse; width:100%; margin:10px 0;'>";
-        echo "<tr><th>ID</th><th>Username</th><th>Type</th><th>Full Name</th><th>Program</th><th>Section</th></tr>";
-        foreach($users as $row) {
-            echo "<tr><td>{$row['id']}</td><td>{$row['username']}</td><td>{$row['user_type']}</td><td>{$row['full_name']}</td><td>" . ($row['program'] ?: '-') . "</td><td>" . ($row['section'] ?: '-') . "</td></tr>";
-        }
-        echo "</table>";
+    // Show current data summary
+    echo "<h3>📊 Database Summary</h3>";
+    
+    $users_stmt = query("SELECT user_type, COUNT(*) as count FROM users GROUP BY user_type");
+    $users_summary = fetch_all($users_stmt);
+    
+    echo "<table>";
+    echo "<tr><th>User Type</th><th>Count</th></tr>";
+    foreach($users_summary as $row) {
+        echo "<tr><td>" . ucfirst($row['user_type']) . "</td><td>{$row['count']}</td></tr>";
     }
+    echo "</table>";
 
-    echo "<h3>Current Teachers by Program:</h3>";
-    $teachers_stmt = query("SELECT id, name, subject, program FROM teachers ORDER BY program, name");
-    $teachers = fetch_all($teachers_stmt);
-
-    if (count($teachers) > 0) {
-        echo "<table border='1' style='border-collapse:collapse; width:100%; margin:10px 0;'>";
-        echo "<tr><th>ID</th><th>Name</th><th>Subject</th><th>Program</th></tr>";
-        foreach($teachers as $row) {
-            echo "<tr><td>{$row['id']}</td><td>{$row['name']}</td><td>{$row['subject']}</td><td>{$row['program']}</td></tr>";
-        }
-        echo "</table>";
+    $teachers_stmt = query("SELECT program, COUNT(*) as count FROM teachers GROUP BY program");
+    $teachers_summary = fetch_all($teachers_stmt);
+    
+    echo "<table>";
+    echo "<tr><th>Program</th><th>Teachers Count</th></tr>";
+    foreach($teachers_summary as $row) {
+        echo "<tr><td>{$row['program']}</td><td>{$row['count']}</td></tr>";
     }
+    echo "</table>";
 
-    echo "<p style='color:green; font-weight:bold; margin:20px 0;'>🎉 Enhanced database setup completed successfully!</p>";
+    echo "<div class='success'><h3>🎉 Database setup completed successfully!</h3></div>";
 
 } catch (Exception $e) {
-    echo "<p style='color:red;'>❌ Error during setup: " . $e->getMessage() . "</p>";
+    echo "<div class='error'>❌ Error during setup: " . $e->getMessage() . "</div>";
 }
 
-echo "<p><a href='login.php' style='background:#4CAF50; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;'>Go to Login Page</a></p>";
-echo "<p><a href='admin.php' style='background:#2196F3; color:white; padding:10px 20px; text-decoration:none; border-radius:5px; margin-left:10px;'>Go to Admin Dashboard</a></p>";
+echo "<p style='margin-top: 30px;'>";
+echo "<a href='login.php' class='btn btn-success'>🔑 Go to Login Page</a>";
+echo "<a href='index.php' class='btn'>🏠 Go to Main Page</a>";
+echo "</p>";
+
+echo "<div class='info' style='margin-top: 20px;'>";
+echo "<h4>🔧 Next Steps:</h4>";
+echo "<ol>";
+echo "<li>Click 'Go to Login Page' to test the system</li>";
+echo "<li>Login with admin credentials to access admin dashboard</li>";
+echo "<li>Login with student credentials to test student features</li>";
+echo "<li>Check that all features work properly</li>";
+echo "</ol>";
+echo "</div>";
+
+echo "</div></body></html>";
 ?>
-
-
-
-
-
-
