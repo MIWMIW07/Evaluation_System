@@ -1,9 +1,4 @@
 <?php
-
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
-    header('Location: login.php');
-    exit;
-}
 // db_connection.php - PostgreSQL version
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -65,4 +60,5 @@ try {
     $conn = null;
 }
 ?>
+
 
