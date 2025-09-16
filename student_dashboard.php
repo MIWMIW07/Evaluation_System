@@ -47,25 +47,21 @@ $current_section = $_SESSION['section'];
 $teachers_result = [];
 $evaluated_teachers = [];
 
+// In student_dashboard.php, modify the teachers query
 if (!empty($current_program)) {
     try {
         // Get teachers for student's program
         $teachers_stmt = query("SELECT id, name, subject FROM teachers WHERE program = ? ORDER BY name", 
                               [$current_program]);
         $teachers_result = fetch_all($teachers_stmt);
-        
-        // Get already evaluated teachers by this student
-        $evaluated_stmt = query("SELECT teacher_id FROM evaluations WHERE user_id = ?", 
-                               [$_SESSION['user_id']]);
-        $evaluated_results = fetch_all($evaluated_stmt);
-        
-        foreach($evaluated_results as $row) {
-            $evaluated_teachers[] = $row['teacher_id'];
-        }
-        
+        // ... rest of the code
     } catch (Exception $e) {
         $error = "❌ Could not load teachers list: " . $e->getMessage();
+        // Set empty results to prevent further errors
+        $teachers_result = [];
     }
+} else {
+    $teachers_result = [];
 }
 
 // Get evaluation statistics
