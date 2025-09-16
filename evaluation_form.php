@@ -1,9 +1,5 @@
 <?php
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
-    header('Location: login.php');
-    exit;
-}
 // evaluation_form.php - Enhanced evaluation form for logged in students
 session_start();
 
