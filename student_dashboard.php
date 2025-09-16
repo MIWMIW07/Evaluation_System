@@ -1,5 +1,7 @@
 <?php
 
+require_once 'security.php';
+
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     header('Location: login.php');
     exit;
@@ -21,6 +23,10 @@ $error = '';
 
 // Handle program/section update
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
+
+    if (!validate_csrf_token($_POST['csrf_token'])) {
+    die('CSRF token validation failed');
+        }
     try {
         $program = trim($_POST['program']);
         $section = trim($_POST['section']);
@@ -502,6 +508,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         <?php endif; ?>
         
         <div class="program-section-form">
+            <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <h3>📚 Update Your Program & Section</h3>
             <p style="margin-bottom: 20px; color: #666;">Please select your program and section to view available teachers for evaluation.</p>
             
