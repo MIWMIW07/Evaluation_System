@@ -367,6 +367,7 @@ try {
 </head>
 <body>
     <a href="index.php" class="back-link">← Back to Evaluation Form</a>
+    <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
     
     <div class="container">
         <header>
@@ -553,6 +554,7 @@ try {
     </script>
 </body>
 </html>
+
 
 
 
