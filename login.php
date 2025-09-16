@@ -1,4 +1,6 @@
 <?php
+require_once 'security.php';
+
 // login.php - Enhanced login system
 session_start();
 
