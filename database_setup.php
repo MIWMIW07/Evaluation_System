@@ -29,6 +29,21 @@ try {
         last_login TIMESTAMP
     )";
 
+    // Add this code to database_setup.php after table creation
+try {
+    // Check if program column exists in teachers table
+    $check_column = query("SELECT column_name FROM information_schema.columns WHERE table_name='teachers' AND column_name='program'");
+    $column_exists = fetch_assoc($check_column);
+    
+    if (!$column_exists) {
+        // Add the program column to teachers table
+        query("ALTER TABLE teachers ADD COLUMN program VARCHAR(20) NOT NULL DEFAULT 'SHS' CHECK (program IN ('SHS', 'COLLEGE'))");
+        echo "<p style='color:green;'>✅ Added 'program' column to teachers table</p>";
+    }
+} catch (Exception $e) {
+    echo "<p style='color:orange;'>⚠️ Could not check/add 'program' column: " . $e->getMessage() . "</p>";
+}
+
     if (query($sql)) {
         echo "<p style='color:green;'>✅ Users table created successfully</p>";
     } else {
@@ -211,3 +226,4 @@ try {
 echo "<p><a href='login.php' style='background:#4CAF50; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;'>Go to Login Page</a></p>";
 echo "<p><a href='admin.php' style='background:#2196F3; color:white; padding:10px 20px; text-decoration:none; border-radius:5px; margin-left:10px;'>Go to Admin Dashboard</a></p>";
 ?>
+
