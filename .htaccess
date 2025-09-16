@@ -29,7 +29,9 @@ RewriteCond %{REQUEST_URI} /(^|/)(\\.git|config|logs|temp|vendor)(/|$) [NC]
 RewriteRule .* - [F,L]
 
 # Protect against SQL injection attempts
-RewriteCond %{QUERY_STRING} (;|<|>|'|"|\\)|%0A|%0D|%22|%27|%3C|%3E|%00).*(union|select|insert|drop|delete|update|cast|create|char|convert|alter|declare|order|script|iframe) [NC,OR]
+RewriteCond %{QUERY_STRING} (union|select|insert|drop|delete|update|cast|create|char|convert|alter|declare|order|script|iframe) [NC,OR]
+RewriteCond %{QUERY_STRING} [;'\"<>] [OR]
+RewriteCond %{QUERY_STRING} (%0A|%0D|%22|%27|%3C|%3E|%00) [OR]
 RewriteCond %{QUERY_STRING} \.\./\.\. [OR]
 RewriteCond %{QUERY_STRING} (localhost|loopback|127\.0\.0\.1) [NC,OR]
 RewriteCond %{QUERY_STRING} =PHP[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} [NC]
