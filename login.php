@@ -1,8 +1,8 @@
 <?php
-require_once 'security.php';
-
 // login.php - Enhanced login system
 session_start();
+
+require_once 'security.php';
 
 // If user is already logged in, redirect appropriately
 if (isset($_SESSION['user_id'])) {
