@@ -754,3 +754,140 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
                 $performance_level = 'Fair';
             } else {
                 $performance_level = 'Needs Improvement';
+            }
+            ?>
+            <div class="average-rating">
+                <h4>📊 Your Overall Rating</h4>
+                <div class="average-score"><?php echo $average_rating; ?>/5.0</div>
+                <p><strong><?php echo $performance_level; ?></strong></p>
+            </div>
+        <?php endif; ?>
+        
+        <div class="button-group">
+            <?php if ($is_view_mode): ?>
+                <a href="student_dashboard.php" class="btn btn-primary">🏠 Back to Dashboard</a>
+                <a href="evaluation_form.php?teacher_id=<?php echo $teacher_id; ?>&print=1" class="btn btn-secondary" target="_blank">🖨️ Print Evaluation</a>
+            <?php else: ?>
+                <button type="submit" class="btn" id="submitBtn">✅ Submit Evaluation</button>
+                <a href="student_dashboard.php" class="btn btn-secondary">❌ Cancel</a>
+            <?php endif; ?>
+        </div>
+        
+        <?php if (!$is_view_mode): ?>
+            </form>
+        <?php endif; ?>
+        
+        <div style="text-align: center; margin-top: 40px; padding-top: 25px; border-top: 2px solid #e9ecef; color: #6c757d;">
+            <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
+            <p>Teacher Evaluation System</p>
+            <p style="margin-top: 10px;">
+                Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        <?php if (!$is_view_mode): ?>
+        // Form validation enhancement
+        document.getElementById('evaluationForm').addEventListener('submit', function(e) {
+            const requiredRadioGroups = [
+                'q1_1', 'q1_2', 'q1_3', 'q1_4', 'q1_5', 'q1_6',
+                'q2_1', 'q2_2', 'q2_3', 'q2_4',
+                'q3_1', 'q3_2', 'q3_3', 'q3_4',
+                'q4_1', 'q4_2', 'q4_3', 'q4_4', 'q4_5', 'q4_6'
+            ];
+            
+            let allAnswered = true;
+            let firstUnanswered = null;
+            
+            for (let group of requiredRadioGroups) {
+                const radios = document.getElementsByName(group);
+                const checked = Array.from(radios).some(radio => radio.checked);
+                if (!checked) {
+                    allAnswered = false;
+                    if (!firstUnanswered) {
+                        firstUnanswered = group;
+                    }
+                }
+            }
+            
+            if (!allAnswered) {
+                e.preventDefault();
+                alert(`Please answer all questions. Missing: Question ${firstUnanswered.replace('_', '.')}`);
+                
+                // Scroll to first unanswered question
+                const firstRadio = document.getElementsByName(firstUnanswered)[0];
+                if (firstRadio) {
+                    firstRadio.closest('.question').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                    firstRadio.closest('.question').style.borderLeft = '4px solid #dc3545';
+                    setTimeout(() => {
+                        firstRadio.closest('.question').style.borderLeft = '4px solid #4CAF50';
+                    }, 3000);
+                }
+                return;
+            }
+            
+            // Show confirmation dialog
+            if (!confirm('Are you sure you want to submit this evaluation? You cannot change it after submission.')) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '⏳ Submitting...';
+            submitBtn.disabled = true;
+        });
+        
+        // Add visual feedback for radio selections
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                // Remove previous selections styling in this group
+                const groupName = this.name;
+                document.querySelectorAll(`input[name="${groupName}"]`).forEach(r => {
+                    r.closest('label').style.backgroundColor = '';
+                    r.closest('label').style.transform = '';
+                });
+                
+                // Style the selected option
+                this.closest('label').style.backgroundColor = '#e8f5e8';
+                this.closest('label').style.transform = 'scale(1.05)';
+                
+                // Mark question as completed
+                const question = this.closest('.question');
+                question.style.borderLeft = '4px solid #28a745';
+                question.style.backgroundColor = '#f8fff8';
+            });
+        });
+        <?php endif; ?>
+        
+        // Animate elements on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = document.querySelectorAll('.form-section');
+            sections.forEach((section, index) => {
+                section.style.opacity = '0';
+                section.style.transform = 'translateY(20px)';
+                section.style.transition = 'all 0.5s ease';
+                
+                setTimeout(() => {
+                    section.style.opacity = '1';
+                    section.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        });
+        
+        // Add smooth scrolling to questions
+        document.querySelectorAll('.question').forEach(question => {
+            question.addEventListener('click', function() {
+                this.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
