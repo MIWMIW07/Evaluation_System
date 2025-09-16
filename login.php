@@ -2,6 +2,16 @@
 // login.php - Enhanced login system
 session_start();
 
+// Check for logout message
+if (isset($_SESSION['logout_message'])) {
+    $success = $_SESSION['logout_message'];
+    unset($_SESSION['logout_message']);
+    
+    // Also check if user was admin to show appropriate redirect option
+    $was_admin = isset($_SESSION['user_type_was']) && $_SESSION['user_type_was'] === 'admin';
+    unset($_SESSION['user_type_was']);
+}
+
 require_once 'security.php';
 
 // If user is already logged in, redirect appropriately
