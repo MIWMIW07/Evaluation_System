@@ -1,7 +1,9 @@
 <?php
-
 // evaluation_form.php - Enhanced evaluation form for logged in students
 session_start();
+
+// Include security functions for CSRF protection
+require_once 'security.php';
 
 // Check if user is logged in and is a student
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
@@ -51,6 +53,11 @@ try {
 // Handle form submission (only if not in view mode)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
     try {
+        // Validate CSRF token first
+        if (!validate_csrf_token($_POST['csrf_token'])) {
+            die('CSRF token validation failed');
+        }
+        
         // Validate all required fields
         $ratings = [];
         
@@ -576,6 +583,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
         
         <?php if (!$is_view_mode): ?>
             <form method="POST" action="" id="evaluationForm">
+                <!-- CSRF Token Field -->
+                <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
         <?php endif; ?>
         
         <!-- Section 1: Teaching Competence -->
