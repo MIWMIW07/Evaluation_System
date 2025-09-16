@@ -1,9 +1,5 @@
 <?php
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
-    header('Location: login.php');
-    exit;
-}
 // Include database connection
 require_once 'db_connection.php';
 
@@ -106,4 +102,5 @@ try {
     echo "</body></html>";
 }
 ?>
+
 
