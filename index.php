@@ -1,4 +1,9 @@
 <?php
+
+if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
+    header('Location: login.php');
+    exit;
+}
 // Updated index.php - Redirect to login system
 session_start();
 
@@ -81,3 +86,4 @@ exit;
     </div>
 </body>
 </html>
+
