@@ -100,6 +100,13 @@ try {
         UNIQUE(user_id, teacher_id)
     )";
 
+    // Add user_id column to evaluations table if it doesn't exist
+$check_column = query("SELECT column_name FROM information_schema.columns 
+                      WHERE table_name='evaluations' AND column_name='user_id'");
+if (count(fetch_all($check_column)) == 0) {
+    query("ALTER TABLE evaluations ADD COLUMN user_id INTEGER REFERENCES users(id)");
+    echo "✅ Added user_id column to evaluations table";
+}
     if (query($sql)) {
         echo "<p style='color:green;'>✅ Evaluations table created/updated successfully</p>";
     } else {
@@ -226,4 +233,5 @@ try {
 echo "<p><a href='login.php' style='background:#4CAF50; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;'>Go to Login Page</a></p>";
 echo "<p><a href='admin.php' style='background:#2196F3; color:white; padding:10px 20px; text-decoration:none; border-radius:5px; margin-left:10px;'>Go to Admin Dashboard</a></p>";
 ?>
+
 
