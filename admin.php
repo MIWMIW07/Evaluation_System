@@ -1,20 +1,21 @@
 <?php
 session_start();
-require_once 'security.php';
+require_once 'includes/security.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     header('Location: login.php');
     exit;
 }
+
 // Enable error reporting for debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // Include database connection with error handling
 try {
-    require_once 'db_connection.php';
+    require_once 'includes/db_connection.php';
     
-    if (!isset($conn)) {
+    if (!isset($pdo)) {
         throw new Exception("Database connection not established");
     }
 } catch (Exception $e) {
@@ -377,8 +378,7 @@ try {
         </header>
         
         <?php if (isset($db_error)): ?>
-            <div class="error-alert">
-                <h3>⚠️ Database Error</h3>
+            <div class="error-alert">⚠️ Database Error</h3>
                 <p>There was an issue loading the dashboard data: <?php echo htmlspecialchars($db_error); ?></p>
                 <p>Please check your database connection and try again.</p>
             </div>
@@ -554,7 +554,3 @@ try {
     </script>
 </body>
 </html>
-
-
-
-
