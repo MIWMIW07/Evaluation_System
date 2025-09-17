@@ -2,8 +2,7 @@
 // student_dashboard.php - Student Dashboard
 session_start();
 
-require_once 'security.php';
-
+require_once 'includes/security.php';
 
 // Check if user is logged in and is a student
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
@@ -12,17 +11,17 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
 }
 
 // Include database connection
-require_once 'db_connection.php';
+require_once 'includes/db_connection.php';
 
 $success = '';
 $error = '';
 
 // Handle program/section update
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
-
     if (!validate_csrf_token($_POST['csrf_token'])) {
-    die('CSRF token validation failed');
-        }
+        die('CSRF token validation failed');
+    }
+    
     try {
         $program = trim($_POST['program']);
         $section = trim($_POST['section']);
@@ -54,17 +53,24 @@ $current_section = $_SESSION['section'];
 $teachers_result = [];
 $evaluated_teachers = [];
 
-// In student_dashboard.php, modify the teachers query
+// Get evaluated teachers for this student
+try {
+    $evaluated_stmt = query("SELECT teacher_id FROM evaluations WHERE user_id = ?", 
+                           [$_SESSION['user_id']]);
+    $evaluated_teachers_result = fetch_all($evaluated_stmt);
+    $evaluated_teachers = array_column($evaluated_teachers_result, 'teacher_id');
+} catch (Exception $e) {
+    $error = "❌ Could not load evaluation data: " . $e->getMessage();
+}
+
+// Get teachers for student's program
 if (!empty($current_program)) {
     try {
-        // Get teachers for student's program
         $teachers_stmt = query("SELECT id, name, subject FROM teachers WHERE program = ? ORDER BY name", 
                               [$current_program]);
         $teachers_result = fetch_all($teachers_stmt);
-        // ... rest of the code
     } catch (Exception $e) {
         $error = "❌ Could not load teachers list: " . $e->getMessage();
-        // Set empty results to prevent further errors
         $teachers_result = [];
     }
 } else {
@@ -504,11 +510,11 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         <?php endif; ?>
         
         <div class="program-section-form">
-            <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <h3>📚 Update Your Program & Section</h3>
             <p style="margin-bottom: 20px; color: #666;">Please select your program and section to view available teachers for evaluation.</p>
             
             <form method="POST" action="">
+                <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                 <input type="hidden" name="update_info" value="1">
                 <div class="form-grid">
                     <div class="form-group">
