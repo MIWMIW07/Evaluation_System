@@ -1,10 +1,18 @@
 <?php
+// generate_report.php - Generate CSV report
+session_start();
+
+// Check if user is admin
+if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
+    header('HTTP/1.0 403 Forbidden');
+    die('Access denied. Admin privileges required.');
+}
 
 // Include database connection
-require_once 'db_connection.php';
+require_once 'includes/db_connection.php';
 
 // Check if connection exists
-if (!isset($conn)) {
+if (!isset($pdo)) {
     die("Database connection failed. Please check your configuration.");
 }
 
@@ -102,5 +110,3 @@ try {
     echo "</body></html>";
 }
 ?>
-
-
