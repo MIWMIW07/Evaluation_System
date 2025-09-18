@@ -5,13 +5,13 @@ ini_set('display_errors', 1);
 
 // Security check - Only allow access during setup phase
 // You can comment out these lines during initial setup, then uncomment for security
-/*
+
 session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     http_response_code(403);
     die('Access Denied: Admin access required for database setup.');
 }
-*/
+
 
 // Include database connection with correct path
 require_once 'includes/db_connection.php';
@@ -397,3 +397,4 @@ try {
     </div>
 </body>
 </html>
+
