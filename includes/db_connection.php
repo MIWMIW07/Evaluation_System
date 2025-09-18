@@ -39,8 +39,7 @@ function getDatabaseConnection() {
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
                 PDO::ATTR_PERSISTENT => false, // Don't use persistent connections on Railway
-                PDO::ATTR_TIMEOUT => 30, // Longer timeout for Railway
-                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false // For Railway compatibility
+                PDO::ATTR_TIMEOUT => 30 // Longer timeout for Railway
             ]);
             
             // Test the connection
