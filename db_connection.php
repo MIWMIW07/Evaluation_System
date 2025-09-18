@@ -87,12 +87,4 @@ function fetch_assoc($stmt) {
 function fetch_all($stmt) {
     return $stmt->fetchAll();
 }
-
-// Initialize connection for backward compatibility
-try {
-    $conn = getDatabaseConnection();
-} catch (Exception $e) {
-    $conn = null;
-    error_log("Database initialization failed: " . $e->getMessage());
-}
 ?>
