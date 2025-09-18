@@ -3,7 +3,7 @@
 session_start();
 
 // Include security functions for CSRF protection
-require_once 'security.php';
+require_once 'includes/security.php';
 
 // Check if user is logged in and is a student
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
 }
 
 // Include database connection
-require_once 'db_connection.php';
+require_once 'includes/db_connection.php';
 
 $success = '';
 $error = '';
@@ -277,7 +277,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
         }
         
         .section-title {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+                       background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             color: white;
             padding: 15px;
             margin: -20px -20px 20px -20px;
@@ -404,7 +404,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
         }
         
         .btn-primary:hover {
-            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
+            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100'#');
             box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
         }
         
@@ -567,7 +567,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
         <?php endif; ?>
         
         <?php if (!$is_view_mode): ?>
-            <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); border-left: 6px solid #2196F3; padding: 20px; margin-bottom: 25px; border-radius: 5px;">
+            <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100'); border-left: 6px solid #2196F3; padding: 20px; margin-bottom: 25px; border-radius: 5px;">
                 <p><strong>📋 Directions:</strong> The following items describe aspects of the teacher's characteristics inside and outside the classroom. 
                 Choose the appropriate number that fits your observation. Your score will help the teacher further develop their dedication to the field of teaching.</p>
             </div>
