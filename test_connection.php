@@ -3,6 +3,12 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Prevent direct access
+if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
+    header('HTTP/1.0 403 Forbidden');
+    die('Access denied.');
+}
+
 echo "<!DOCTYPE html>
 <html><head><meta charset='UTF-8'><title>Connection Test</title>
 <style>
@@ -38,14 +44,14 @@ echo "</div>";
 echo "<h2>Database Connection Test:</h2>";
 
 try {
-    require_once 'db_connection.php';
+    require_once 'includes/db_connection.php';
     
-    if (isset($conn) && $conn) {
+    if (isset($pdo) && $pdo) {
         echo "<div class='success'>✅ Database connection successful!</div>";
         
         // Test a simple query
         try {
-            $stmt = $conn->query("SELECT version()");
+            $stmt = $pdo->query("SELECT version()");
             $version = $stmt->fetch();
             echo "<div class='success'>✅ PostgreSQL Version: " . $version['version'] . "</div>";
         } catch (Exception $e) {
@@ -57,7 +63,7 @@ try {
             $tables = ['users', 'teachers', 'evaluations'];
             echo "<h3>Database Tables:</h3>";
             foreach ($tables as $table) {
-                $stmt = $conn->prepare("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = ?)");
+                $stmt = $pdo->prepare("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = ?)");
                 $stmt->execute([$table]);
                 $exists = $stmt->fetch()['exists'] ? '✅' : '❌';
                 echo "<div>$exists Table '$table' " . ($stmt->fetch() ? 'exists' : 'missing') . "</div>";
