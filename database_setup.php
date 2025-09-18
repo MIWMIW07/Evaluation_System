@@ -3,6 +3,12 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Prevent direct access
+if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
+    header('HTTP/1.0 403 Forbidden');
+    die('Access denied.');
+}
+
 echo "<!DOCTYPE html>
 <html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>
 <title>Database Setup - Teacher Evaluation System</title>
@@ -28,7 +34,7 @@ echo "<p>Setting up database for Railway PostgreSQL deployment...</p>";
 // Include database connection
 require_once 'db_connection.php';
 
-if (!isset($conn)) {
+if (!isset($pdo)) {
     echo "<div class='error'>❌ Could not establish database connection. Please check your Railway PostgreSQL service configuration.</div>";
     echo "<div class='info'><h4>Environment Variables Check:</h4>";
     echo "<ul>";
