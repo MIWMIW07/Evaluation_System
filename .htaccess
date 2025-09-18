@@ -1,85 +1,35 @@
-# Enhanced .htaccess for Teacher Evaluation System
+# .htaccess for PHP Teacher Evaluation System on Railway
+# This prevents infinite redirect loops
 
-# Enable mod_rewrite
 RewriteEngine On
 
-# Force HTTPS (disabled for Railway/proxy environments to prevent redirect loops)
-# RewriteCond %{HTTPS} !=on
-# RewriteCond %{REQUEST_URI} !^/healthcheck.php
-# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# Prevent infinite loops by checking if we're already processing a redirect
+RewriteCond %{ENV:REDIRECT_STATUS} 200
+RewriteRule ^.*$ - [L]
 
-# Security headers
-<IfModule mod_headers.c>
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set X-Frame-Options "DENY"
-    Header always set X-XSS-Protection "1; mode=block"
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:;"
-</IfModule>
-
-# Prevent access to sensitive files (but allow regular PHP files)
-<FilesMatch "\\.(env|log|htaccess|htpasswd|ini|sql|tpl|txt|xml)$">
+# Security: Block access to sensitive files
+<FilesMatch "^\.">
     Order allow,deny
     Deny from all
 </FilesMatch>
 
-# Restrict access to specific directories using RewriteRule instead of DirectoryMatch
-RewriteCond %{REQUEST_URI} /(^|/)(\\.git|config|logs|temp|vendor)(/|$) [NC]
-RewriteRule .* - [F,L]
+<FilesMatch "\.(sql|log|conf|ini|bak|backup)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
 
-# Protect against SQL injection attempts
-RewriteCond %{QUERY_STRING} (union|select|insert|drop|delete|update|cast|create|char|convert|alter|declare|order|script|iframe) [NC,OR]
-RewriteCond %{QUERY_STRING} [;'\"<>] [OR]
-RewriteCond %{QUERY_STRING} (%0A|%0D|%22|%27|%3C|%3E|%00) [OR]
-RewriteCond %{QUERY_STRING} \.\./\.\. [OR]
-RewriteCond %{QUERY_STRING} (localhost|loopback|127\.0\.0\.1) [NC,OR]
-RewriteCond %{QUERY_STRING} =PHP[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} [NC]
-RewriteRule ^(.*)$ - [F,L]
+# Block access to includes directory from direct web access
+RewriteRule ^includes/ - [F,L]
 
-# Prevent directory browsing
-Options -Indexes
+# Error pages
+ErrorDocument 404 /error.php?code=404
+ErrorDocument 500 /error.php?code=500
 
-# Set default charset
-AddDefaultCharset UTF-8
-
-# Enable compression
-<IfModule mod_deflate.c>
-    <IfModule mod_filter.c>
-        AddOutputFilterByType DEFLATE "application/atom+xml" \\
-          "application/javascript" \\
-          "application/json" \\
-          "application/ld+json" \\
-          "application/manifest+json" \\
-          "application/rdf+xml" \\
-          "application/rss+xml" \\
-          "application/schema+json" \\
-          "application/vnd.geo+json" \\
-          "application/vnd.ms-fontobject" \\
-          "application/x-font-ttf" \\
-          "application/x-javascript" \\
-          "application/x-web-app-manifest+json" \\
-          "application/xhtml+xml" \\
-          "application/xml" \\
-          "font/eot" \\
-          "font/opentype" \\
-          "image/bmp" \\
-          "image/svg+xml" \\
-          "image/vnd.microsoft.icon" \\
-          "image/x-icon" \\
-          "text/cache-manifest" \\
-          "text/css" \\
-          "text/html" \\
-          "text/javascript" \\
-          "text/plain" \\
-          "text/vcard" \\
-          "text/vnd.rim.location.xloc" \\
-          "text/vtt" \\
-          "text/x-component" \\
-          "text/x-cross-domain-policy" \\
-          "text/xml"
-    </IfModule>
-</IfModule>
+# PHP settings for Railway
+php_value upload_max_filesize 10M
+php_value post_max_size 10M
+php_value max_execution_time 300
+php_value memory_limit 256M
 
 # Cache static files
 <IfModule mod_expires.c>
@@ -90,14 +40,27 @@ AddDefaultCharset UTF-8
     ExpiresByType image/jpg "access plus 1 month"
     ExpiresByType image/jpeg "access plus 1 month"
     ExpiresByType image/gif "access plus 1 month"
-    ExpiresByType image/ico "access plus 1 month"
     ExpiresByType image/svg+xml "access plus 1 month"
-    ExpiresByType font/ttf "access plus 1 month"
-    ExpiresByType font/woff "access plus 1 month"
-    ExpiresByType font/woff2 "access plus 1 month"
 </IfModule>
 
-# Pretty URLs
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^([^/]+)/?$ $1.php [L,QSA]
+# Gzip compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
