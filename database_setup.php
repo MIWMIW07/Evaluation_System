@@ -3,11 +3,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Prevent direct access
-if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
-    header('HTTP/1.0 403 Forbidden');
-    die('Access denied.');
-}
+
 
 echo "<!DOCTYPE html>
 <html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>
@@ -262,3 +258,4 @@ echo "</div>";
 
 echo "</div></body></html>";
 ?>
+
