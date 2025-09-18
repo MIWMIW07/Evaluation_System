@@ -5,9 +5,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Include database connection (adjust path as needed)
-require_once 'db_connection.php'; // or wherever your database connection is defined
-
 // Generate CSRF token
 function generate_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
@@ -47,7 +44,7 @@ function validate_alphanumeric($input) {
 }
 
 function validate_name($name) {
-    return preg_match('/^[a-zA-Z\s\.\-\']+$/', $name); // Added apostrophe for names like O'Brien
+    return preg_match('/^[a-zA-Z\s\.\-\']+$/', $name);
 }
 
 function validate_password_strength($password) {
@@ -60,28 +57,26 @@ function validate_password_strength($password) {
 
 // Rate limiting for login attempts
 function check_login_rate_limit($username) {
-    global $pdo; // Assuming you're using PDO, adjust as needed
+    global $pdo;
     
     $max_attempts = 5;
     $lockout_time = 15; // 15 minutes
     
     try {
-        // Create rate limit table if it doesn't exist (MySQL compatible)
+        // Create rate limit table if it doesn't exist
         $pdo->exec("CREATE TABLE IF NOT EXISTS login_attempts (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             ip_address VARCHAR(45) NOT NULL,
             username VARCHAR(255) NOT NULL,
             attempts INT DEFAULT 1,
             last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            locked_until TIMESTAMP NULL,
-            INDEX idx_ip_username (ip_address, username),
-            INDEX idx_last_attempt (last_attempt)
+            locked_until TIMESTAMP NULL
         )");
         
         $ip = $_SERVER['REMOTE_ADDR'];
         
         // Clean up old records (older than 24 hours)
-        $pdo->prepare("DELETE FROM login_attempts WHERE last_attempt < DATE_SUB(NOW(), INTERVAL 24 HOUR)")->execute();
+        $pdo->prepare("DELETE FROM login_attempts WHERE last_attempt < NOW() - INTERVAL '24 hours'")->execute();
         
         // Check if currently locked out
         $stmt = $pdo->prepare("SELECT locked_until FROM login_attempts 
@@ -109,7 +104,7 @@ function check_login_rate_limit($username) {
         // Get current attempt count for this IP/username in the last hour
         $stmt = $pdo->prepare("SELECT id, attempts FROM login_attempts 
                               WHERE (ip_address = ? OR username = ?) 
-                              AND last_attempt > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                              AND last_attempt > NOW() - INTERVAL '1 hour'
                               AND (locked_until IS NULL OR locked_until <= NOW())
                               ORDER BY last_attempt DESC LIMIT 1");
         $stmt->execute([$ip, $username]);
@@ -120,9 +115,9 @@ function check_login_rate_limit($username) {
             if ($new_attempts >= $max_attempts) {
                 // Lock the account
                 $stmt = $pdo->prepare("UPDATE login_attempts 
-                                     SET attempts = ?, last_attempt = NOW(), locked_until = DATE_ADD(NOW(), INTERVAL ? MINUTE) 
+                                     SET attempts = ?, last_attempt = NOW(), locked_until = NOW() + INTERVAL '$lockout_time minutes' 
                                      WHERE id = ?");
-                $stmt->execute([$new_attempts, $lockout_time, $row['id']]);
+                $stmt->execute([$new_attempts, $row['id']]);
                 
                 return [
                     'success' => false,
@@ -180,14 +175,12 @@ function log_security_event($event_type, $details = '') {
     try {
         // Create security log table if it doesn't exist
         $pdo->exec("CREATE TABLE IF NOT EXISTS security_log (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             event_type VARCHAR(100) NOT NULL,
             ip_address VARCHAR(45) NOT NULL,
             user_agent TEXT,
             details TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_event_type (event_type),
-            INDEX idx_created_at (created_at)
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )");
         
         $ip = $_SERVER['REMOTE_ADDR'];
@@ -210,7 +203,7 @@ function detect_suspicious_activity() {
         
         // Check for rapid requests (more than 50 requests in 5 minutes)
         $stmt = $pdo->prepare("SELECT COUNT(*) as request_count FROM security_log 
-                              WHERE ip_address = ? AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)");
+                              WHERE ip_address = ? AND created_at > NOW() - INTERVAL '5 minutes'");
         $stmt->execute([$ip]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         
