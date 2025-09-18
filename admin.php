@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once 'includes/db_connection.php';
 require_once 'includes/security.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
