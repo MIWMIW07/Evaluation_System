@@ -1,9 +1,9 @@
 <?php
-// evaluation_form.php - Teacher Evaluation Form with PHP Processing
+// evaluation_form.php - Enhanced bilingual evaluation form for logged in students
 session_start();
 
+// Include security functions for CSRF protection
 require_once 'includes/security.php';
-require_once 'includes/db_connection.php';
 
 // Check if user is logged in and is a student
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
@@ -11,114 +11,233 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
     exit;
 }
 
-// Get teacher_id from URL
-$teacher_id = isset($_GET['teacher_id']) ? (int)$_GET['teacher_id'] : 0;
+// Include database connection
+require_once 'includes/db_connection.php';
+
+$success = '';
+$error = '';
+$teacher_info = null;
+$is_view_mode = false;
+$existing_evaluation = null;
+
+// Get teacher ID from URL
+$teacher_id = isset($_GET['teacher_id']) ? intval($_GET['teacher_id']) : 0;
+
 if ($teacher_id <= 0) {
     header('Location: student_dashboard.php');
     exit;
 }
 
-// Get teacher details
-$teacher = null;
 try {
-    $stmt = query("SELECT id, name, subject, program FROM teachers WHERE id = ?", [$teacher_id]);
-    $teacher = fetch_assoc($stmt);
-    if (!$teacher) {
-        header('Location: student_dashboard.php');
-        exit;
+    // Get teacher information
+    $teacher_stmt = query("SELECT id, name, subject, program FROM teachers WHERE id = ?", [$teacher_id]);
+    $teacher_info = fetch_assoc($teacher_stmt);
+    
+    if (!$teacher_info) {
+        throw new Exception("Teacher not found.");
     }
+    
+    // Check if student has already evaluated this teacher
+    $check_stmt = query("SELECT * FROM evaluations WHERE user_id = ? AND teacher_id = ?", 
+                       [$_SESSION['user_id'], $teacher_id]);
+    $existing_evaluation = fetch_assoc($check_stmt);
+    
+    if ($existing_evaluation) {
+        $is_view_mode = true;
+    }
+    
 } catch (Exception $e) {
-    error_log("Error fetching teacher: " . $e->getMessage());
-    header('Location: student_dashboard.php');
-    exit;
+    $error = $e->getMessage();
 }
 
-// Check if already evaluated
-$already_evaluated = false;
-try {
-    $stmt = query("SELECT id FROM evaluations WHERE user_id = ? AND teacher_id = ?", 
-                 [$_SESSION['user_id'], $teacher_id]);
-    $existing = fetch_assoc($stmt);
-    $already_evaluated = $existing ? true : false;
-} catch (Exception $e) {
-    error_log("Error checking existing evaluation: " . $e->getMessage());
-}
-
-// Handle form submission
-$success = '';
-$error = '';
-if ($_SERVER["REQUEST_METHOD"] == "POST" && !$already_evaluated) {
-    if (!validate_csrf_token($_POST['csrf_token'])) {
-        $error = "❌ CSRF token validation failed";
-    } else {
-        try {
-            // Validate required ratings (1-5)
-            $ratings = [];
-            for ($i = 1; $i <= 4; $i++) {
-                $max = ($i == 1) ? 6 : (($i == 2 || $i == 3) ? 4 : 6);
-                for ($j = 1; $j <= $max; $j++) {
-                    $rating_key = "rating{$i}_{$j}";
-                    $rating = isset($_POST[$rating_key]) ? (int)$_POST[$rating_key] : 0;
-                    if ($rating < 1 || $rating > 5) {
-                        throw new Exception("Invalid rating for question {$i}.{$j}");
-                    }
-                    $ratings["q{$i}_{$j}"] = $rating;
-                }
-            }
-
-            // Collect comments from both languages
-            $comments = [];
-            if (!empty(trim($_POST['q5-positive-en'] ?? ''))) {
-                $comments[] = "Positive (EN): " . trim($_POST['q5-positive-en']);
-            }
-            if (!empty(trim($_POST['q5-negative-en'] ?? ''))) {
-                $comments[] = "Negative (EN): " . trim($_POST['q5-negative-en']);
-            }
-            if (!empty(trim($_POST['q5-positive-tl'] ?? ''))) {
-                $comments[] = "Positive (TL): " . trim($_POST['q5-positive-tl']);
-            }
-            if (!empty(trim($_POST['q5-negative-tl'] ?? ''))) {
-                $comments[] = "Negative (TL): " . trim($_POST['q5-negative-tl']);
-            }
-            $comments_text = implode("\n\n", $comments);
-
-            // Insert evaluation
-            $insert_sql = "INSERT INTO evaluations 
-                          (user_id, student_id, student_name, section, program, teacher_id, subject, 
-                           q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
-                           q2_1, q2_2, q2_3, q2_4,
-                           q3_1, q3_2, q3_3, q3_4,
-                           q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
-                           comments) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?, 
-                                  ?, ?, ?, ?, ?, ?,
-                                  ?, ?, ?, ?,
-                                  ?, ?, ?, ?,
-                                  ?, ?, ?, ?, ?, ?,
-                                  ?)";
-
-            $params = [
-                $_SESSION['user_id'],
-                $_SESSION['student_id'],
-                $_SESSION['full_name'],
-                $_SESSION['section'],
-                $_SESSION['program'],
-                $teacher_id,
-                $teacher['subject'],
-                $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
-                $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
-                $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
-                $ratings['q4_1'], $ratings['q4_2'], $ratings['q4_3'], $ratings['q4_4'], $ratings['q4_5'], $ratings['q4_6'],
-                $comments_text
-            ];
-
-            query($insert_sql, $params);
-            $success = "✅ Evaluation submitted successfully! Thank you for your feedback.";
-            $already_evaluated = true; // Prevent further submissions
-
-        } catch (Exception $e) {
-            $error = "❌ " . $e->getMessage();
+// Handle form submission (only if not in view mode)
+if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
+    try {
+        // Validate CSRF token first
+        if (!validate_csrf_token($_POST['csrf_token'])) {
+            die('CSRF token validation failed');
         }
+        
+        // Validate all required fields
+        $ratings = [];
+        
+        // Section 1: Teaching Competence (6 questions)
+        for ($i = 1; $i <= 6; $i++) {
+            $rating = intval($_POST["rating1_$i"] ?? 0);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 1.$i");
+            }
+            $ratings["q1_$i"] = $rating;
+        }
+        
+        // Section 2: Management Skills (4 questions)
+        for ($i = 1; $i <= 4; $i++) {
+            $rating = intval($_POST["rating2_$i"] ?? 0);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 2.$i");
+            }
+            $ratings["q2_$i"] = $rating;
+        }
+        
+        // Section 3: Guidance Skills (4 questions)
+        for ($i = 1; $i <= 4; $i++) {
+            $rating = intval($_POST["rating3_$i"] ?? 0);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 3.$i");
+            }
+            $ratings["q3_$i"] = $rating;
+        }
+        
+        // Section 4: Personal and Social Characteristics (6 questions)
+        for ($i = 1; $i <= 6; $i++) {
+            $rating = intval($_POST["rating4_$i"] ?? 0);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 4.$i");
+            }
+            $ratings["q4_$i"] = $rating;
+        }
+        
+        $comments = trim($_POST['comments'] ?? '');
+        
+        // Insert evaluation using PostgreSQL syntax
+        $insert_sql = "INSERT INTO evaluations (user_id, student_id, student_name, section, program, teacher_id, subject, 
+                      q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
+                      q2_1, q2_2, q2_3, q2_4,
+                      q3_1, q3_2, q3_3, q3_4,
+                      q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
+                      comments) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $params = [
+            $_SESSION['user_id'], $_SESSION['student_id'], $_SESSION['full_name'], 
+            $_SESSION['section'], $_SESSION['program'], $teacher_id, $teacher_info['subject'],
+            $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
+            $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
+            $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
+            $ratings['q4_1'], $ratings['q4_2'], $ratings['q4_3'], $ratings['q4_4'], $ratings['q4_5'], $ratings['q4_6'],
+            $comments
+        ];
+        
+        $stmt = query($insert_sql, $params);
+        
+        if ($stmt) {
+            $success = "Evaluation submitted successfully! Thank you for your feedback.";
+            // Reload to show in view mode
+            $check_stmt = query("SELECT * FROM evaluations WHERE user_id = ? AND teacher_id = ?", 
+                               [$_SESSION['user_id'], $teacher_id]);
+            $existing_evaluation = fetch_assoc($check_stmt);
+            $is_view_mode = true;
+        } else {
+            throw new Exception("Database error occurred while saving your evaluation.");
+        }
+        
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
+// Define questions for both languages
+$section1_questions = [
+    '1.1' => 'Analyses and elaborates lesson without reading textbook in class.',
+    '1.2' => 'Uses audio visual and devices to support and facilitate instructions.',
+    '1.3' => 'Present ideas/ concepts clearly and convincingly from related fields and integrate subject matter with actual experience.',
+    '1.4' => 'Make the students apply concepts to demonstrate understanding of the lesson.',
+    '1.5' => 'Gives fair test and examination and return test results within the reasonable period.',
+    '1.6' => 'Shows good command of the language of instruction.'
+];
+
+$section2_questions = [
+    '2.1' => 'Maintains responsive, disciplined and safe classroom atmosphere that is conducive to learning.',
+    '2.2' => 'Follow the schematic way.',
+    '2.3' => 'Stimulate students respect regard for the teacher.',
+    '2.4' => 'Allow the students to express their opinions and views.'
+];
+
+$section3_questions = [
+    '3.1' => 'Accepts students as they are by recognizing their strength and weakness as individuals.',
+    '3.2' => 'Inspires students to be self-reliant and self- disciplined.',
+    '3.3' => 'Handles class and student\'s problem with fairness and understanding.',
+    '3.4' => 'Shows genuine concern for the personal and other problems presented by the students outside classroom activities.'
+];
+
+$section4_questions = [
+    '4.1' => 'Maintains emotional balance; neither over critical nor over-sensitive.',
+    '4.2' => 'Is free from mannerisms that distract the teaching and learning process.',
+    '4.3' => 'Is well groomed; clothes are clean and neat (Uses appropriate clothes that are becoming of a teacher).',
+    '4.4' => 'Shows no favoritism.',
+    '4.5' => 'Has good sense of humor and shows enthusiasm in teaching.',
+    '4.6' => 'Has good diction, clear and modulated voice.'
+];
+
+$section1_tagalog = [
+    '1.1' => 'Nasuri at-naipaliwanag ang araling nang hindi binabasa ang aklat sa klase.',
+    '1.2' => 'Gumugamit ng audio-visual at mga device upang suportahan at mapadali ang pagtuturo',
+    '1.3' => 'Nagpapakita ng mga ideya/konsepto nang malinaw at nakukumbinsi mula sa mga kaugnay na larangan at isama ang subject matter sa aktwal na karanasan.',
+    '1.4' => 'Hinahayaan ang mga mag-aaral na gumamit ng mga konsepto upang ipakita ang pag-unawa sa mga aralin',
+    '1.5' => 'Nagbibigay ng patas na pagsusulit at pagsusuri at ibalik ang mga result ang pagsusulit sa loob ng makatawirang panahon.',
+    '1.6' => 'Naguutos nang maayos sa pagtuturo gamit ang maayos na pananalita.'
+];
+
+$section2_tagalog = [
+    '2.1' => 'Pinapanatiling maayos, disiplinado at ligtas ang silid-aralan upang magkaraon ng maayos na pagaaral.',
+    '2.2' => 'Sumusunod sa sistematikong iskedyul ng mga klase at iba pang pangaraw-araw na gawain.',
+    '2.3' => 'Hinuhubog sa mga mag-aaral ang respeto at paggalang sa mga guro.',
+    '2.4' => 'Pinahihinlulutan ang mga mag-aaral na ipahayag ang kanilang mga opinyon at mga pananaw.'
+];
+
+$section3_tagalog = [
+    '3.1' => 'Pagtanggap sa mga mag-aaral bilang indibidwal na may kalakasan at kahinaan.',
+    '3.2' => 'Pagpapakita ng tiwala at kaayusan sa sarili',
+    '3.3' => 'Pinangangasiwaan ang problema ng klase at mga mag-aaral nang may patas at pang-unawa.',
+    '3.4' => 'Nagpapakita ng tunay na pagmamalasakit sa mga personal at iba pang problemang ipinakita ng mga mag-aaral.'
+];
+
+$section4_tagalog = [
+    '4.1' => 'Nagpapanatili ng emosyonal na balanse: hindi masyadong kritikal o sobrang sensitibo.',
+    '4.2' => 'Malaya sa nakasanayang galaw na nakakagambala sa proseso ng pagtuturo at pagkatuto.',
+    '4.3' => 'Maayos at presentable; Malinis at maayos ang mga damit.',
+    '4.4' => 'Hindi nagpapakita ng paboritismo',
+    '4.5' => 'May magandang sense of humor at nagpapakita ng sigla sa pagtuturo.',
+    '4.6' => 'May magandang diction, malinaw at maayos na timpla ng boses.'
+];
+
+// Calculate average rating if in view mode
+$average_rating = 0;
+$performance_level = '';
+if ($is_view_mode && $existing_evaluation) {
+    $total_rating = 0;
+    $total_questions = 0;
+    
+    // Sum all ratings
+    for ($i = 1; $i <= 6; $i++) {
+        $total_rating += $existing_evaluation["q1_$i"];
+        $total_questions++;
+    }
+    for ($i = 1; $i <= 4; $i++) {
+        $total_rating += $existing_evaluation["q2_$i"];
+        $total_questions++;
+    }
+    for ($i = 1; $i <= 4; $i++) {
+        $total_rating += $existing_evaluation["q3_$i"];
+        $total_questions++;
+    }
+    for ($i = 1; $i <= 6; $i++) {
+        $total_rating += $existing_evaluation["q4_$i"];
+        $total_questions++;
+    }
+    
+    $average_rating = round($total_rating / $total_questions, 2);
+    
+    if ($average_rating >= 4.5) {
+        $performance_level = 'Outstanding';
+    } else if ($average_rating >= 4.0) {
+        $performance_level = 'Very Satisfactory';
+    } else if ($average_rating >= 3.5) {
+        $performance_level = 'Good/Satisfactory';
+    } else if ($average_rating >= 2.5) {
+        $performance_level = 'Fair';
+    } else {
+        $performance_level = 'Needs Improvement';
     }
 }
 ?>
