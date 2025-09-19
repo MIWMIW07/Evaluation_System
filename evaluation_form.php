@@ -97,7 +97,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             $ratings["q4_$i"] = $rating;
         }
         
-        $comments = trim($_POST['comments'] ?? '');
+        // Get comments (combine positive and negative)
+        $positive_comment = trim($_POST['q5-positive-en'] ?? $_POST['q5-positive-tl'] ?? '');
+        $negative_comment = trim($_POST['q5-negative-en'] ?? $_POST['q5-negative-tl'] ?? '');
+        
+        $comments = "Positive: " . $positive_comment . "\nNegative: " . $negative_comment;
         
         // Insert evaluation using PostgreSQL syntax
         $insert_sql = "INSERT INTO evaluations (user_id, student_id, student_name, section, program, teacher_id, subject, 
@@ -170,7 +174,7 @@ $section4_questions = [
 ];
 
 $section1_tagalog = [
-    '1.1' => 'Nasuri at-naipaliwanag ang araling nang hindi binabasa ang aklat sa klase.',
+    '1.1' => 'Nasuri at-naipaliwanag ang aralin nang hindi binabasa ang aklat sa klase.',
     '1.2' => 'Gumugamit ng audio-visual at mga device upang suportahan at mapadali ang pagtuturo',
     '1.3' => 'Nagpapakita ng mga ideya/konsepto nang malinaw at nakukumbinsi mula sa mga kaugnay na larangan at isama ang subject matter sa aktwal na karanasan.',
     '1.4' => 'Hinahayaan ang mga mag-aaral na gumamit ng mga konsepto upang ipakita ang pag-unawa sa mga aralin',
@@ -179,7 +183,7 @@ $section1_tagalog = [
 ];
 
 $section2_tagalog = [
-    '2.1' => 'Pinapanatiling maayos, disiplinado at ligtas ang silid-aralan upang magkaraon ng maayos na pagaaral.',
+    '2.1' => 'Pinapanatiling maayos, disiplinado at ligtas ang silid-aralan upang magkaraon ng maayos at maaliwalas na pagaaral.',
     '2.2' => 'Sumusunod sa sistematikong iskedyul ng mga klase at iba pang pangaraw-araw na gawain.',
     '2.3' => 'Hinuhubog sa mga mag-aaral ang respeto at paggalang sa mga guro.',
     '2.4' => 'Pinahihinlulutan ang mga mag-aaral na ipahayag ang kanilang mga opinyon at mga pananaw.'
@@ -187,9 +191,9 @@ $section2_tagalog = [
 
 $section3_tagalog = [
     '3.1' => 'Pagtanggap sa mga mag-aaral bilang indibidwal na may kalakasan at kahinaan.',
-    '3.2' => 'Pagpapakita ng tiwala at kaayusan sa sarili',
+    '3.2' => 'Pagpapakita ng tiwala and kaayusan sa sarili',
     '3.3' => 'Pinangangasiwaan ang problema ng klase at mga mag-aaral nang may patas at pang-unawa.',
-    '3.4' => 'Nagpapakita ng tunay na pagmamalasakit sa mga personal at iba pang problemang ipinakita ng mga mag-aaral.'
+    '3.4' => 'Nagpapakita ng tunay na pagmamalasakit sa mga personal at iba pang problemang ipinakita ng mga mag-aaral sa labas ng mga aktibidad sa silid-aralan.'
 ];
 
 $section4_tagalog = [
@@ -261,6 +265,7 @@ if ($is_view_mode && $existing_evaluation) {
             color: #333;
             line-height: 1.6;
             padding: 20px;
+            padding-top: 70px; /* Prevents overlap with fixed progress bar */
         }
         
         .container {
@@ -484,6 +489,7 @@ if ($is_view_mode && $existing_evaluation) {
             font-size: 16px;
             font-family: inherit;
             transition: border-color 0.3s ease;
+            margin-bottom: 15px;
         }
         
         textarea:focus {
@@ -499,6 +505,7 @@ if ($is_view_mode && $existing_evaluation) {
             border-left: 4px solid #6c757d;
             font-style: italic;
             color: #495057;
+            white-space: pre-line;
         }
         
         .btn {
@@ -613,6 +620,46 @@ if ($is_view_mode && $existing_evaluation) {
             display: none;
         }
         
+        /* Progress Bar - Fixed at Top */
+        .progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #fff;
+            padding: 10px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 2000;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background-color: #2ecc71;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        /* Incomplete question styling */
+        .incomplete {
+            background-color: #ffebee;
+            border-left: 4px solid #e74c3c;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -659,6 +706,13 @@ if ($is_view_mode && $existing_evaluation) {
 </head>
 <body>
     <a href="student_dashboard.php" class="back-link">← Back to Dashboard</a>
+    
+    <div class="progress-container">
+        <div class="progress-text" id="progress-text">Completion: 0%</div>
+        <div class="progress-bar">
+            <div class="progress" id="progress-bar"></div>
+        </div>
+    </div>
     
     <div class="container">
         <header>
@@ -716,10 +770,12 @@ if ($is_view_mode && $existing_evaluation) {
         <?php if (!$is_view_mode): ?>
             <div class="instructions english">
                 <p><strong>Instructions:</strong> The following items describe the aspects of teacher's behavior in and out the classroom. Please choose the number that indicates the degree to which you feel each item is descriptive of him/her. Your rating will be the reference that may lead to the improvement of instructor, so kindly rate each item as thoughtfully and carefully as possible. This will be kept confidentially.</p>
+                <p class="incomplete-notice" id="english-incomplete-notice">Please answer all questions before submitting. Incomplete sections are highlighted in red.</p>
             </div>
             
             <div class="instructions tagalog">
                 <p><strong>Mga Panuto:</strong> Ang mga sumusunod na aytem ay naglalarawan sa mga aspeto ng pag-uugali ng guro sa loob at labas ng silid-aralan. Paki piliin ang numero na nagpapakita ng antas kung saan naramdaman mo ang bawat aytem na naglalarawan sa kanya. Ang iyong rating ay magiging sanggunian na maaaring humantong sa pagpapabuti ng tagapagturo, kaya mangyaring i-rate ang bawat aytem nang maingat at maayos. Ito ay itatago nang kumpidensyal.</p>
+                <p class="incomplete-notice" id="tagalog-incomplete-notice">Mangyaring sagutin ang lahat ng mga katanungan bago ipasa. Ang mga hindi kumpletong seksyon ay naka-highlight sa pula.</p>
             </div>
         <?php endif; ?>
         
@@ -750,15 +806,16 @@ if ($is_view_mode && $existing_evaluation) {
                     <?php foreach ($section1_questions as $key => $question): 
                         $field_name = 'rating1_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q1_' . substr($key, -1)] : '';
+                        $tr_id = 'question-' . str_replace('.', '-', $key);
                     ?>
-                        <tr>
+                        <tr id="<?php echo $tr_id; ?>">
                             <td><?php echo $key; ?> <?php echo $question; ?></td>
                             <td>
                                 <?php if ($is_view_mode): ?>
                                     <div class="rating-display"><?php echo $current_value; ?></div>
                                 <?php else: ?>
                                     <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" class="required-rating"> 5</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
@@ -783,15 +840,16 @@ if ($is_view_mode && $existing_evaluation) {
                     <?php foreach ($section2_questions as $key => $question): 
                         $field_name = 'rating2_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q2_' . substr($key, -1)] : '';
+                        $tr_id = 'question-' . str_replace('.', '-', $key);
                     ?>
-                        <tr>
+                        <tr id="<?php echo $tr_id; ?>">
                             <td><?php echo $key; ?> <?php echo $question; ?></td>
                             <td>
                                 <?php if ($is_view_mode): ?>
                                     <div class="rating-display"><?php echo $current_value; ?></div>
                                 <?php else: ?>
                                     <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" class="required-rating"> 5</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
@@ -816,15 +874,16 @@ if ($is_view_mode && $existing_evaluation) {
                     <?php foreach ($section3_questions as $key => $question): 
                         $field_name = 'rating3_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q3_' . substr($key, -1)] : '';
+                        $tr_id = 'question-' . str_replace('.', '-', $key);
                     ?>
-                        <tr>
+                        <tr id="<?php echo $tr_id; ?>">
                             <td><?php echo $key; ?> <?php echo $question; ?></td>
                             <td>
                                 <?php if ($is_view_mode): ?>
                                     <div class="rating-display"><?php echo $current_value; ?></div>
                                 <?php else: ?>
                                     <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" class="required-rating"> 5</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
@@ -849,15 +908,16 @@ if ($is_view_mode && $existing_evaluation) {
                     <?php foreach ($section4_questions as $key => $question): 
                         $field_name = 'rating4_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q4_' . substr($key, -1)] : '';
+                        $tr_id = 'question-' . str_replace('.', '-', $key);
                     ?>
-                        <tr>
+                        <tr id="<?php echo $tr_id; ?>">
                             <td><?php echo $key; ?> <?php echo $question; ?></td>
                             <td>
                                 <?php if ($is_view_mode): ?>
                                     <div class="rating-display"><?php echo $current_value; ?></div>
                                 <?php else: ?>
                                     <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" class="required-rating"> 5</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
@@ -869,6 +929,24 @@ if ($is_view_mode && $existing_evaluation) {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            
+            <div class="comments-section">
+                <h2>5. Comments</h2>
+                <?php if ($is_view_mode): 
+                    $comments = $existing_evaluation['comments'] ?? '';
+                    $comments_parts = explode("Negative:", $comments);
+                    $positive_comment = str_replace("Positive:", "", $comments_parts[0] ?? '');
+                    $negative_comment = $comments_parts[1] ?? '';
+                ?>
+                    <p><strong>Positive Comments:</strong></p>
+                    <div class="comments-display"><?php echo nl2br(htmlspecialchars(trim($positive_comment))); ?></div>
+                    <p><strong>Negative Comments:</strong></p>
+                    <div class="comments-display"><?php echo nl2br(htmlspecialchars(trim($negative_comment))); ?></div>
+                <?php else: ?>
+                    <textarea name="q5-positive-en" class="required-comment" placeholder="Positive comment about the instructor..."></textarea>
+                    <textarea name="q5-negative-en" class="required-comment" placeholder="Negative comment about the instructor..."></textarea>
+                <?php endif; ?>
+            </div>
         </div>
         
         <!-- Tagalog Content -->
@@ -885,15 +963,16 @@ if ($is_view_mode && $existing_evaluation) {
                     <?php foreach ($section1_tagalog as $key => $question): 
                         $field_name = 'rating1_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q1_' . substr($key, -1)] : '';
+                        $tr_id = 'question-' . str_replace('.', '-', $key) . '-t';
                     ?>
-                        <tr>
+                        <tr id="<?php echo $tr_id; ?>">
                             <td><?php echo $key; ?> <?php echo $question; ?></td>
                             <td>
                                 <?php if ($is_view_mode): ?>
                                     <div class="rating-display"><?php echo $current_value; ?></div>
                                 <?php else: ?>
                                     <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" class="required-rating"> 5</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
@@ -918,15 +997,16 @@ if ($is_view_mode && $existing_evaluation) {
                     <?php foreach ($section2_tagalog as $key => $question): 
                         $field_name = 'rating2_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q2_' . substr($key, -1)] : '';
+                        $tr_id = 'question-' . str_replace('.', '-', $key) . '-t';
                     ?>
-                        <tr>
+                        <tr id="<?php echo $tr_id; ?>">
                             <td><?php echo $key; ?> <?php echo $question; ?></td>
                             <td>
                                 <?php if ($is_view_mode): ?>
                                     <div class="rating-display"><?php echo $current_value; ?></div>
                                 <?php else: ?>
                                     <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" class="required-rating"> 5</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
@@ -951,15 +1031,16 @@ if ($is_view_mode && $existing_evaluation) {
                     <?php foreach ($section3_tagalog as $key => $question): 
                         $field_name = 'rating3_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q3_' . substr($key, -1)] : '';
+                        $tr_id = 'question-' . str_replace('.', '-', $key) . '-t';
                     ?>
-                        <tr>
+                        <tr id="<?php echo $tr_id; ?>">
                             <td><?php echo $key; ?> <?php echo $question; ?></td>
                             <td>
                                 <?php if ($is_view_mode): ?>
                                     <div class="rating-display"><?php echo $current_value; ?></div>
                                 <?php else: ?>
                                     <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" class="required-rating"> 5</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
@@ -984,15 +1065,16 @@ if ($is_view_mode && $existing_evaluation) {
                     <?php foreach ($section4_tagalog as $key => $question): 
                         $field_name = 'rating4_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q4_' . substr($key, -1)] : '';
+                        $tr_id = 'question-' . str_replace('.', '-', $key) . '-t';
                     ?>
-                        <tr>
+                        <tr id="<?php echo $tr_id; ?>">
                             <td><?php echo $key; ?> <?php echo $question; ?></td>
                             <td>
                                 <?php if ($is_view_mode): ?>
                                     <div class="rating-display"><?php echo $current_value; ?></div>
                                 <?php else: ?>
                                     <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" class="required-rating"> 5</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
                                         <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
@@ -1004,99 +1086,232 @@ if ($is_view_mode && $existing_evaluation) {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            
+            <div class="comments-section">
+                <h2>5. Komento</h2>
+                <?php if ($is_view_mode): 
+                    $comments = $existing_evaluation['comments'] ?? '';
+                    $comments_parts = explode("Negative:", $comments);
+                    $positive_comment = str_replace("Positive:", "", $comments_parts[0] ?? '');
+                    $negative_comment = $comments_parts[1] ?? '';
+                ?>
+                    <p><strong>Positibong Komento:</strong></p>
+                    <div class="comments-display"><?php echo nl2br(htmlspecialchars(trim($positive_comment))); ?></div>
+                    <p><strong>Negatibong Komento:</strong></p>
+                    <div class="comments-display"><?php echo nl2br(htmlspecialchars(trim($negative_comment))); ?></div>
+                <?php else: ?>
+                    <textarea name="q5-positive-tl" class="required-comment" placeholder="Positibong komento tungkol sa guro..."></textarea>
+                    <textarea name="q5-negative-tl" class="required-comment" placeholder="Negatibong komento tungkol sa guro..."></textarea>
+                <?php endif; ?>
+            </div>
         </div>
         
         <?php if ($is_view_mode && $existing_evaluation): ?>
-            <div class="comments-section">
-                <h3>Your Comments</h3>
-                <div class="comments-display">
-                    <?php echo !empty($existing_evaluation['comments']) ? nl2br(htmlspecialchars($existing_evaluation['comments'])) : 'No comments provided.'; ?>
-                </div>
-            </div>
-            
             <div class="average-rating">
                 <h4>Overall Performance Rating</h4>
                 <div class="average-score"><?php echo $average_rating; ?></div>
                 <div class="performance-level"><?php echo $performance_level; ?></div>
             </div>
-        <?php else: ?>
-            <div class="comments-section">
-                <h3>Comments/Suggestions (Optional)</h3>
-                <textarea name="comments" placeholder="Please provide any additional comments or suggestions for improvement..."></textarea>
-            </div>
         <?php endif; ?>
         
         <?php if (!$is_view_mode): ?>
+            <button type="submit" class="btn" id="submit-btn" disabled>Submit Evaluation</button>
             </form>
         <?php endif; ?>
         
         <div class="button-group">
-            <?php if (!$is_view_mode): ?>
-                <button type="submit" form="evaluationForm" class="btn">Submit Evaluation</button>
-            <?php endif; ?>
             <a href="student_dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
         </div>
         
         <footer>
+            <p>This evaluation will be kept confidential.</p>
             <p>© <?php echo date('Y'); ?> PHILTECH GMA - All rights reserved</p>
-            <p>This evaluation system is designed to improve teaching quality and student learning experience.</p>
         </footer>
     </div>
     
+    <!-- Modal for incomplete form -->
+    <div class="modal" id="incomplete-modal">
+        <div class="modal-content">
+            <h2>Incomplete Evaluation</h2>
+            <p id="modal-message">Please answer all questions before submitting. The incomplete sections are highlighted in red.</p>
+            <button class="modal-btn" id="modal-ok-btn">OK</button>
+        </div>
+    </div>
+    
     <script>
-        // Language toggle functionality
-        document.getElementById('english-btn').addEventListener('click', function() {
-            document.querySelectorAll('.english').forEach(el => el.style.display = 'block');
-            document.querySelectorAll('.tagalog').forEach(el => el.style.display = 'none');
-            document.getElementById('english-btn').classList.add('active');
-            document.getElementById('tagalog-btn').classList.remove('active');
-        });
-        
-        document.getElementById('tagalog-btn').addEventListener('click', function() {
-            document.querySelectorAll('.english').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.tagalog').forEach(el => el.style.display = 'block');
-            document.getElementById('english-btn').classList.remove('active');
-            document.getElementById('tagalog-btn').classList.add('active');
-        });
-        
-        // Form validation
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
+            const englishBtn = document.getElementById('english-btn');
+            const tagalogBtn = document.getElementById('tagalog-btn');
+            const englishContent = document.querySelectorAll('.english');
+            const tagalogContent = document.querySelectorAll('.tagalog');
             const form = document.getElementById('evaluationForm');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const submitBtn = document.getElementById('submit-btn');
+            const incompleteModal = document.getElementById('incomplete-modal');
+            const modalOkBtn = document.getElementById('modal-ok-btn');
+            const modalMessage = document.getElementById('modal-message');
+            const englishIncompleteNotice = document.getElementById('english-incomplete-notice');
+            const tagalogIncompleteNotice = document.getElementById('tagalog-incomplete-notice');
+
+            // Language toggle
+            englishBtn.addEventListener('click', () => {
+                englishContent.forEach(el => el.style.display = 'block');
+                tagalogContent.forEach(el => el.style.display = 'none');
+                englishBtn.classList.add('active');
+                tagalogBtn.classList.remove('active');
+                updateProgress();
+            });
+
+            tagalogBtn.addEventListener('click', () => {
+                englishContent.forEach(el => el.style.display = 'none');
+                tagalogContent.forEach(el => el.style.display = 'block');
+                tagalogBtn.classList.add('active');
+                englishBtn.classList.remove('active');
+                updateProgress();
+            });
+
+            // Initialize display
+            englishContent.forEach(el => el.style.display = 'block');
+            tagalogContent.forEach(el => el.style.display = 'none');
+
+            // Update progress bar
+            function updateProgress() {
+                if (!form) return; // Exit if in view mode
+                
+                // Get all required radio groups
+                const radioInputs = form.querySelectorAll('input.required-rating');
+                const ratingNames = Array.from(radioInputs)
+                    .map(input => input.name)
+                    .filter((v, i, a) => a.indexOf(v) === i);
+
+                // Count answered radio groups
+                let answeredRatings = 0;
+                ratingNames.forEach(name => {
+                    if (form.querySelector(`input[name="${name}"]:checked`)) answeredRatings++;
+                });
+
+                // Count total comments (both positive and negative)
+                const totalComments = 2;
+                let answeredComments = 0;
+                
+                // Check English comments
+                if (document.querySelector('.english').style.display !== 'none') {
+                    const positiveEn = form.querySelector('textarea[name="q5-positive-en"]');
+                    const negativeEn = form.querySelector('textarea[name="q5-negative-en"]');
+                    if (positiveEn && positiveEn.value.trim()) answeredComments++;
+                    if (negativeEn && negativeEn.value.trim()) answeredComments++;
+                } else {
+                    // Check Tagalog comments
+                    const positiveTl = form.querySelector('textarea[name="q5-positive-tl"]');
+                    const negativeTl = form.querySelector('textarea[name="q5-negative-tl"]');
+                    if (positiveTl && positiveTl.value.trim()) answeredComments++;
+                    if (negativeTl && negativeTl.value.trim()) answeredComments++;
+                }
+
+                const progress = ((answeredRatings / ratingNames.length) * 0.8 + (answeredComments / totalComments) * 0.2) * 100;
+                progressBar.style.width = progress + '%';
+                progressText.textContent = `Completion: ${Math.round(progress)}%`;
+
+                if (submitBtn) {
+                    submitBtn.disabled = progress < 100;
+                }
+            }
+
+            // Listen to changes
             if (form) {
-                form.addEventListener('submit', function(e) {
+                form.addEventListener('change', updateProgress);
+                form.addEventListener('input', updateProgress);
+            }
+
+            // Form submit validation
+            if (form) {
+                form.addEventListener('submit', (e) => {
                     let valid = true;
-                    const radioGroups = {};
-                    
-                    // Collect all radio buttons
-                    document.querySelectorAll('input[type="radio"]').forEach(radio => {
-                        if (!radioGroups[radio.name]) {
-                            radioGroups[radio.name] = [];
-                        }
-                        radioGroups[radio.name].push(radio);
-                    });
-                    
-                    // Check if all required radio groups have a selection
-                    for (const groupName in radioGroups) {
-                        const groupSelected = radioGroups[groupName].some(radio => radio.checked);
-                        if (!groupSelected) {
+                    const incompleteSections = [];
+
+                    // Check radio groups
+                    const radioInputs = form.querySelectorAll('input.required-rating');
+                    const ratingNames = Array.from(radioInputs)
+                        .map(input => input.name)
+                        .filter((v, i, a) => a.indexOf(v) === i);
+
+                    ratingNames.forEach(name => {
+                        const checked = form.querySelector(`input[name="${name}"]:checked`);
+                        if (!checked) {
                             valid = false;
-                            // Highlight the first unselected group
-                            if (!radioGroups[groupName][0].closest('tr').classList.contains('missing')) {
-                                radioGroups[groupName][0].closest('tr').classList.add('missing');
-                                setTimeout(() => {
-                                    radioGroups[groupName][0].closest('tr').scrollIntoView({behavior: 'smooth', block: 'center'});
-                                }, 100);
+                            const firstRadio = form.querySelector(`input[name="${name}"]`);
+                            const row = firstRadio.closest('tr');
+                            if (row) {
+                                row.classList.add('incomplete');
+                                incompleteSections.push(row.closest('table').previousElementSibling.textContent);
                             }
-                            break;
                         }
-                    }
+                    });
+
+                    // Check comments
+                    let positiveComment, negativeComment;
                     
+                    if (document.querySelector('.english').style.display !== 'none') {
+                        positiveComment = form.querySelector('textarea[name="q5-positive-en"]');
+                        negativeComment = form.querySelector('textarea[name="q5-negative-en"]');
+                    } else {
+                        positiveComment = form.querySelector('textarea[name="q5-positive-tl"]');
+                        negativeComment = form.querySelector('textarea[name="q5-negative-tl"]');
+                    }
+
+                    if (!positiveComment.value.trim()) {
+                        valid = false;
+                        positiveComment.style.borderColor = '#e74c3c';
+                        incompleteSections.push("Comments");
+                    } else {
+                        positiveComment.style.borderColor = '';
+                    }
+
+                    if (!negativeComment.value.trim()) {
+                        valid = false;
+                        negativeComment.style.borderColor = '#e74c3c';
+                        if (!incompleteSections.includes("Comments")) {
+                            incompleteSections.push("Comments");
+                        }
+                    } else {
+                        negativeComment.style.borderColor = '';
+                    }
+
                     if (!valid) {
                         e.preventDefault();
-                        alert('Please complete all rating fields before submitting.');
+                        
+                        // Show appropriate incomplete notice
+                        if (document.querySelector('.english').style.display !== 'none') {
+                            englishIncompleteNotice.style.display = 'block';
+                            tagalogIncompleteNotice.style.display = 'none';
+                        } else {
+                            englishIncompleteNotice.style.display = 'none';
+                            tagalogIncompleteNotice.style.display = 'block';
+                        }
+                        
+                        // Show modal with incomplete sections
+                        modalMessage.textContent = `Please complete the following sections: ${incompleteSections.join(', ')}.`;
+                        incompleteModal.style.display = 'flex';
+                        
+                        // Scroll to first incomplete question
+                        const firstIncomplete = document.querySelector('.incomplete');
+                        if (firstIncomplete) {
+                            firstIncomplete.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
                     }
                 });
             }
+
+            // Modal OK button
+            if (modalOkBtn) {
+                modalOkBtn.addEventListener('click', () => {
+                    incompleteModal.style.display = 'none';
+                });
+            }
+
+            // Initialize progress
+            updateProgress();
         });
     </script>
 </body>
