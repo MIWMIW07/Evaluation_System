@@ -301,11 +301,25 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
             text-align: center;
             width: 18%;
             cursor: pointer;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .rating-options label:has(input[type="radio"]:checked) {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .rating-options label:hover {
+            background-color: #ecf0f1;
         }
 
         input[type="radio"] {
             transform: scale(1.2);
             margin: 8px 0;
+            opacity: 0;
+            position: absolute;
         }
 
         .comments-section {
@@ -1612,6 +1626,12 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
     </div>
 
 <script>
+        // Define comment elements first
+        const positiveComment = document.getElementById('positive-comment');
+        const negativeComment = document.getElementById('negative-comment');
+        const positiveCommentTl = document.getElementById('positive-comment-tl');
+        const negativeCommentTl = document.getElementById('negative-comment-tl');
+
         // Language toggle functionality
         const englishBtn = document.getElementById('english-btn');
         const tagalogBtn = document.getElementById('tagalog-btn');
@@ -1685,10 +1705,6 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
         });
 
         // Sync comments between English and Tagalog
-        function syncComments(source, target) {
-            target.value = source.value;
-        }
-
         if (positiveComment && positiveCommentTl) {
             positiveComment.addEventListener('input', () => syncComments(positiveComment, positiveCommentTl));
             positiveCommentTl.addEventListener('input', () => syncComments(positiveCommentTl, positiveComment));
@@ -1698,12 +1714,6 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
             negativeComment.addEventListener('input', () => syncComments(negativeComment, negativeCommentTl));
             negativeCommentTl.addEventListener('input', () => syncComments(negativeCommentTl, negativeComment));
         }
-
-        // Define comment elements
-        const positiveComment = document.getElementById('positive-comment');
-        const negativeComment = document.getElementById('negative-comment');
-        const positiveCommentTl = document.getElementById('positive-comment-tl');
-        const negativeCommentTl = document.getElementById('negative-comment-tl');
 
         // Progress bar elements
         const progressBar = document.getElementById('progress-bar');
@@ -1757,8 +1767,8 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
             }
 
             const percentage = Math.round((completed / totalItems) * 100);
-            progressBar.style.width = percentage + '%';
-            progressText.textContent = 'Completion: ' + percentage + '%';
+            if (progressBar) progressBar.style.width = percentage + '%';
+            if (progressText) progressText.textContent = 'Completion: ' + percentage + '%';
 
             // Enable submit button if 100%
             if (submitBtn) {
@@ -1808,10 +1818,11 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                         if (!groupSelected) {
                             valid = false;
                             // Highlight the first unselected group
-                            if (!radioGroups[groupName][0].closest('tr').classList.contains('missing')) {
-                                radioGroups[groupName][0].closest('tr').classList.add('missing');
+                            const row = radioGroups[groupName][0].closest('tr');
+                            if (row && !row.classList.contains('incomplete')) {
+                                row.classList.add('incomplete');
                                 setTimeout(() => {
-                                    radioGroups[groupName][0].closest('tr').scrollIntoView({behavior: 'smooth', block: 'center'});
+                                    row.scrollIntoView({behavior: 'smooth', block: 'center'});
                                 }, 100);
                             }
                             break;
