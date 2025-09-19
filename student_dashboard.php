@@ -84,6 +84,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             padding: 30px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             border-radius: 15px;
+            position: relative;
         }
         
         .header {
@@ -242,36 +243,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             color: #666;
             margin-bottom: 15px;
         }
-
-        .btn {
-    display: inline-block;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    color: white;
-    text-decoration: none;
-    border-radius: 25px;
-    font-weight: 600;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-    text-align: center;
-    font-size: 0.95em;
-}
-
-.btn:hover {
-    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-}
-
-.btn-secondary {
-    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-}
-
-.btn-secondary:hover {
-    background: linear-gradient(135deg, #1976D2 0%, #0d47a1 100%);
-}
         
         .evaluation-status {
             display: flex;
@@ -319,19 +290,55 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
             border-left: 5px solid #dc3545;
         }
+
+        .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.95em;
+}
+
+.btn:hover {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #1976D2 0%, #0d47a1 100%);
+}
+        
+        .logout-container {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 25px;
+            border-top: 2px solid #e9ecef;
+        }
         
         .logout-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+            display: inline-block;
             background: #dc3545;
             color: white;
-            padding: 10px 15px;
+            padding: 12px 25px;
             text-decoration: none;
             border-radius: 5px;
             font-weight: bold;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             transition: all 0.3s ease;
+            margin-top: 15px;
         }
         
         .logout-btn:hover {
@@ -372,13 +379,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 grid-template-columns: 1fr;
             }
             
-            .logout-btn {
-                position: relative;
-                display: block;
-                width: fit-content;
-                margin: 10px auto 20px;
-            }
-            
             .header h1 {
                 font-size: 1.8em;
             }
@@ -386,8 +386,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
     </style>
 </head>
 <body>
-    <a href="logout.php" class="logout-btn">🚪 Logout</a>
-    
     <div class="container">
         <div class="header">
             <h1>🎓 Student Dashboard</h1>
@@ -446,18 +444,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     </div>
                 </div>
             </div>
-
-        <?php if ($is_evaluated): ?>
-    <a href="evaluation_form.php?teacher_id=<?php echo $teacher['id']; ?>" 
-       class="btn btn-secondary">
-        👁️ View Evaluation
-    </a>
-<?php else: ?>
-    <a href="evaluation_form.php?teacher_id=<?php echo $teacher['id']; ?>" 
-       class="btn">
-        📝 Evaluate Teacher
-    </a>
-<?php endif; ?>
             
             <div class="teachers-section">
                 <h2>👨‍🏫 Teachers Available for Evaluation</h2>
@@ -507,12 +493,13 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             </div>
         <?php endif; ?>
         
-        <div style="text-align: center; margin-top: 40px; padding-top: 25px; border-top: 2px solid #e9ecef; color: #6c757d;">
+        <div class="logout-container">
             <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
             <p>Teacher Evaluation System - Student Dashboard</p>
             <p style="margin-top: 10px;">
                 Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
             </p>
+            <a href="logout.php" class="logout-btn">🚪 Logout</a>
         </div>
     </div>
 
