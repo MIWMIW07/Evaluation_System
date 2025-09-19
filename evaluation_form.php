@@ -715,44 +715,46 @@ footer {
             <div class="evaluation-results" style="background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%); padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #4caf50;">
                 <h3>📊 Your Evaluation Details</h3>
                 <?php
-                // Function to display question and selected rating
+                // Function to display question and selected rating with professional design
                 function display_question_rating($question, $rating) {
-                    echo '<div style="margin-bottom: 10px;">';
-                    echo '<strong>' . htmlspecialchars($question) . '</strong><br>';
-                    echo 'Rating: ' . htmlspecialchars($rating) . '/5';
+                    echo '<div style="margin-bottom: 15px; padding: 15px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">';
+                    echo '<p style="font-weight: 600; color: #2c3e50; margin-bottom: 8px;">' . htmlspecialchars($question) . '</p>';
+                    echo '<div style="display: inline-block; background: #2ecc71; color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;">';
+                    echo htmlspecialchars($rating) . ' / 5';
+                    echo '</div>';
                     echo '</div>';
                 }
                 ?>
-                <h4>1. Teaching Competence</h4>
+                <h4 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px;">1. Teaching Competence</h4>
                 <?php
                 foreach ($section1_questions as $key => $question) {
                     $rating = $existing_evaluation["q1_" . substr($key, 2)] ?? 'N/A';
                     display_question_rating($question, $rating);
                 }
                 ?>
-                <h4>2. Management Skills</h4>
+                <h4 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px;">2. Management Skills</h4>
                 <?php
                 foreach ($section2_questions as $key => $question) {
                     $rating = $existing_evaluation["q2_" . substr($key, 2)] ?? 'N/A';
                     display_question_rating($question, $rating);
                 }
                 ?>
-                <h4>3. Guidance Skills</h4>
+                <h4 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px;">3. Guidance Skills</h4>
                 <?php
                 foreach ($section3_questions as $key => $question) {
                     $rating = $existing_evaluation["q3_" . substr($key, 2)] ?? 'N/A';
                     display_question_rating($question, $rating);
                 }
                 ?>
-                <h4>4. Personal and Social Qualities/Skills</h4>
+                <h4 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px;">4. Personal and Social Qualities/Skills</h4>
                 <?php
                 foreach ($section4_questions as $key => $question) {
                     $rating = $existing_evaluation["q4_" . substr($key, 2)] ?? 'N/A';
                     display_question_rating($question, $rating);
                 }
                 ?>
-                <h4>Comments</h4>
-                <p style="white-space: pre-wrap; background: #f9f9f9; padding: 10px; border-radius: 5px;"><?php echo nl2br(htmlspecialchars($existing_evaluation['comments'])); ?></p>
+                <h4 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px;">Comments</h4>
+                <p style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; font-size: 15px; color: #2c3e50; box-shadow: inset 0 0 5px rgba(0,0,0,0.05);"><?php echo nl2br(htmlspecialchars($existing_evaluation['comments'])); ?></p>
                 <p style="margin-top: 15px;"><a href="student_dashboard.php" style="background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashboard</a></p>
             </div>
         <?php endif; ?>
