@@ -242,6 +242,36 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             color: #666;
             margin-bottom: 15px;
         }
+
+        .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.95em;
+}
+
+.btn:hover {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #1976D2 0%, #0d47a1 100%);
+}
         
         .evaluation-status {
             display: flex;
@@ -416,6 +446,18 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     </div>
                 </div>
             </div>
+
+        <?php if ($is_evaluated): ?>
+    <a href="evaluation_form.php?teacher_id=<?php echo $teacher['id']; ?>" 
+       class="btn btn-secondary">
+        👁️ View Evaluation
+    </a>
+<?php else: ?>
+    <a href="evaluation_form.php?teacher_id=<?php echo $teacher['id']; ?>" 
+       class="btn">
+        📝 Evaluate Teacher
+    </a>
+<?php endif; ?>
             
             <div class="teachers-section">
                 <h2>👨‍🏫 Teachers Available for Evaluation</h2>
