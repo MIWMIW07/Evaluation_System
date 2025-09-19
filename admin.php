@@ -128,7 +128,7 @@ try {
         }
         
         body {
-            background: linear-gradient(135deg, #B8860B 0%, #800000 100%);
+            background: linear-gradient(135deg, #800000 0%, #5a0000 100%);
             color: #333;
             line-height: 1.6;
             min-height: 100vh;
@@ -148,18 +148,18 @@ try {
             text-align: center;
             margin-bottom: 40px;
             padding-bottom: 25px;
-            border-bottom: 3px solid #B8860B;
+            border-bottom: 3px solid #D4AF37;
         }
         
         h1, h2, h3 {
-            color: #2c3e50;
+            color: #5a0000;
             margin-bottom: 20px;
         }
         
         header h1 {
             font-size: 2.2em;
             margin-bottom: 10px;
-            background: linear-gradient(135deg, #B8860B, #D4AF37);
+            background: linear-gradient(135deg, #D4AF37, #FFDF7F);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -173,12 +173,12 @@ try {
         }
         
         .stat-card {
-            background: linear-gradient(135deg, #FFF8DC 0%, #F5F5DC 100%);
+            background: linear-gradient(135deg, #FFF8DC 0%, #FAF0C9 100%);
             padding: 25px;
             border-radius: 15px;
             text-align: center;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid #B8860B;
+            border-left: 5px solid #D4AF37;
         }
         
         .stat-card h3 {
@@ -188,7 +188,7 @@ try {
         }
         
         .stat-card p {
-            color: #6c757d;
+            color: #5a0000;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -204,42 +204,43 @@ try {
         
         .btn {
             display: inline-block;
-            background: linear-gradient(135deg, #B8860B 0%, #D4AF37 100%);
+            background: linear-gradient(135deg, #800000 0%, #5a0000 100%);
             color: white;
             padding: 12px 25px;
             text-decoration: none;
             border-radius: 8px;
             font-weight: bold;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
-        }
-        
-        .btn:hover {
-            background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(184, 134, 11, 0.4);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #800000 0%, #A52A2A 100%);
             box-shadow: 0 4px 15px rgba(128, 0, 0, 0.3);
         }
         
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #A52A2A 0%, #800000 100%);
+        .btn:hover {
+            background: linear-gradient(135deg, #5a0000 0%, #800000 100%);
+            transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(128, 0, 0, 0.4);
         }
         
-        .btn-enhanced {
+        .btn-secondary {
+            background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            color: #5a0000;
+        }
+        
+        .btn-secondary:hover {
             background: linear-gradient(135deg, #B8860B 0%, #D4AF37 100%);
-            box-shadow: 0 6px 20px rgba(184, 134, 11, 0.4);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+        }
+        
+        .btn-enhanced {
+            background: linear-gradient(135deg, #800000 0%, #5a0000 100%);
+            box-shadow: 0 6px 20px rgba(128, 0, 0, 0.4);
             padding: 15px 30px;
             font-size: 1.1em;
         }
         
         .btn-enhanced:hover {
-            background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
-            box-shadow: 0 10px 30px rgba(184, 134, 11, 0.5);
+            background: linear-gradient(135deg, #5a0000 0%, #800000 100%);
+            box-shadow: 0 10px 30px rgba(128, 0, 0, 0.5);
         }
         
         .btn-logout {
@@ -253,11 +254,11 @@ try {
         }
         
         .report-generation-section {
-            background: linear-gradient(135deg, #FFF8DC 0%, #F5F5DC 100%);
+            background: linear-gradient(135deg, #FFF8DC 0%, #FAF0C9 100%);
             padding: 25px;
             border-radius: 15px;
             margin: 30px 0;
-            border-left: 5px solid #B8860B;
+            border-left: 5px solid #D4AF37;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         
@@ -290,7 +291,7 @@ try {
             padding: 15px;
             border-radius: 8px;
             margin-top: 20px;
-            border-left: 4px solid #B8860B;
+            border-left: 4px solid #D4AF37;
         }
         
         .note-box p {
@@ -316,7 +317,7 @@ try {
         }
         
         .summary-table th {
-            background: linear-gradient(135deg, #B8860B 0%, #D4AF37 100%);
+            background: linear-gradient(135deg, #800000 0%, #5a0000 100%);
             color: white;
             font-weight: bold;
             text-transform: uppercase;
@@ -345,15 +346,15 @@ try {
         }
         
         .rating-high {
-            background: linear-gradient(135deg, #B8860B, #D4AF37);
+            background: linear-gradient(135deg, #D4AF37, #FFDF7F);
         }
         
         .rating-medium {
-            background: linear-gradient(135deg, #A52A2A, #800000);
+            background: linear-gradient(135deg, #B8860B, #D4AF37);
         }
         
         .rating-low {
-            background: linear-gradient(135deg, #800000, #600000);
+            background: linear-gradient(135deg, #800000, #5a0000);
         }
         
         .rating-none {
@@ -373,7 +374,7 @@ try {
         }
 
         .error-alert {
-            background: linear-gradient(135deg, #FFF8DC 0%, #F5F5DC 100%);
+            background: linear-gradient(135deg, #FFF8DC 0%, #FAF0C9 100%);
             color: #800000;
             padding: 20px;
             border-left: 5px solid #800000;
@@ -457,7 +458,7 @@ try {
 
         <!-- Enhanced Report Generation Section -->
         <div class="report-generation-section">
-            <h2 style="color: #2c3e50; margin-bottom: 20px; display: flex; align-items: center;">
+            <h2 style="color: #5a0000; margin-bottom: 20px; display: flex; align-items: center;">
                 📊 Advanced Report Generation
             </h2>
             <p style="color: #666; margin-bottom: 20px;">Generate comprehensive evaluation reports organized by teacher and section. Each report includes individual student evaluations formatted for printing.</p>
@@ -571,7 +572,7 @@ try {
             </table>
         </div>
         
-        <div style="margin-top: 40px; padding: 25px; background: linear-gradient(135deg, #FFF8DC 0%, #F5F5DC 100%); border-radius: 10px; border-left: 5px solid #B8860B;">
+        <div style="margin-top: 40px; padding: 25px; background: linear-gradient(135deg, #FFF8DC 0%, #FAF0C9 100%); border-radius: 10px; border-left: 5px solid #D4AF37;">
             <h3>📊 Rating Scale Information</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
                 <div style="text-align: center;">
