@@ -602,7 +602,7 @@ footer {
             <div class="institution-name">PHILIPPINE TECHNOLOGICAL INSTITUTE OF SCIENCE ARTS AND TRADE CENTRAL INC.</div>
             <div class="address">2nd Floor CRDM BLDG. Governor's Drive Brgy G. Maderan GMA, Cavite</div>
 
-            <h1>TEACHER'S PERFORMANCE EVALUATION BY THE STUDENTS</h1>
+            <h1><?php echo $is_view_mode ? 'View Evaluation' : 'TEACHER\'S PERFORMANCE EVALUATION BY THE STUDENTS'; ?></h1>
 
             <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #2196F3;">
                 <h3 style="color: #1976D2; margin-bottom: 10px;">👨‍🏫 Evaluating: <?php echo htmlspecialchars($teacher['name']); ?></h3>
@@ -622,8 +622,37 @@ footer {
         <div class="progress" id="progress-bar"></div>
     </div>
 </div>
-
-        </header>
+    </header>
+         <?php if ($teacher_info): ?>
+            <div class="teacher-info">
+                <h3>Teacher Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Teacher Name:</label>
+                        <span><?php echo htmlspecialchars($teacher_info['name']); ?></span>
+                    </div>
+                    <div class="info-item">
+                        <label>Subject:</label>
+                        <span><?php echo htmlspecialchars($teacher_info['subject']); ?></span>
+                    </div>
+                    <div class="info-item">
+                        <label>Program:</label>
+                        <span><?php echo htmlspecialchars($teacher_info['program']); ?></span>
+                    </div>
+                    <div class="info-item">
+                        <label>Your Section:</label>
+                        <span><?php echo htmlspecialchars($_SESSION['section']); ?></span>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+        
+        <?php if ($is_view_mode && $existing_evaluation): ?>
+            <div class="evaluation-status">
+                <h3>Evaluation Already Submitted</h3>
+                <p>You have already evaluated this teacher on <?php echo date('F j, Y \a\t g:i A', strtotime($existing_evaluation['evaluation_date'])); ?>.</p>
+            </div>
+        <?php endif; ?>
 
         <?php if (!empty($success)): ?>
             <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); color: #155724; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #28a745;">
