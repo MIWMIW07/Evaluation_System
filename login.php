@@ -185,6 +185,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             z-index: 2;
         }
         
+        .institution-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid var(--light-gold);
+            margin: 0 auto 1rem;
+            display: block;
+            background: white;
+            padding: 5px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
         .login-header p {
             color: var(--light-gold);
             font-size: 0.875rem;
@@ -497,12 +509,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
     <div class="login-container">
         <div class="login-header">
-            <h1>Welcome Back</h1>
+            <h1>Welcome To</h1>
             <p>Teacher Evaluation System</p>
         </div>
         
         <div class="login-form">
             <div class="institution-badge">
+                <img src="logo.png" alt="PTISAT Logo" class="institution-logo" onerror="this.style.display='none'">
                 Philippine Technological Institute of Science Arts and Trade, Inc.<br>
                 <strong>GMA Branch</strong> • 2nd Semester 2024-2025
             </div>
