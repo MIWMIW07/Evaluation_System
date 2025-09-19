@@ -128,7 +128,7 @@ try {
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #B8860B 0%, #800000 100%);
             color: #333;
             line-height: 1.6;
             min-height: 100vh;
@@ -148,7 +148,7 @@ try {
             text-align: center;
             margin-bottom: 40px;
             padding-bottom: 25px;
-            border-bottom: 3px solid #4CAF50;
+            border-bottom: 3px solid #B8860B;
         }
         
         h1, h2, h3 {
@@ -159,7 +159,7 @@ try {
         header h1 {
             font-size: 2.2em;
             margin-bottom: 10px;
-            background: linear-gradient(135deg, #4CAF50, #45a049);
+            background: linear-gradient(135deg, #B8860B, #D4AF37);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -173,16 +173,16 @@ try {
         }
         
         .stat-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: linear-gradient(135deg, #FFF8DC 0%, #F5F5DC 100%);
             padding: 25px;
             border-radius: 15px;
             text-align: center;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid #4CAF50;
+            border-left: 5px solid #B8860B;
         }
         
         .stat-card h3 {
-            color: #4CAF50;
+            color: #800000;
             font-size: 2.5em;
             margin-bottom: 10px;
         }
@@ -204,50 +204,50 @@ try {
         
         .btn {
             display: inline-block;
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            background: linear-gradient(135deg, #B8860B 0%, #D4AF37 100%);
             color: white;
             padding: 12px 25px;
             text-decoration: none;
             border-radius: 8px;
             font-weight: bold;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
         }
         
         .btn:hover {
-            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
+            background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+            box-shadow: 0 8px 25px rgba(184, 134, 11, 0.4);
         }
         
         .btn-secondary {
-            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+            background: linear-gradient(135deg, #800000 0%, #A52A2A 100%);
+            box-shadow: 0 4px 15px rgba(128, 0, 0, 0.3);
         }
         
         .btn-secondary:hover {
-            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
-            box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
+            background: linear-gradient(135deg, #A52A2A 0%, #800000 100%);
+            box-shadow: 0 8px 25px rgba(128, 0, 0, 0.4);
         }
         
         .btn-enhanced {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+            background: linear-gradient(135deg, #B8860B 0%, #D4AF37 100%);
+            box-shadow: 0 6px 20px rgba(184, 134, 11, 0.4);
             padding: 15px 30px;
             font-size: 1.1em;
         }
         
         .btn-enhanced:hover {
-            background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
-            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.5);
+            background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+            box-shadow: 0 10px 30px rgba(184, 134, 11, 0.5);
         }
         
         .report-generation-section {
-            background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%);
+            background: linear-gradient(135deg, #FFF8DC 0%, #F5F5DC 100%);
             padding: 25px;
             border-radius: 15px;
             margin: 30px 0;
-            border-left: 5px solid #4CAF50;
+            border-left: 5px solid #B8860B;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         
@@ -266,7 +266,7 @@ try {
         }
         
         .feature-card h4 {
-            color: #4CAF50;
+            color: #800000;
             margin-bottom: 10px;
         }
         
@@ -276,15 +276,15 @@ try {
         }
         
         .note-box {
-            background: #fff3cd;
+            background: #FFF8DC;
             padding: 15px;
             border-radius: 8px;
             margin-top: 20px;
-            border-left: 4px solid #ffc107;
+            border-left: 4px solid #B8860B;
         }
         
         .note-box p {
-            color: #856404;
+            color: #800000;
             font-size: 0.9em;
             margin: 0;
         }
@@ -306,7 +306,7 @@ try {
         }
         
         .summary-table th {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            background: linear-gradient(135deg, #B8860B 0%, #D4AF37 100%);
             color: white;
             font-weight: bold;
             text-transform: uppercase;
@@ -319,7 +319,7 @@ try {
         }
         
         .summary-table tr:hover {
-            background-color: #e3f2fd;
+            background-color: #FFF8DC;
             transform: scale(1.01);
             transition: all 0.3s ease;
         }
@@ -335,15 +335,15 @@ try {
         }
         
         .rating-high {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
+            background: linear-gradient(135deg, #B8860B, #D4AF37);
         }
         
         .rating-medium {
-            background: linear-gradient(135deg, #FF9800, #F57C00);
+            background: linear-gradient(135deg, #A52A2A, #800000);
         }
         
         .rating-low {
-            background: linear-gradient(135deg, #F44336, #D32F2F);
+            background: linear-gradient(135deg, #800000, #600000);
         }
         
         .rating-none {
@@ -359,7 +359,7 @@ try {
             position: fixed;
             top: 20px;
             left: 20px;
-            background: #2196F3;
+            background: #800000;
             color: white;
             padding: 10px 15px;
             text-decoration: none;
@@ -370,7 +370,7 @@ try {
         }
         
         .back-link:hover {
-            background: #1976D2;
+            background: #A52A2A;
             transform: translateY(-2px);
         }
         
@@ -382,10 +382,10 @@ try {
         }
 
         .error-alert {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            color: #721c24;
+            background: linear-gradient(135deg, #FFF8DC 0%, #F5F5DC 100%);
+            color: #800000;
             padding: 20px;
-            border-left: 5px solid #dc3545;
+            border-left: 5px solid #800000;
             border-radius: 8px;
             margin-bottom: 20px;
         }
@@ -557,7 +557,7 @@ try {
                                         <td><strong>$rank</strong></td>
                                         <td><strong>" . htmlspecialchars($row['teacher_name']) . "</strong></td>
                                         <td>" . htmlspecialchars($row['subject']) . "</td>
-                                        <td><span style='background: #e3f2fd; padding: 3px 8px; border-radius: 10px; color: #1976D2; font-weight: bold;'>{$row['evaluation_count']}</span></td>
+                                        <td><span style='background: #FFF8DC; padding: 3px 8px; border-radius: 10px; color: #800000; font-weight: bold;'>{$row['evaluation_count']}</span></td>
                                         <td><span class='rating $rating_class'>" . number_format($avg_rating, 2) . "</span></td>
                                         <td><strong>$performance_level</strong></td>
                                       </tr>";
@@ -588,7 +588,7 @@ try {
             </table>
         </div>
         
-        <div style="margin-top: 40px; padding: 25px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 10px; border-left: 5px solid #2196F3;">
+        <div style="margin-top: 40px; padding: 25px; background: linear-gradient(135deg, #FFF8DC 0%, #F5F5DC 100%); border-radius: 10px; border-left: 5px solid #B8860B;">
             <h3>📊 Rating Scale Information</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
                 <div style="text-align: center;">
