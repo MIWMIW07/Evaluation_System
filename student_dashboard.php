@@ -16,6 +16,35 @@ require_once 'includes/db_connection.php';
 $success = '';
 $error = '';
 
+// Handle program/section update
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
+    if (!validate_csrf_token($_POST['csrf_token'])) {
+        die('CSRF token validation failed');
+    }
+    
+    try {
+        $program = trim($_POST['program']);
+        $section = trim($_POST['section']);
+        
+        if (empty($program) || empty($section)) {
+            throw new Exception("Program and section are required.");
+        }
+        
+        // Update user information
+        query("UPDATE users SET program = ?, section = ? WHERE id = ?", 
+              [$program, $section, $_SESSION['user_id']]);
+        
+        // Update session variables
+        $_SESSION['program'] = $program;
+        $_SESSION['section'] = $section;
+        
+        $success = "✅ Your program and section have been updated successfully!";
+        
+    } catch (Exception $e) {
+        $error = "❌ " . $e->getMessage();
+    }
+}
+
 // Get student's current program and section
 $current_program = $_SESSION['program'];
 $current_section = $_SESSION['section'];
@@ -387,6 +416,77 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             margin-bottom: 15px;
             color: #800000;
         }
+        .program-section-form {
+    background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    border-left: 5px solid #D4AF37;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.program-section-form h3 {
+    color: #800000;
+    margin-bottom: 10px;
+    font-size: 1.4em;
+    border-bottom: 2px solid #D4AF37;
+    padding-bottom: 10px;
+}
+
+.form-description {
+    color: #500000;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: end;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    color: #800000;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.95em;
+}
+
+.form-group select {
+    padding: 12px 15px;
+    border: 2px solid #D4AF37;
+    border-radius: 8px;
+    background-color: #fff;
+    color: #500000;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.form-group select:focus {
+    outline: none;
+    border-color: #800000;
+    box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.2);
+}
+
+.form-button-container {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-bottom: 5px;
+}
+
+.form-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 1em;
+}
         
         @media (max-width: 768px) {
             .container {
@@ -410,6 +510,20 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 flex-direction: column;
                 text-align: center;
             }
+
+            .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .form-button-container {
+        padding-bottom: 0;
+        margin-top: 5px;
+    }
+    
+    .program-section-form {
+        padding: 20px;
+    }
         }
     </style>
 </head>
@@ -450,6 +564,51 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         <?php if (!empty($error)): ?>
             <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
+
+        <div class="program-section-form">
+            <h3>📚 Update Your Program & Section</h3>
+            <p style="margin-bottom: 20px; color: #666;">Please select your program and section to view available teachers for evaluation.</p>
+            
+            <form method="POST" action="">
+                <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                <input type="hidden" name="update_info" value="1">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="program">Program *</label>
+                        <select id="program" name="program" required>
+                            <option value="">Select Program</option>
+                            <option value="SHS" <?php echo ($current_program === 'SHS') ? 'selected' : ''; ?>>
+                                Senior High School (SHS)
+                            </option>
+                            <option value="COLLEGE" <?php echo ($current_program === 'COLLEGE') ? 'selected' : ''; ?>>
+                                College
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="section">Section *</label>
+                        <select id="section" name="section" required>
+                            <option value="">Select Section</option>
+                            <!-- SHS Sections -->
+                            <option value="Grade 11-A" <?php echo ($current_section === 'Grade 11-A') ? 'selected' : ''; ?>>Grade 11-A</option>
+                            <option value="Grade 11-B" <?php echo ($current_section === 'Grade 11-B') ? 'selected' : ''; ?>>Grade 11-B</option>
+                            <option value="Grade 12-A" <?php echo ($current_section === 'Grade 12-A') ? 'selected' : ''; ?>>Grade 12-A</option>
+                            <option value="Grade 12-B" <?php echo ($current_section === 'Grade 12-B') ? 'selected' : ''; ?>>Grade 12-B</option>
+                            <!-- College Sections -->
+                            <option value="BSIT-1A" <?php echo ($current_section === 'BSIT-1A') ? 'selected' : ''; ?>>BSIT-1A</option>
+                            <option value="BSIT-2A" <?php echo ($current_section === 'BSIT-2A') ? 'selected' : ''; ?>>BSIT-2A</option>
+                            <option value="BSCS-1A" <?php echo ($current_section === 'BSCS-1A') ? 'selected' : ''; ?>>BSCS-1A</option>
+                            <option value="BSCS-2A" <?php echo ($current_section === 'BSCS-2A') ? 'selected' : ''; ?>>BSCS-2A</option>
+                            <option value="BSBA-1A" <?php echo ($current_section === 'BSBA-1A') ? 'selected' : ''; ?>>BSBA-1A</option>
+                            <option value="BSBA-2A" <?php echo ($current_section === 'BSBA-2A') ? 'selected' : ''; ?>>BSBA-2A</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn">🔄 Update Info</button>
+                </div>
+            </form>
+        </div>
         
         <?php if (!empty($current_program) && !empty($current_section)): ?>
             <div class="stats-container">
