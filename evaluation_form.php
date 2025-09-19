@@ -735,37 +735,88 @@ footer {
                 <h4 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px;">Ratings Overview</h4>
                 <div style="margin-bottom: 30px; padding: 20px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
                     <h5 style="color: #2c3e50; margin-bottom: 15px;">Average Ratings Trend</h5>
-                    <svg width="100%" height="200" viewBox="0 0 400 200" style="border: 1px solid #ecf0f1; border-radius: 8px;">
+                    <svg id="ratingLineGraph" width="100%" height="220" viewBox="0 0 400 220" style="border: 1px solid #ecf0f1; border-radius: 8px; background: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
                         <defs>
                             <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#2ecc71;stop-opacity:1" />
+                                <stop offset="0%" style="stop-color:gold;stop-opacity:1" />
+                                <stop offset="25%" style="stop-color:goldenrod;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:lightgoldenrodyellow;stop-opacity:1" />
+                                <stop offset="75%" style="stop-color:maroon;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:darkred;stop-opacity:1" />
                             </linearGradient>
+                            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="maroon" flood-opacity="0.4"/>
+                            </filter>
                         </defs>
                         <?php
                         $sections = [$section1_avg, $section2_avg, $section3_avg, $section4_avg];
                         $labels = ['Teaching', 'Management', 'Guidance', 'Personal'];
                         $points = '';
-                        $lines = '';
                         for ($i = 0; $i < count($sections); $i++) {
                             $x = 50 + $i * 100;
-                            $y = 150 - ($sections[$i] / 5) * 100;
+                            $y = 170 - ($sections[$i] / 5) * 100;
                             $points .= ($i > 0 ? ' ' : '') . "$x,$y";
-                            // Draw grid lines
-                            echo "<line x1='$x' y1='50' x2='$x' y2='150' stroke='#ecf0f1' stroke-width='1' />";
-                            echo "<text x='$x' y='170' text-anchor='middle' font-size='12' fill='#7f8c8d'>{$labels[$i]}</text>";
-                            echo "<text x='30' y='" . (155 - ($i * 25)) . "' text-anchor='end' font-size='10' fill='#7f8c8d'>" . (5 - $i) . "</text>";
+                            // Draw vertical grid lines
+                            echo "<line x1='$x' y1='70' x2='$x' y2='170' stroke='#ecf0f1' stroke-width='1' />";
+                            // Draw labels
+                            echo "<text x='$x' y='190' text-anchor='middle' font-size='12' fill='#7f8c8d'>{$labels[$i]}</text>";
                         }
-                        echo "<polyline points='$points' fill='none' stroke='url(#lineGradient)' stroke-width='3' />";
-                        // Draw points
+                        // Draw horizontal grid lines and labels
+                        for ($j = 0; $j <= 5; $j++) {
+                            $y = 170 - $j * 20;
+                            echo "<line x1='40' y1='$y' x2='350' y2='$y' stroke='#ecf0f1' stroke-width='1' />";
+                            echo "<text x='30' y='" . ($y + 5) . "' text-anchor='end' font-size='10' fill='#7f8c8d'>" . $j . "</text>";
+                        }
+                        // Draw polyline with shadow filter
+                        echo "<polyline points='$points' fill='none' stroke='url(#lineGradient)' stroke-width='4' filter='url(#shadow)' stroke-linejoin='round' stroke-linecap='round' />";
+                        // Draw points with hover circles
                         $points_array = explode(' ', $points);
-                        foreach ($points_array as $point) {
+                        foreach ($points_array as $index => $point) {
                             list($x, $y) = explode(',', $point);
-                            echo "<circle cx='$x' cy='$y' r='5' fill='#3498db' />";
-                            echo "<circle cx='$x' cy='$y' r='8' fill='none' stroke='#3498db' stroke-width='2' opacity='0.5' />";
+                            echo "<circle class='hover-point' cx='$x' cy='$y' r='7' fill='gold' style='cursor:pointer;' data-label='{$labels[$index]}' data-value='" . number_format($sections[$index], 2) . "' />";
+                            echo "<circle cx='$x' cy='$y' r='10' fill='none' stroke='goldenrod' stroke-width='2' opacity='0.3' />";
                         }
                         ?>
+                        <style>
+                            .tooltip {
+                                position: absolute;
+                                background: maroon;
+                                color: lightgoldenrodyellow;
+                                padding: 6px 12px;
+                                border-radius: 6px;
+                                font-size: 14px;
+                                pointer-events: none;
+                                opacity: 0;
+                                transition: opacity 0.3s ease;
+                                white-space: nowrap;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                                z-index: 1000;
+                            }
+                        </style>
                     </svg>
+                    <div id="tooltip" class="tooltip"></div>
+                    <script>
+                        const svg = document.getElementById('ratingLineGraph');
+                        const tooltip = document.getElementById('tooltip');
+                        const points = svg.querySelectorAll('.hover-point');
+
+                        points.forEach(point => {
+                            point.addEventListener('mouseenter', (e) => {
+                                const label = e.target.getAttribute('data-label');
+                                const value = e.target.getAttribute('data-value');
+                                tooltip.textContent = label + ': ' + value + ' / 5';
+                                tooltip.style.opacity = 1;
+                                const rect = svg.getBoundingClientRect();
+                                const cx = parseFloat(e.target.getAttribute('cx'));
+                                const cy = parseFloat(e.target.getAttribute('cy'));
+                                tooltip.style.left = (rect.left + cx + 10) + 'px';
+                                tooltip.style.top = (rect.top + cy - 30) + 'px';
+                            });
+                            point.addEventListener('mouseleave', () => {
+                                tooltip.style.opacity = 0;
+                            });
+                        });
+                    </script>
                 </div>
                 <?php
                 display_section_bar('1. Teaching Competence', $section1_avg);
