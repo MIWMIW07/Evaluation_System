@@ -135,6 +135,111 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
         $error = $e->getMessage();
     }
 }
+
+// Define questions for both languages
+$section1_questions = [
+    '1.1' => 'Analyses and elaborates lesson without reading textbook in class.',
+    '1.2' => 'Uses audio visual and devices to support and facilitate instructions.',
+    '1.3' => 'Present ideas/ concepts clearly and convincingly from related fields and integrate subject matter with actual experience.',
+    '1.4' => 'Make the students apply concepts to demonstrate understanding of the lesson.',
+    '1.5' => 'Gives fair test and examination and return test results within the reasonable period.',
+    '1.6' => 'Shows good command of the language of instruction.'
+];
+
+$section2_questions = [
+    '2.1' => 'Maintains responsive, disciplined and safe classroom atmosphere that is conducive to learning.',
+    '2.2' => 'Follow the schematic way.',
+    '2.3' => 'Stimulate students respect regard for the teacher.',
+    '2.4' => 'Allow the students to express their opinions and views.'
+];
+
+$section3_questions = [
+    '3.1' => 'Accepts students as they are by recognizing their strength and weakness as individuals.',
+    '3.2' => 'Inspires students to be self-reliant and self- disciplined.',
+    '3.3' => 'Handles class and student\'s problem with fairness and understanding.',
+    '3.4' => 'Shows genuine concern for the personal and other problems presented by the students outside classroom activities.'
+];
+
+$section4_questions = [
+    '4.1' => 'Maintains emotional balance; neither over critical nor over-sensitive.',
+    '4.2' => 'Is free from mannerisms that distract the teaching and learning process.',
+    '4.3' => 'Is well groomed; clothes are clean and neat (Uses appropriate clothes that are becoming of a teacher).',
+    '4.4' => 'Shows no favoritism.',
+    '4.5' => 'Has good sense of humor and shows enthusiasm in teaching.',
+    '4.6' => 'Has good diction, clear and modulated voice.'
+];
+
+$section1_tagalog = [
+    '1.1' => 'Nasuri at-naipaliwanag ang araling nang hindi binabasa ang aklat sa klase.',
+    '1.2' => 'Gumugamit ng audio-visual at mga device upang suportahan at mapadali ang pagtuturo',
+    '1.3' => 'Nagpapakita ng mga ideya/konsepto nang malinaw at nakukumbinsi mula sa mga kaugnay na larangan at isama ang subject matter sa aktwal na karanasan.',
+    '1.4' => 'Hinahayaan ang mga mag-aaral na gumamit ng mga konsepto upang ipakita ang pag-unawa sa mga aralin',
+    '1.5' => 'Nagbibigay ng patas na pagsusulit at pagsusuri at ibalik ang mga result ang pagsusulit sa loob ng makatawirang panahon.',
+    '1.6' => 'Naguutos nang maayos sa pagtuturo gamit ang maayos na pananalita.'
+];
+
+$section2_tagalog = [
+    '2.1' => 'Pinapanatiling maayos, disiplinado at ligtas ang silid-aralan upang magkaraon ng maayos na pagaaral.',
+    '2.2' => 'Sumusunod sa sistematikong iskedyul ng mga klase at iba pang pangaraw-araw na gawain.',
+    '2.3' => 'Hinuhubog sa mga mag-aaral ang respeto at paggalang sa mga guro.',
+    '2.4' => 'Pinahihinlulutan ang mga mag-aaral na ipahayag ang kanilang mga opinyon at mga pananaw.'
+];
+
+$section3_tagalog = [
+    '3.1' => 'Pagtanggap sa mga mag-aaral bilang indibidwal na may kalakasan at kahinaan.',
+    '3.2' => 'Pagpapakita ng tiwala at kaayusan sa sarili',
+    '3.3' => 'Pinangangasiwaan ang problema ng klase at mga mag-aaral nang may patas at pang-unawa.',
+    '3.4' => 'Nagpapakita ng tunay na pagmamalasakit sa mga personal at iba pang problemang ipinakita ng mga mag-aaral.'
+];
+
+$section4_tagalog = [
+    '4.1' => 'Nagpapanatili ng emosyonal na balanse: hindi masyadong kritikal o sobrang sensitibo.',
+    '4.2' => 'Malaya sa nakasanayang galaw na nakakagambala sa proseso ng pagtuturo at pagkatuto.',
+    '4.3' => 'Maayos at presentable; Malinis at maayos ang mga damit.',
+    '4.4' => 'Hindi nagpapakita ng paboritismo',
+    '4.5' => 'May magandang sense of humor at nagpapakita ng sigla sa pagtuturo.',
+    '4.6' => 'May magandang diction, malinaw at maayos na timpla ng boses.'
+];
+
+// Calculate average rating if in view mode
+$average_rating = 0;
+$performance_level = '';
+if ($is_view_mode && $existing_evaluation) {
+    $total_rating = 0;
+    $total_questions = 0;
+    
+    // Sum all ratings
+    for ($i = 1; $i <= 6; $i++) {
+        $total_rating += $existing_evaluation["q1_$i"];
+        $total_questions++;
+    }
+    for ($i = 1; $i <= 4; $i++) {
+        $total_rating += $existing_evaluation["q2_$i"];
+        $total_questions++;
+    }
+    for ($i = 1; $i <= 4; $i++) {
+        $total_rating += $existing_evaluation["q3_$i"];
+        $total_questions++;
+    }
+    for ($i = 1; $i <= 6; $i++) {
+        $total_rating += $existing_evaluation["q4_$i"];
+        $total_questions++;
+    }
+    
+    $average_rating = round($total_rating / $total_questions, 2);
+    
+    if ($average_rating >= 4.5) {
+        $performance_level = 'Outstanding';
+    } else if ($average_rating >= 4.0) {
+        $performance_level = 'Very Satisfactory';
+    } else if ($average_rating >= 3.5) {
+        $performance_level = 'Good/Satisfactory';
+    } else if ($average_rating >= 2.5) {
+        $performance_level = 'Fair';
+    } else {
+        $performance_level = 'Needs Improvement';
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -445,6 +550,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             font-weight: bold;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             transition: all 0.3s ease;
+            z-index: 1000;
         }
         
         .back-link:hover {
@@ -539,6 +645,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
                 padding: 8px 5px;
                 font-size: 14px;
             }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
         }
     </style>
 </head>
@@ -632,428 +747,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php 
-                    $section4_questions = [
-                        '4.1' => 'Maintains emotional balance; neither over critical nor over-sensitive.',
-                        '4.2' => 'Is free from mannerisms that distract the teaching and learning process.',
-                        '4.3' => 'Is well groomed; clothes are clean and neat (Uses appropriate clothes that are becoming of a teacher).',
-                        '4.4' => 'Shows no favoritism.',
-                        '4.5' => 'Has good sense of humor and shows enthusiasm in teaching.',
-                        '4.6' => 'Has good diction, clear and modulated voice.'
-                    ];
-                    
-                    foreach ($section4_questions as $key => $question):
-                        $field_name = 'rating4_' . substr($key, -1);
-                        $current_value = $is_view_mode ? $existing_evaluation['q4_' . substr($key, -1)] : '';
-                    ?>
-                        <tr>
-                            <td><?php echo $key; ?> <?php echo $question; ?></td>
-                            <td>
-                                <?php if ($is_view_mode): ?>
-                                    <div class="rating-display"><?php echo $current_value; ?></div>
-                                <?php else: ?>
-                                    <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="1"> 1</label>
-                                    </div>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                </tbody>
-            </table>
-            
-            <div class="comments-section">
-                <h2>5. Comments</h2>
-                <?php if ($is_view_mode): ?>
-                    <?php if (!empty($existing_evaluation['comments'])): ?>
-                        <div class="comments-display">
-                            <?php echo htmlspecialchars($existing_evaluation['comments']); ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="comments-display" style="color: #6c757d; font-style: italic;">
-                            No comments provided.
-                        </div>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <textarea name="comments" placeholder="Please provide any comments or suggestions here..."></textarea>
-                <?php endif; ?>
-            </div>
-        </div>
-        
-        <!-- Tagalog Content -->
-        <div class="tagalog">
-            <h2>1. Kakayahan sa Pagtuturo</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th width="70%">Pahayag</th>
-                        <th width="30%">Marka</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $section1_tagalog = [
-                        '1.1' => 'Nasuri at-naipaliwanag ang araling nang hindi binabasa ang aklat sa klase.',
-                        '1.2' => 'Gumugamit ng audio-visual at mga device upang suportahan at mapadali ang pagtuturo',
-                        '1.3' => 'Nagpapakita ng mga ideya/konsepto nang malinaw at nakukumbinsi mula sa mga kaugnay na larangan at isama ang subject matter sa aktwal na karanasan.',
-                        '1.4' => 'Hinahayaan ang mga mag-aaral na gumamit ng mga konsepto upang ipakita ang pag-unawa sa mga aralin',
-                        '1.5' => 'Nagbibigay ng patas na pagsusulit at pagsusuri at ibalik ang mga result ang pagsusulit sa loob ng makatawirang panahon.',
-                        '1.6' => 'Naguutos nang maayos sa pagtuturo gamit ang maayos na pananalita.'
-                    ];
-                    
-                    foreach ($section1_tagalog as $key => $question):
-                        $field_name = 'rating1_' . substr($key, -1);
-                        $current_value = $is_view_mode ? $existing_evaluation['q1_' . substr($key, -1)] : '';
-                    ?>
-                        <tr>
-                            <td><?php echo $key; ?> <?php echo $question; ?></td>
-                            <td>
-                                <?php if ($is_view_mode): ?>
-                                    <div class="rating-display"><?php echo $current_value; ?></div>
-                                <?php else: ?>
-                                    <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="1"> 1</label>
-                                    </div>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            
-            <h2>2. Kasanayan sa pamamahala</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th width="70%">Pahayag</th>
-                        <th width="30%">Marka</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $section2_tagalog = [
-                        '2.1' => 'Pinapanatiling maayos, disiplinado at ligtas ang silid-aralan upang magkaraon ng maayos at maaliwas na pagaaral.',
-                        '2.2' => 'Sumusunod sa sistematikong iskedyul ng mga klase at iba pang pangaraw-araw na gawain.',
-                        '2.3' => 'Hinuhubog sa mga mag-aaral ang respeto at paggalang sa mga guro.',
-                        '2.4' => 'Pinahihinlulutan ang mga mag-aaral na ipahayag ang kanilang mga opinyon at mga pananaw.'
-                    ];
-                    
-                    foreach ($section2_tagalog as $key => $question):
-                        $field_name = 'rating2_' . substr($key, -1);
-                        $current_value = $is_view_mode ? $existing_evaluation['q2_' . substr($key, -1)] : '';
-                    ?>
-                        <tr>
-                            <td><?php echo $key; ?> <?php echo $question; ?></td>
-                            <td>
-                                <?php if ($is_view_mode): ?>
-                                    <div class="rating-display"><?php echo $current_value; ?></div>
-                                <?php else: ?>
-                                    <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="1"> 1</label>
-                                    </div>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            
-            <h2>3. Mga kasanayan sa Paggabay</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th width="70%">Pahayag</th>
-                        <th width="30%">Marka</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $section3_tagalog = [
-                        '3.1' => 'Pagtanggap sa mga mag-aaral bilang indibidwal na may kalakasan at kahinaan.',
-                        '3.2' => 'Pagpapakita ng tiwala at kaayusan sa sarili',
-                        '3.3' => 'Pinangangasiwaan ang problema ng klase at mga mag-aaral nang may patas at pang-unawa.',
-                        '3.4' => 'Nagpapakita ng tunay na pagmamalasakit sa mga personal at iba pang problemang ipinakita ng mga mag-aaral sa labas ng mga aktibidad sa silid-aralan.'
-                    ];
-                    
-                    foreach ($section3_tagalog as $key => $question):
-                        $field_name = 'rating3_' . substr($key, -1);
-                        $current_value = $is_view_mode ? $existing_evaluation['q3_' . substr($key, -1)] : '';
-                    ?>
-                        <tr>
-                            <td><?php echo $key; ?> <?php echo $question; ?></td>
-                            <td>
-                                <?php if ($is_view_mode): ?>
-                                    <div class="rating-display"><?php echo $current_value; ?></div>
-                                <?php else: ?>
-                                    <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="1"> 1</label>
-                                    </div>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            
-            <h2>4. Personal at panlipunang katangian</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th width="70%">Pahayag</th>
-                        <th width="30%">Marka</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $section4_tagalog = [
-                        '4.1' => 'Nagpapanatili ng emosyonal na balanse: hindi masyadong kritikal o sobrang sensitibo.',
-                        '4.2' => 'Malaya sa nakasanayang galaw na nakakagambala sa proseso ng pagtuturo at pagkatuto.',
-                        '4.3' => 'Maayos at presentable; Malinis at maayos ang mga damit.',
-                        '4.4' => 'Hindi nagpapakita ng paboritismo',
-                        '4.5' => 'May magandang sense of humor at nagpapakita ng sigla sa pagtuturo.',
-                        '4.6' => 'May magandang diction, malinaw at maayos na timpla ng boses.'
-                    ];
-                    
-                    foreach ($section4_tagalog as $key => $question):
-                        $field_name = 'rating4_' . substr($key, -1);
-                        $current_value = $is_view_mode ? $existing_evaluation['q4_' . substr($key, -1)] : '';
-                    ?>
-                        <tr>
-                            <td><?php echo $key; ?> <?php echo $question; ?></td>
-                            <td>
-                                <?php if ($is_view_mode): ?>
-                                    <div class="rating-display"><?php echo $current_value; ?></div>
-                                <?php else: ?>
-                                    <div class="rating-options">
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
-                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="1"> 1</label>
-                                    </div>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            
-            <div class="comments-section">
-                <h2>5. Komento</h2>
-                <?php if ($is_view_mode): ?>
-                    <?php if (!empty($existing_evaluation['comments'])): ?>
-                        <div class="comments-display">
-                            <?php echo htmlspecialchars($existing_evaluation['comments']); ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="comments-display" style="color: #6c757d; font-style: italic;">
-                            Walang komento na naibigay.
-                        </div>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <textarea name="comments" placeholder="Mangyaring magbigay ng anumang komento o mungkahi dito..."></textarea>
-                <?php endif; ?>
-            </div>
-        </div>
-        
-        <?php if ($is_view_mode && $existing_evaluation): ?>
-            <?php
-            // Calculate average rating
-            $total_rating = $existing_evaluation['q1_1'] + $existing_evaluation['q1_2'] + $existing_evaluation['q1_3'] + 
-                           $existing_evaluation['q1_4'] + $existing_evaluation['q1_5'] + $existing_evaluation['q1_6'] +
-                           $existing_evaluation['q2_1'] + $existing_evaluation['q2_2'] + $existing_evaluation['q2_3'] + 
-                           $existing_evaluation['q2_4'] + $existing_evaluation['q3_1'] + $existing_evaluation['q3_2'] + 
-                           $existing_evaluation['q3_3'] + $existing_evaluation['q3_4'] + $existing_evaluation['q4_1'] + 
-                           $existing_evaluation['q4_2'] + $existing_evaluation['q4_3'] + $existing_evaluation['q4_4'] + 
-                           $existing_evaluation['q4_5'] + $existing_evaluation['q4_6'];
-            $average_rating = round($total_rating / 20, 2);
-            
-            $performance_level = '';
-            if ($average_rating >= 4.5) {
-                $performance_level = 'Outstanding';
-            } else if ($average_rating >= 4.0) {
-                $performance_level = 'Very Satisfactory';
-            } else if ($average_rating >= 3.5) {
-                $performance_level = 'Good/Satisfactory';
-            } else if ($average_rating >= 2.5) {
-                $performance_level = 'Fair';
-            } else {
-                $performance_level = 'Needs Improvement';
-            }
-            ?>
-            <div class="average-rating">
-                <h4>Your Overall Rating</h4>
-                <div class="average-score"><?php echo $average_rating; ?>/5.0</div>
-                <p><strong><?php echo $performance_level; ?></strong></p>
-            </div>
-        <?php endif; ?>
-        
-        <div class="button-group">
-            <?php if ($is_view_mode): ?>
-                <a href="student_dashboard.php" class="btn">Back to Dashboard</a>
-                <a href="evaluation_form.php?teacher_id=<?php echo $teacher_id; ?>&print=1" class="btn btn-secondary" target="_blank">Print Evaluation</a>
-            <?php else: ?>
-                <button type="submit" class="btn" id="submitBtn">Submit Evaluation</button>
-                <a href="student_dashboard.php" class="btn btn-secondary">Cancel</a>
-            <?php endif; ?>
-        </div>
-        
-        <?php if (!$is_view_mode): ?>
-            </form>
-        <?php endif; ?>
-        
-        <footer>
-            <p>Ang evaluation na ito ay itatago nang kumpidensyal.</p>
-            <p>© PHILTECH GMA</p>
-            <p>Last updated: <?php echo date('F j, Y \a\t g:i A'); ?></p>
-        </footer>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const englishBtn = document.getElementById('english-btn');
-            const tagalogBtn = document.getElementById('tagalog-btn');
-            const englishContent = document.querySelectorAll('.english');
-            const tagalogContent = document.querySelectorAll('.tagalog');
-            const submitBtn = document.querySelector('.btn:not(.btn-secondary)');
-
-            englishBtn.addEventListener('click', function() {
-                englishContent.forEach(item => item.style.display = 'block');
-                tagalogContent.forEach(item => item.style.display = 'none');
-                englishBtn.classList.add('active');
-                tagalogBtn.classList.remove('active');
-                if (submitBtn && submitBtn.textContent.includes('Ipasa')) {
-                    submitBtn.textContent = 'Submit Evaluation';
-                }
-            });
-
-            tagalogBtn.addEventListener('click', function() {
-                englishContent.forEach(item => item.style.display = 'none');
-                tagalogContent.forEach(item => item.style.display = 'block');
-                englishBtn.classList.remove('active');
-                tagalogBtn.classList.add('active');
-                if (submitBtn && submitBtn.textContent.includes('Submit')) {
-                    submitBtn.textContent = 'Ipasa ang Evaluation';
-                }
-            });
-            
-            <?php if (!$is_view_mode): ?>
-            // Form validation enhancement
-            const evaluationForm = document.getElementById('evaluationForm');
-            if (evaluationForm) {
-                evaluationForm.addEventListener('submit', function(e) {
-                    const requiredRadioGroups = [
-                        'rating1_1', 'rating1_2', 'rating1_3', 'rating1_4', 'rating1_5', 'rating1_6',
-                        'rating2_1', 'rating2_2', 'rating2_3', 'rating2_4',
-                        'rating3_1', 'rating3_2', 'rating3_3', 'rating3_4',
-                        'rating4_1', 'rating4_2', 'rating4_3', 'rating4_4', 'rating4_5', 'rating4_6'
-                    ];
-                    
-                    let allAnswered = true;
-                    let firstUnanswered = null;
-                    
-                    for (let group of requiredRadioGroups) {
-                        const radios = document.getElementsByName(group);
-                        const checked = Array.from(radios).some(radio => radio.checked);
-                        if (!checked) {
-                            allAnswered = false;
-                            if (!firstUnanswered) {
-                                firstUnanswered = group;
-                            }
-                        }
-                    }
-                    
-                    if (!allAnswered) {
-                        e.preventDefault();
-                        alert(`Please answer all questions. Missing: Question ${firstUnanswered.replace('rating', '').replace('_', '.')}`);
-                        
-                        // Scroll to first unanswered question
-                        const firstRadio = document.getElementsByName(firstUnanswered)[0];
-                        if (firstRadio) {
-                            firstRadio.closest('tr').scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'center'
-                            });
-                            firstRadio.closest('tr').style.backgroundColor = '#ffe6e6';
-                            setTimeout(() => {
-                                firstRadio.closest('tr').style.backgroundColor = '';
-                            }, 3000);
-                        }
-                        return;
-                    }
-                    
-                    // Show confirmation dialog
-                    const isEnglish = englishBtn.classList.contains('active');
-                    const confirmMessage = isEnglish ? 
-                        'Are you sure you want to submit this evaluation? You cannot change it after submission.' :
-                        'Sigurado ka ba na gusto mong ipasa ang evaluation na ito? Hindi mo na ito mababago pagkatapos na maipasa.';
-                        
-                    if (!confirm(confirmMessage)) {
-                        e.preventDefault();
-                        return;
-                    }
-                    
-                    // Show loading state
-                    const btn = document.getElementById('submitBtn');
-                    if (btn) {
-                        const loadingText = isEnglish ? 'Submitting...' : 'Nagsusumite...';
-                        btn.innerHTML = loadingText;
-                        btn.disabled = true;
-                    }
-                });
-            }
-            
-            // Add visual feedback for radio selections
-            document.querySelectorAll('input[type="radio"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    // Remove previous selections styling in this group
-                    const groupName = this.name;
-                    document.querySelectorAll(`input[name="${groupName}"]`).forEach(r => {
-                        r.closest('label').style.backgroundColor = '';
-                        r.closest('label').style.transform = '';
-                    });
-                    
-                    // Style the selected option
-                    this.closest('label').style.backgroundColor = '#e8f5e8';
-                    this.closest('label').style.transform = 'scale(1.05)';
-                    
-                    // Mark row as completed
-                    const row = this.closest('tr');
-                    if (row) {
-                        row.style.backgroundColor = '#f8fff8';
-                    }
-                });
-            });
-            <?php endif; ?>
-        });
-    </script>
-</body>
-</html>
-                    $section1_questions = [
-                        '1.1' => 'Analyses and elaborates lesson without reading textbook in class.',
-                        '1.2' => 'Uses audio visual and devices to support and facilitate instructions.',
-                        '1.3' => 'Present ideas/ concepts clearly and convincingly from related fields and integrate subject matter with actual experience.',
-                        '1.4' => 'Make the students apply concepts to demonstrate understanding of the lesson.',
-                        '1.5' => 'Gives fair test and examination and return test results within the reasonable period.',
-                        '1.6' => 'Shows good command of the language of instruction.'
-                    ];
-                    
-                    foreach ($section1_questions as $key => $question):
+                    <?php foreach ($section1_questions as $key => $question): 
                         $field_name = 'rating1_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q1_' . substr($key, -1)] : '';
                     ?>
@@ -1086,15 +780,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php 
-                    $section2_questions = [
-                        '2.1' => 'Maintains responsive, disciplined and safe classroom atmosphere that is conducive to learning.',
-                        '2.2' => 'Follow the schematic way.',
-                        '2.3' => 'Stimulate students respect regard for the teacher.',
-                        '2.4' => 'Allow the students to express their opinions and views.'
-                    ];
-                    
-                    foreach ($section2_questions as $key => $question):
+                    <?php foreach ($section2_questions as $key => $question): 
                         $field_name = 'rating2_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q2_' . substr($key, -1)] : '';
                     ?>
@@ -1127,15 +813,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php 
-                    $section3_questions = [
-                        '3.1' => 'Accepts students as they are by recognizing their strength and weakness as individuals.',
-                        '3.2' => 'Inspires students to be self-reliant and self- disciplined.',
-                        '3.3' => 'Handles class and student\'s problem with fairness and understanding.',
-                        '3.4' => 'Shows genuine concern for the personal and other problems presented by the students outside classroom activities.'
-                    ];
-                    
-                    foreach ($section3_questions as $key => $question):
+                    <?php foreach ($section3_questions as $key => $question): 
                         $field_name = 'rating3_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q3_' . substr($key, -1)] : '';
                     ?>
@@ -1168,19 +846,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
                     </tr>
                 </thead>
                 <tbody>
-<?php
-                    $section4_questions = [
-                        '4.1' => 'Maintains emotional balance; neither over critical nor over-sensitive.',
-                        '4.2' => 'Is free from mannerisms that distract the teaching and learning process.',
-                        '4.3' => 'Is well groomed; clothes are clean and neat (Uses appropriate clothes that are becoming of a teacher).',
-                        '4.4' => 'Shows no favoritism.',
-                        '4.5' => 'Has good sense of humor and shows enthusiasm in teaching.',
-                        '4.6' => 'Has good diction, clear and modulated voice.'
-                    ];
-                    foreach ($section4_questions as $key => $question) {
+                    <?php foreach ($section4_questions as $key => $question): 
                         $field_name = 'rating4_' . substr($key, -1);
                         $current_value = $is_view_mode ? $existing_evaluation['q4_' . substr($key, -1)] : '';
-                ?>
+                    ?>
                         <tr>
                             <td><?php echo $key; ?> <?php echo $question; ?></td>
                             <td>
@@ -1197,26 +866,238 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
                                 <?php endif; ?>
                             </td>
                         </tr>
-                <?php
-                    }
-                ?>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Tagalog Content -->
+        <div class="tagalog">
+            <h2>1. Kakayahan sa Pagtuturo</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="70%">Pahayag</th>
+                        <th width="30%">Marka</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($section1_tagalog as $key => $question): 
+                        $field_name = 'rating1_' . substr($key, -1);
+                        $current_value = $is_view_mode ? $existing_evaluation['q1_' . substr($key, -1)] : '';
+                    ?>
+                        <tr>
+                            <td><?php echo $key; ?> <?php echo $question; ?></td>
+                            <td>
+                                <?php if ($is_view_mode): ?>
+                                    <div class="rating-display"><?php echo $current_value; ?></div>
+                                <?php else: ?>
+                                    <div class="rating-options">
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="1"> 1</label>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
             
-            <div class="comments-section">
-                <h2>5. Comments</h2>
-                <?php if ($is_view_mode): ?>
-                    <?php if (!empty($existing_evaluation['comments'])): ?>
-                        <div class="comments-display">
-                            <?php echo htmlspecialchars($existing_evaluation['comments']); ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="comments-display" style="color: #6c757d; font-style: italic;">
-                            No comments provided.
-                        </div>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <textarea name="comments" placeholder="Please provide any comments or suggestions here..."></textarea>
-                <?php endif; ?>
-            </div>
+            <h2>2. Kasanayan sa Pamamahala</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="70%">Pahayag</th>
+                        <th width="30%">Marka</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($section2_tagalog as $key => $question): 
+                        $field_name = 'rating2_' . substr($key, -1);
+                        $current_value = $is_view_mode ? $existing_evaluation['q2_' . substr($key, -1)] : '';
+                    ?>
+                        <tr>
+                            <td><?php echo $key; ?> <?php echo $question; ?></td>
+                            <td>
+                                <?php if ($is_view_mode): ?>
+                                    <div class="rating-display"><?php echo $current_value; ?></div>
+                                <?php else: ?>
+                                    <div class="rating-options">
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="1"> 1</label>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            
+            <h2>3. Kasanayan sa Paggabay</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="70%">Pahayag</th>
+                        <th width="30%">Marka</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($section3_tagalog as $key => $question): 
+                        $field_name = 'rating3_' . substr($key, -1);
+                        $current_value = $is_view_mode ? $existing_evaluation['q3_' . substr($key, -1)] : '';
+                    ?>
+                        <tr>
+                            <td><?php echo $key; ?> <?php echo $question; ?></td>
+                            <td>
+                                <?php if ($is_view_mode): ?>
+                                    <div class="rating-display"><?php echo $current_value; ?></div>
+                                <?php else: ?>
+                                    <div class="rating-options">
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="1"> 1</label>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            
+            <h2>4. Personal at Panlipunang Katangian/Kasanayan</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="70%">Pahayag</th>
+                        <th width="30%">Marka</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($section4_tagalog as $key => $question): 
+                        $field_name = 'rating4_' . substr($key, -1);
+                        $current_value = $is_view_mode ? $existing_evaluation['q4_' . substr($key, -1)] : '';
+                    ?>
+                        <tr>
+                            <td><?php echo $key; ?> <?php echo $question; ?></td>
+                            <td>
+                                <?php if ($is_view_mode): ?>
+                                    <div class="rating-display"><?php echo $current_value; ?></div>
+                                <?php else: ?>
+                                    <div class="rating-options">
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="5" required> 5</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="4"> 4</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="3"> 3</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="2"> 2</label>
+                                        <label><input type="radio" name="<?php echo $field_name; ?>" value="1"> 1</label>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
+        
+        <?php if ($is_view_mode && $existing_evaluation): ?>
+            <div class="comments-section">
+                <h3>Your Comments</h3>
+                <div class="comments-display">
+                    <?php echo !empty($existing_evaluation['comments']) ? nl2br(htmlspecialchars($existing_evaluation['comments'])) : 'No comments provided.'; ?>
+                </div>
+            </div>
+            
+            <div class="average-rating">
+                <h4>Overall Performance Rating</h4>
+                <div class="average-score"><?php echo $average_rating; ?></div>
+                <div class="performance-level"><?php echo $performance_level; ?></div>
+            </div>
+        <?php else: ?>
+            <div class="comments-section">
+                <h3>Comments/Suggestions (Optional)</h3>
+                <textarea name="comments" placeholder="Please provide any additional comments or suggestions for improvement..."></textarea>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (!$is_view_mode): ?>
+            </form>
+        <?php endif; ?>
+        
+        <div class="button-group">
+            <?php if (!$is_view_mode): ?>
+                <button type="submit" form="evaluationForm" class="btn">Submit Evaluation</button>
+            <?php endif; ?>
+            <a href="student_dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+        
+        <footer>
+            <p>© <?php echo date('Y'); ?> PHILTECH GMA - All rights reserved</p>
+            <p>This evaluation system is designed to improve teaching quality and student learning experience.</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Language toggle functionality
+        document.getElementById('english-btn').addEventListener('click', function() {
+            document.querySelectorAll('.english').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('.tagalog').forEach(el => el.style.display = 'none');
+            document.getElementById('english-btn').classList.add('active');
+            document.getElementById('tagalog-btn').classList.remove('active');
+        });
+        
+        document.getElementById('tagalog-btn').addEventListener('click', function() {
+            document.querySelectorAll('.english').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tagalog').forEach(el => el.style.display = 'block');
+            document.getElementById('english-btn').classList.remove('active');
+            document.getElementById('tagalog-btn').classList.add('active');
+        });
+        
+        // Form validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('evaluationForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    let valid = true;
+                    const radioGroups = {};
+                    
+                    // Collect all radio buttons
+                    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                        if (!radioGroups[radio.name]) {
+                            radioGroups[radio.name] = [];
+                        }
+                        radioGroups[radio.name].push(radio);
+                    });
+                    
+                    // Check if all required radio groups have a selection
+                    for (const groupName in radioGroups) {
+                        const groupSelected = radioGroups[groupName].some(radio => radio.checked);
+                        if (!groupSelected) {
+                            valid = false;
+                            // Highlight the first unselected group
+                            if (!radioGroups[groupName][0].closest('tr').classList.contains('missing')) {
+                                radioGroups[groupName][0].closest('tr').classList.add('missing');
+                                setTimeout(() => {
+                                    radioGroups[groupName][0].closest('tr').scrollIntoView({behavior: 'smooth', block: 'center'});
+                                }, 100);
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (!valid) {
+                        e.preventDefault();
+                        alert('Please complete all rating fields before submitting.');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
