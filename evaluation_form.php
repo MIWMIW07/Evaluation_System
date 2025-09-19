@@ -32,20 +32,20 @@ try {
     // Get teacher information
     $teacher_stmt = query("SELECT id, name, subject, program FROM teachers WHERE id = ?", [$teacher_id]);
     $teacher_info = fetch_assoc($teacher_stmt);
-    
+
     if (!$teacher_info) {
         throw new Exception("Teacher not found.");
     }
-    
+
     // Check if student has already evaluated this teacher
-    $check_stmt = query("SELECT * FROM evaluations WHERE user_id = ? AND teacher_id = ?", 
-                       [$_SESSION['user_id'], $teacher_id]);
+    $check_stmt = query("SELECT * FROM evaluations WHERE user_id = ? AND teacher_id = ?",
+        [$_SESSION['user_id'], $teacher_id]);
     $existing_evaluation = fetch_assoc($check_stmt);
-    
+
     if ($existing_evaluation) {
         $is_view_mode = true;
     }
-    
+
 } catch (Exception $e) {
     $error = $e->getMessage();
 }
@@ -57,10 +57,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
         if (!validate_csrf_token($_POST['csrf_token'])) {
             die('CSRF token validation failed');
         }
-        
+
         // Validate all required fields
         $ratings = [];
-        
+
         // Section 1: Teaching Competence (6 questions)
         for ($i = 1; $i <= 6; $i++) {
             $rating = intval($_POST["rating1_$i"] ?? 0);
@@ -69,7 +69,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             }
             $ratings["q1_$i"] = $rating;
         }
-        
+
         // Section 2: Management Skills (4 questions)
         for ($i = 1; $i <= 4; $i++) {
             $rating = intval($_POST["rating2_$i"] ?? 0);
@@ -78,7 +78,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             }
             $ratings["q2_$i"] = $rating;
         }
-        
+
         // Section 3: Guidance Skills (4 questions)
         for ($i = 1; $i <= 4; $i++) {
             $rating = intval($_POST["rating3_$i"] ?? 0);
@@ -87,7 +87,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             }
             $ratings["q3_$i"] = $rating;
         }
-        
+
         // Section 4: Personal and Social Characteristics (6 questions)
         for ($i = 1; $i <= 6; $i++) {
             $rating = intval($_POST["rating4_$i"] ?? 0);
@@ -96,9 +96,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             }
             $ratings["q4_$i"] = $rating;
         }
-        
+
         $comments = trim($_POST['comments'] ?? '');
-        
+
         // Insert evaluation using PostgreSQL syntax
         $insert_sql = "INSERT INTO evaluations (user_id, student_id, student_name, section, program, teacher_id, subject, 
                       q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
@@ -107,9 +107,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
                       q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
                       comments) 
                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
+
         $params = [
-            $_SESSION['user_id'], $_SESSION['student_id'], $_SESSION['full_name'], 
+            $_SESSION['user_id'], $_SESSION['student_id'], $_SESSION['full_name'],
             $_SESSION['section'], $_SESSION['program'], $teacher_id, $teacher_info['subject'],
             $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
             $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
@@ -117,20 +117,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             $ratings['q4_1'], $ratings['q4_2'], $ratings['q4_3'], $ratings['q4_4'], $ratings['q4_5'], $ratings['q4_6'],
             $comments
         ];
-        
+
         $stmt = query($insert_sql, $params);
-        
+
         if ($stmt) {
             $success = "Evaluation submitted successfully! Thank you for your feedback.";
             // Reload to show in view mode
-            $check_stmt = query("SELECT * FROM evaluations WHERE user_id = ? AND teacher_id = ?", 
-                               [$_SESSION['user_id'], $teacher_id]);
+            $check_stmt = query("SELECT * FROM evaluations WHERE user_id = ? AND teacher_id = ?",
+                [$_SESSION['user_id'], $teacher_id]);
             $existing_evaluation = fetch_assoc($check_stmt);
             $is_view_mode = true;
         } else {
             throw new Exception("Database error occurred while saving your evaluation.");
         }
-        
+
     } catch (Exception $e) {
         $error = $e->getMessage();
     }
@@ -207,7 +207,7 @@ $performance_level = '';
 if ($is_view_mode && $existing_evaluation) {
     $total_rating = 0;
     $total_questions = 0;
-    
+
     // Sum all ratings
     for ($i = 1; $i <= 6; $i++) {
         $total_rating += $existing_evaluation["q1_$i"];
@@ -225,9 +225,9 @@ if ($is_view_mode && $existing_evaluation) {
         $total_rating += $existing_evaluation["q4_$i"];
         $total_questions++;
     }
-    
+
     $average_rating = round($total_rating / $total_questions, 2);
-    
+
     if ($average_rating >= 4.5) {
         $performance_level = 'Outstanding';
     } else if ($average_rating >= 4.0) {
@@ -645,9 +645,9 @@ footer {
             <h1><?php echo $is_view_mode ? 'View Evaluation' : 'TEACHER\'S PERFORMANCE EVALUATION BY THE STUDENTS'; ?></h1>
 
             <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #2196F3;">
-                <h3 style="color: #1976D2; margin-bottom: 10px;">👨‍🏫 Evaluating: <?php echo htmlspecialchars($teacher['name']); ?></h3>
-                <p style="margin: 5px 0;"><strong>Subject:</strong> <?php echo htmlspecialchars($teacher['subject']); ?></p>
-                <p style="margin: 5px 0;"><strong>Program:</strong> <?php echo htmlspecialchars($teacher['program']); ?></p>
+                <h3 style="color: #1976D2; margin-bottom: 10px;">👨‍🏫 Evaluating: <?php echo htmlspecialchars($teacher_info['name']); ?></h3>
+                <p style="margin: 5px 0;"><strong>Subject:</strong> <?php echo htmlspecialchars($teacher_info['subject']); ?></p>
+                <p style="margin: 5px 0;"><strong>Program:</strong> <?php echo htmlspecialchars($teacher_info['program']); ?></p>
                 <p style="margin: 5px 0;"><strong>Student:</strong> <?php echo htmlspecialchars($_SESSION['full_name']); ?> (<?php echo htmlspecialchars($_SESSION['student_id']); ?>)</p>
             </div>
 
@@ -709,13 +709,20 @@ footer {
             </div>
         <?php endif; ?>
 
-        <?php if ($is_view_mode && empty($success)): ?>
-            <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); color: #856404; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #ffc107;">
-                <h3>ℹ️ Already Evaluated</h3>
-                <p>You have already submitted an evaluation for this teacher. You can view your evaluation or go back to the dashboard.</p>
-                <p style="margin-top: 15px;">
-                    <a href="student_dashboard.php" style="background: #ffc107; color: #856404; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;">← Back to Dashboar[...]
-                </p>
+        <?php if ($is_view_mode && $existing_evaluation): ?>
+            <div class="evaluation-results" style="background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%); padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #4caf50;">
+                <h3>📊 Your Evaluation Summary</h3>
+                <p><strong>Average Rating:</strong> <?php echo $average_rating; ?>/5 - <strong><?php echo $performance_level; ?></strong></p>
+                <div class="rating-scale" style="margin: 20px 0;">
+                    <div class="rating-item">5 - Outstanding</div>
+                    <div class="rating-item">4 - Very Satisfactory</div>
+                    <div class="rating-item">3 - Good/Satisfactory</div>
+                    <div class="rating-item">2 - Fair</div>
+                    <div class="rating-item">1 - Unsatisfactory</div>
+                </div>
+                <p><strong>Comments:</strong></p>
+                <p style="background: #f9f9f9; padding: 10px; border-radius: 5px;"><?php echo nl2br(htmlspecialchars($existing_evaluation['comments'])); ?></p>
+                <p style="margin-top: 15px;"><a href="student_dashboard.php" style="background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashboard</a></p>
             </div>
         <?php endif; ?>
 
