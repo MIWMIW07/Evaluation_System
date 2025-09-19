@@ -247,7 +247,7 @@ if ($is_view_mode && $existing_evaluation) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher's Performance Evaluation - <?php echo htmlspecialchars($teacher_info['name']); ?></title>
+    <title>Teacher's Performance Evaluation - <?php echo htmlspecialchars($teacher['name']); ?></title>
 </head>
 <body>
     <style>
@@ -605,9 +605,9 @@ footer {
             <h1>TEACHER'S PERFORMANCE EVALUATION BY THE STUDENTS</h1>
 
             <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #2196F3;">
-                <h3 style="color: #1976D2; margin-bottom: 10px;">👨‍🏫 Evaluating: <?php echo htmlspecialchars($teacher_info['name']); ?></h3>
-                <p style="margin: 5px 0;"><strong>Subject:</strong> <?php echo htmlspecialchars($teacher_info['subject']); ?></p>
-                <p style="margin: 5px 0;"><strong>Program:</strong> <?php echo htmlspecialchars($teacher_info['program']); ?></p>
+                <h3 style="color: #1976D2; margin-bottom: 10px;">👨‍🏫 Evaluating: <?php echo htmlspecialchars($teacher['name']); ?></h3>
+                <p style="margin: 5px 0;"><strong>Subject:</strong> <?php echo htmlspecialchars($teacher['subject']); ?></p>
+                <p style="margin: 5px 0;"><strong>Program:</strong> <?php echo htmlspecialchars($teacher['program']); ?></p>
                 <p style="margin: 5px 0;"><strong>Student:</strong> <?php echo htmlspecialchars($_SESSION['full_name']); ?> (<?php echo htmlspecialchars($_SESSION['student_id']); ?>)</p>
             </div>
 
@@ -640,7 +640,7 @@ footer {
             </div>
         <?php endif; ?>
 
-        <?php if ($is_view_mode && empty($success)): ?>
+        <?php if ($already_evaluated && empty($success)): ?>
             <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); color: #856404; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #ffc107;">
                 <h3>ℹ️ Already Evaluated</h3>
                 <p>You have already submitted an evaluation for this teacher. You can view your evaluation or go back to the dashboard.</p>
