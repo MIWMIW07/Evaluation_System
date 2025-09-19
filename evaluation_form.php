@@ -116,7 +116,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
             $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
             $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
-            $ratings['q4_1'], $ratings['q4_2'], $ratings['极4_3'], $ratings['q4_4'], $ratings['q4_5'], $ratings['q4_6'],
+            $ratings['q4_1'], $ratings['q4_2'], $ratings['4_3'], $ratings['q4_4'], $ratings['q4_5'], $ratings['q4_6'],
             $comments
         ];
         
@@ -350,7 +350,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
         footer {
             text-align: center;
             margin-top: 20px;
-            color: #7f极c8d;
+            color: #7fc8dd;
             font-size: 0.9em;
         }
 
@@ -533,7 +533,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
             background: white;
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 极 2px 4px rgba(0,0,0,0.1);
+            box-shadow:  2px 4px rgba(0,0,0,0.1);
         }
 
         .info-item label {
@@ -551,7 +551,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
 
         /* Evaluation status */
         .evaluation-status {
-            background: linear-gradient(135deg, #d4edda 0%, #c3极6cb 100%);
+            background: linear-gradient(135deg, #d4edda 0%, #6c757d 100%);
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 25px;
@@ -761,7 +761,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                 <div class="view-mode-rating"><?php echo $existing_evaluation['q1_1']; ?></div>
                             <?php else: ?>
                                 <div class="rating-options">
-                                    <label><input type="radio" name="q1_1" value="5"> 5</label>
+                                    <label><input type="radio" name="q1_1" value="5" class="required-rating"> 5</label>
                                     <label><input type="radio" name="q1_1" value="4"> 4</label>
                                     <label><input type="radio" name="q1_1" value="3"> 3</label>
                                     <label><input type="radio" name="q1_1" value="2"> 2</label>
@@ -796,7 +796,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q1_3" value="5"> 5</label>
                                     <label><input type="radio" name="q1_3" value="4"> 4</label>
                                     <label><input type="radio" name="q1_3" value="3"> 3</label>
-                                    <label><input type="radio" name="q1_3" value="2"> 2</label>
+                                    <label><input type="adio" name="q1_3" value="2"> 2</label>
                                     <label><input type="radio" name="q1_3" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
@@ -827,7 +827,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                 <div class="rating-options">
                                     <label><input type="radio" name="q1_5" value="5"> 5</label>
                                     <label><input type="radio" name="q1_5" value="4"> 4</label>
-                                    <label><input type="radio" name="q1_5" value="3"> 3</极>
+                                    <label><input type="radio" name="q1_5" value="3"> 3</>
                                     <label><input type="radio" name="q1_5" value="2"> 2</label>
                                     <label><input type="radio" name="q1_5" value="1"> 1</label>
                                 </div>
@@ -905,7 +905,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q2_3" value="5"> 5</label>
                                     <label><input type="radio" name="q2_3" value="4"> 4</label>
                                     <label><input type="radio" name="q2_3" value="3"> 3</label>
-                                    <label><input type="radio" name="q2_3" value="2"> 2</label>
+                                    <label><input type="radio" name="q2_3"="2"> 2</label>
                                     <label><input type="radio" name="q2_3" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
@@ -956,7 +956,6 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                             <?php endif; ?>
                         </td>
                     </tr>
-                    </tbody>
                     <tr id="question-3-2" class="<?php echo $is_view_mode ? '' : 'required-rating'; ?>">
                         <td>3.2 Inspires students to be self-reliant and self- disciplined.</td>
                         <td>
@@ -985,7 +984,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q3_3" value="3"> 3</label>
                                     <label><input type="radio" name="q3_3" value="2"> 2</label>
                                     <label><input type="radio" name="q3_3" value="1"> 1</label>
-                                </极>
+                                </>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -1013,7 +1012,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
             <table>
                 <thead>
                     <tr>
-                        <th width="70%">Statement</极>
+                        <th width="70%">Statement</>
                         <th width="30%">Rating</th>
                     </tr>
                 </thead>
@@ -1054,7 +1053,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                         <td>4.3 Is well groomed; clothes are clean and neat (Uses appropriate clothes that are becoming of a teacher).</td>
                         <td>
                             <?php if ($is_view_mode): ?>
-                                <div class="view-mode-rating"><?php echo $existing_evaluation['q4极3']; ?></div>
+                                <div class="view-mode-rating"><?php echo $existing_evaluation['q43']; ?></div>
                             <?php else: ?>
                                 <div class="rating-options">
                                     <label><input type="radio" name="q4_3" value="5"> 5</label>
@@ -1076,8 +1075,8 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q4_4" value="5"> 5</label>
                                     <label><input type="radio" name="q4_4" value="4"> 4</label>
                                     <label><input type="radio" name="q4_4" value="3"> 3</label>
-                                    <label><input type="radio" name="q4_4极" value="2"> 2</label>
-                                    <label><input type="radio" name="q极4_4" value="1"> 1</label>
+                                    <label><input type="radio" name="q4_4" value="2"> 2</label>
+                                    <label><input type="radio" name="q4_4" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
                         </td>
@@ -1090,7 +1089,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                             <?php else: ?>
                                 <div class="rating-options">
                                     <label><input type="radio" name="q4_5" value="5"> 5</label>
-                                    <label><input type="radio" name="q4_5" value="4极"> 4</label>
+                                    <label><input type="radio" name="q4_5" value="4"> 4</label>
                                     <label><input type="radio" name="q4_5" value="3"> 3</label>
                                     <label><input type="radio" name="q4_5" value="2"> 2</label>
                                     <label><input type="radio" name="q4_5" value="1"> 1</label>
@@ -1185,7 +1184,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                 <div class="rating-options">
                                     <label><input type="radio" name="q1_2" value="5"> 5</label>
                                     <label><input type="radio" name="q1_2" value="4"> 4</label>
-                                    <label><input type="radio极" name="q1_2" value="3"> 3</label>
+                                    <label><input type="radio" name="q1_2" value="3"> 3</label>
                                     <label><input type="radio" name="q1_2" value="2"> 2</label>
                                     <label><input type="radio" name="q1_2" value="1"> 1</label>
                                 </div>
@@ -1200,9 +1199,9 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                             <?php else: ?>
                                 <div class="rating-options">
                                     <label><input type="radio" name="q1_3" value="5"> 5</label>
-                                    <label><input type="radio" name="q1_3" value极4"> 4</label>
+                                    <label><input type="radio" name="q1_3" value4"> 4</label>
                                     <label><input type="radio" name="q1_3" value="3"> 3</label>
-                                    <极abel><input type="radio" name="q1_3" value="2"> 2</label>
+                                    <abel><input type="radio" name="q1_3" value="2"> 2</label>
                                     <label><input type="radio" name="q1_3" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
@@ -1224,7 +1223,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                             <?php endif; ?>
                         </td>
                     </tr>
-                    <tr id="question-1-5-t" class="<?php echo $is_view_mode ? '' : '极equired-rating'; ?>">
+                    <tr id="question-1-5-t" class="<?php echo $is_view_mode ? '' : 'equired-rating'; ?>">
                         <td>1.5 Nagbibigay ng patas na pagsusulit at pagsusuri at ibalik ang mga resulta ng pagsusulit sa loob ng makatawirang panahon.</td>
                         <td>
                             <?php if ($is_view_mode): ?>
@@ -1234,7 +1233,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q1_5" value="5"> 5</label>
                                     <label><input type="radio" name="q1_5" value="4"> 4</label>
                                     <label><input type="radio" name="q1_5" value="3"> 3</label>
-                                    <label><input type="radio" name="q1_5极" value="2"> 2</label>
+                                    <label><input type="radio" name="q1_5" value="2"> 2</label>
                                     <label><input type="radio" name="q1_5" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
@@ -1251,7 +1250,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q1_6" value="4"> 4</label>
                                     <label><input type="radio" name="q1_6" value="3"> 3</label>
                                     <label><input type="radio" name="q1_6" value="2"> 2</label>
-                                    <label><input type="radio极" name="q1_6" value="1"> 1</label>
+                                    <label><input type="radio" name="q1_6" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
                         </td>
@@ -1273,7 +1272,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                         <td>2.1 Pinapanatiling maayos, disiplinado at ligtas ang silid-aralan upang magkaraoon ng maayos at maaliwalas na pagaaral.</td>
                         <td>
                             <?php if ($is_view_mode): ?>
-                                <div class="view-mode-rating"><?php echo $existing_evaluation['q2极1']; ?></div>
+                                <div class="view-mode-rating"><?php echo $existing_evaluation['q21']; ?></div>
                             <?php else: ?>
                                 <div class="rating-options">
                                     <label><input type="radio" name="q2_1" value="5"> 5</label>
@@ -1303,7 +1302,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                     </tr>
                     <tr id="question-2-3-t" class="<?php echo $is_view_mode ? '' : 'required-rating'; ?>">
                         <td>2.3 Hinuhubog sa mga mag-aaral ang respeto at paggalang sa mga guro.</td>
-                        <极>
+                        <>
                             <?php if ($is_view_mode): ?>
                                 <div class="view-mode-rating"><?php echo $existing_evaluation['q2_3']; ?></div>
                             <?php else: ?>
@@ -1312,7 +1311,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q2_3" value="4"> 4</label>
                                     <label><input type="radio" name="q2_3" value="3"> 3</label>
                                     <label><input type="radio" name="q2_3" value="2"> 2</label>
-                                    <label><input type="radio" name="q2_3" value="极"> 1</label>
+                                    <label><input type="radio" name="q2_3" value=""> 1</label>
                                 </div>
                             <?php endif; ?>
                         </td>
@@ -1357,12 +1356,12 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q3_1" value="4"> 4</label>
                                     <label><input type="radio" name="q3_1" value="3"> 3</label>
                                     <label><input type="radio" name="q3_1" value="2"> 2</label>
-                                    <label><input type="radio" name="q3_1极" value="1"> 1</label>
+                                    <label><input type="radio" name="q3_1" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
                         </td>
                     </tr>
-                    <tr id="question-极-2-t" class="<?php echo $is_view_mode ? '' : 'required-rating'; ?>">
+                    <tr id="question--2-t" class="<?php echo $is_view_mode ? '' : 'required-rating'; ?>">
                         <td>3.2 Pagpapakita ng tiwala and kaayusan sa sarili</td>
                         <td>
                             <?php if ($is_view_mode): ?>
@@ -1371,7 +1370,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                 <div class="rating-options">
                                     <label><input type="radio" name="q3_2" value="5"> 5</label>
                                     <label><input type="radio" name="q3_2" value="4"> 4</label>
-                                    <label><input type="radio" name="q3_2极" value="3"> 3</label>
+                                    <label><input type="radio" name="q3_2" value="3"> 3</label>
                                     <label><input type="radio" name="q3_2" value="2"> 2</label>
                                     <label><input type="radio" name="q3_2" value="1"> 1</label>
                                 </div>
@@ -1385,8 +1384,8 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                 <div class="view-mode-rating"><?php echo $existing_evaluation['q3_3']; ?></div>
                             <?php else: ?>
                                 <div class="rating-options">
-                                    <label><input type="radio" name="q3_3" value极5"> 5</label>
-                                    <label><input type="radio" name="q3极3" value="4"> 4</label>
+                                    <label><input type="radio" name="q3_3" value5"> 5</label>
+                                    <label><input type="radio" name="q33" value="4"> 4</label>
                                     <label><input type="radio" name="q3_3" value="3"> 3</label>
                                     <label><input type="radio" name="q3_3" value="2"> 2</label>
                                     <label><input type="radio" name="q3_3" value="1"> 1</label>
@@ -1466,7 +1465,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q4_3" value="4"> 4</label>
                                     <label><input type="radio" name="q4_3" value="3"> 3</label>
                                     <label><input type="radio" name="q4_3" value="2"> 2</label>
-                                    <label><input type="radio" name="q4_3" value="1"> 1极</label>
+                                    <label><input type="radio" name="q4_3" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
                         </td>
@@ -1484,7 +1483,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q4_4" value="2"> 2</label>
                                     <label><input type="radio" name="q4_4" value="1"> 1</label>
                                 </div>
-                            <?极 endif; ?>
+                            <? endif; ?>
                         </td>
                     </tr>
                     <tr id="question-4-5-t" class="<?php echo $is_view_mode ? '' : 'required-rating'; ?>">
@@ -1495,10 +1494,10 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                             <?php else: ?>
                                 <div class="rating-options">
                                     <label><input type="radio" name="q4_5" value="5"> 5</label>
-                                    <label><input type="radio" name="q4_5极" value="4"> 4</label>
-                                    <label><input type="radio" name="q4_5" value="3极"> 3</label>
+                                    <label><input type="radio" name="q4_5" value="4"> 4</label>
+                                    <label><input type="radio" name="q4_5" value="3"> 3</label>
                                     <label><input type="radio" name="q4_5" value="2"> 2</label>
-                                    <label><input type="radio" name="q4极5" value="1"> 1</label>
+                                    <label><input type="radio" name="q45" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
                         </td>
@@ -1513,7 +1512,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q4_6" value="5"> 5</label>
                                     <label><input type="radio" name="q4_6" value="4"> 4</label>
                                     <label><input type="radio" name="q4_6" value="3"> 3</label>
-                                    <label><input type="radio" name="q4_6" value="2"> 2极</label>
+                                    <label><input type="radio" name="q4_6" value="2"> 2</label>
                                     <label><input type="radio" name="q4_6" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
@@ -1723,7 +1722,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                 if (negativeCommentTl && !negativeCommentTl.value.trim()) {
                     negativeCommentTl.style.borderColor = '#e74c3c';
                 } else if (negativeCommentTl) {
-                    negativeCommentTl.style.border极olor = '#ddd';
+                    negativeCommentTl.style.borderolor = '#ddd';
                 }
             }
 
