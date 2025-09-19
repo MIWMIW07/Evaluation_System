@@ -1615,23 +1615,57 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
         // Language toggle functionality
         const englishBtn = document.getElementById('english-btn');
         const tagalogBtn = document.getElementById('tagalog-btn');
+
+        // Function to sync radio buttons from source to target
+        function syncRadios(sourceClass, targetClass) {
+            document.querySelectorAll(`.${sourceClass} input[type="radio"]`).forEach(radio => {
+                if (radio.checked) {
+                    const name = radio.name;
+                    const value = radio.value;
+                    const targetRadio = document.querySelector(`.${targetClass} input[name="${name}"][value="${value}"]`);
+                    if (targetRadio) {
+                        targetRadio.checked = true;
+                    }
+                }
+            });
+        }
+
+        // Function to sync comments from source to target
+        function syncComments(sourceComment, targetComment) {
+            if (sourceComment && targetComment) {
+                targetComment.value = sourceComment.value;
+            }
+        }
+
         if (englishBtn) {
             englishBtn.addEventListener('click', function() {
+                // Sync from Tagalog to English
+                syncRadios('tagalog', 'english');
+                syncComments(positiveCommentTl, positiveComment);
+                syncComments(negativeCommentTl, negativeComment);
+
                 document.querySelectorAll('.english').forEach(el => el.style.display = 'block');
                 document.querySelectorAll('.tagalog').forEach(el => el.style.display = 'none');
                 englishBtn.classList.add('active');
                 tagalogBtn.classList.remove('active');
                 updateProgress();
+                highlightIncompleteComments();
             });
         }
 
         if (tagalogBtn) {
             tagalogBtn.addEventListener('click', function() {
+                // Sync from English to Tagalog
+                syncRadios('english', 'tagalog');
+                syncComments(positiveComment, positiveCommentTl);
+                syncComments(negativeComment, negativeCommentTl);
+
                 document.querySelectorAll('.english').forEach(el => el.style.display = 'none');
                 document.querySelectorAll('.tagalog').forEach(el => el.style.display = 'block');
                 englishBtn.classList.remove('active');
                 tagalogBtn.classList.add('active');
                 updateProgress();
+                highlightIncompleteComments();
             });
         }
 
