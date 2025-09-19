@@ -197,7 +197,7 @@ try {
         .actions-container {
             display: flex;
             gap: 15px;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -228,6 +228,65 @@ try {
         .btn-secondary:hover {
             background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
             box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
+        }
+        
+        .btn-enhanced {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+            padding: 15px 30px;
+            font-size: 1.1em;
+        }
+        
+        .btn-enhanced:hover {
+            background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
+            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.5);
+        }
+        
+        .report-generation-section {
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            border-left: 5px solid #4CAF50;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card h4 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        
+        .feature-card p {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .note-box {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .note-box p {
+            color: #856404;
+            font-size: 0.9em;
+            margin: 0;
         }
         
         .summary-table {
@@ -346,6 +405,10 @@ try {
                 align-items: center;
             }
             
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            
             .summary-table {
                 font-size: 0.85em;
             }
@@ -405,9 +468,45 @@ try {
         </div>
         
         <div class="actions-container">
-            <a href="generate_report.php" class="btn">📥 Download CSV Report</a>
             <a href="database_setup.php" class="btn btn-secondary">🔧 Database Setup</a>
             <a href="#" onclick="location.reload();" class="btn btn-secondary">🔄 Refresh Data</a>
+        </div>
+
+        <!-- Enhanced Report Generation Section -->
+        <div class="report-generation-section">
+            <h2 style="color: #2c3e50; margin-bottom: 20px; display: flex; align-items: center;">
+                📊 Advanced Report Generation
+            </h2>
+            <p style="color: #666; margin-bottom: 20px;">Generate comprehensive evaluation reports organized by teacher and section. Each report includes individual student evaluations formatted for printing.</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>📁 Organized Folders</h4>
+                    <p>Creates folders for each teacher with subfolders for each section they teach.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>📄 Individual Reports</h4>
+                    <p>Generates printable HTML reports for each student's evaluation.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>📈 Section Summaries</h4>
+                    <p>Creates summary reports showing section-wide evaluation statistics.</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="generate_report.php" class="btn btn-enhanced">
+                    🚀 Generate Organized Reports
+                </a>
+            </div>
+            
+            <div class="note-box">
+                <p>
+                    <strong>💡 Note:</strong> This will create a complete folder structure with individual evaluation reports that can be easily printed or shared. The process may take a few moments for large datasets.
+                </p>
+            </div>
         </div>
         
         <h2>📈 Teacher Evaluation Summary</h2>
@@ -550,6 +649,13 @@ try {
                     const teacherName = this.children[1].textContent;
                     console.log(`Clicked on ${teacherName}`);
                 });
+            });
+
+            // Add confirmation for report generation
+            document.querySelector('.btn-enhanced').addEventListener('click', function(e) {
+                if (!confirm('Generate organized evaluation reports? This may take a few moments for large datasets.')) {
+                    e.preventDefault();
+                }
             });
         });
     </script>
