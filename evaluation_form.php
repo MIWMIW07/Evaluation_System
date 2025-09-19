@@ -733,6 +733,40 @@ footer {
                 }
                 ?>
                 <h4 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px;">Ratings Overview</h4>
+                <div style="margin-bottom: 30px; padding: 20px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+                    <h5 style="color: #2c3e50; margin-bottom: 15px;">Average Ratings Trend</h5>
+                    <svg width="100%" height="200" viewBox="0 0 400 200" style="border: 1px solid #ecf0f1; border-radius: 8px;">
+                        <defs>
+                            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#2ecc71;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <?php
+                        $sections = [$section1_avg, $section2_avg, $section3_avg, $section4_avg];
+                        $labels = ['Teaching', 'Management', 'Guidance', 'Personal'];
+                        $points = '';
+                        $lines = '';
+                        for ($i = 0; $i < count($sections); $i++) {
+                            $x = 50 + $i * 100;
+                            $y = 150 - ($sections[$i] / 5) * 100;
+                            $points .= ($i > 0 ? ' ' : '') . "$x,$y";
+                            // Draw grid lines
+                            echo "<line x1='$x' y1='50' x2='$x' y2='150' stroke='#ecf0f1' stroke-width='1' />";
+                            echo "<text x='$x' y='170' text-anchor='middle' font-size='12' fill='#7f8c8d'>{$labels[$i]}</text>";
+                            echo "<text x='30' y='" . (155 - ($i * 25)) . "' text-anchor='end' font-size='10' fill='#7f8c8d'>" . (5 - $i) . "</text>";
+                        }
+                        echo "<polyline points='$points' fill='none' stroke='url(#lineGradient)' stroke-width='3' />";
+                        // Draw points
+                        $points_array = explode(' ', $points);
+                        foreach ($points_array as $point) {
+                            list($x, $y) = explode(',', $point);
+                            echo "<circle cx='$x' cy='$y' r='5' fill='#3498db' />";
+                            echo "<circle cx='$x' cy='$y' r='8' fill='none' stroke='#3498db' stroke-width='2' opacity='0.5' />";
+                        }
+                        ?>
+                    </svg>
+                </div>
                 <?php
                 display_section_bar('1. Teaching Competence', $section1_avg);
                 display_section_bar('2. Management Skills', $section2_avg);
