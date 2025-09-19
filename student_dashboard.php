@@ -103,6 +103,19 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            height: 50px;
+            width: auto;
+        }
         
         .user-info {
             background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
@@ -382,14 +395,23 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             .header h1 {
                 font-size: 1.8em;
             }
+
+             .header-content {
+                flex-direction: column;
+                text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎓 Student Dashboard</h1>
-            <p>Teacher Evaluation System</p>
+            <div class="header-content">
+                <img src="logo.png" alt="School Logo" class="logo">
+                <div>
+                    <h1>Student Dashboard</h1>
+                    <p>Teacher Evaluation System</p>
+                </div>
+            </div>
         </div>
         
         <div class="user-info">
