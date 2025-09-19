@@ -1,82 +1,94 @@
-# .htaccess file for /reports directory
-# This file should be placed in the /reports folder to enable directory browsing
+# .htaccess for PHP Teacher Evaluation System on Railway
+# This prevents infinite redirect loops and supports reports directory
 
-# Enable directory browsing and symlink following
-Options +Indexes +FollowSymLinks
-AllowOverride All
+RewriteEngine On
 
-# Set index files priority
-DirectoryIndex index.html
+# Prevent infinite loops by checking if we're already processing a redirect
+RewriteCond %{ENV:REDIRECT_STATUS} 200
+RewriteRule ^.*$ - [L]
 
-# Allow access to all users
-Order allow,deny
-Allow from all
-
-# Allow access to HTML and CSV files
-<Files "*.html">
-    Order allow,deny
-    Allow from all
-    Header set Content-Type "text/html; charset=UTF-8"
-</Files>
-
-<Files "*.csv">
-    Order allow,deny
-    Allow from all
-    Header set Content-Type "text/csv; charset=UTF-8"
-    Header set Content-Disposition "inline"
-</Files>
-
-# Prevent access to PHP files in reports directory for security
-<Files "*.php">
-    Order allow,deny
-    Deny from all
-</Files>
-
-# Prevent access to .htaccess files
-<Files ".htaccess">
-    Order allow,deny
-    Deny from all
-</Files>
-
-# Custom styling for directory listings
-IndexOptions FancyIndexing HTMLTable SuppressDescription NameWidth=50 DescriptionWidth=20 SuppressLastModified SuppressSize
-
-# Custom index styling
-IndexStyleSheet "https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
-
-# Add custom icons for different file types
-AddIcon /icons/html.png .html
-AddIcon /icons/csv.png .csv
-AddIcon /icons/folder.png ^^DIRECTORY^^
-
-# Security headers for reports
-<IfModule mod_headers.c>
-    Header always set X-Content-Type-Options nosniff
-    Header always set X-Frame-Options SAMEORIGIN
-    Header always set X-XSS-Protection "1; mode=block"
-    Header always set Cache-Control "public, max-age=3600"
-    Header always set Referrer-Policy "same-origin"
-</IfModule>
-
-# Enable compression for HTML and CSV files
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html
-    AddOutputFilterByType DEFLATE text/csv
-    AddOutputFilterByType DEFLATE text/plain
-</IfModule>
-
-# Set proper MIME types
-<IfModule mod_mime.c>
-    AddType text/html .html
-    AddType text/csv .csv
-</IfModule>
-
-# Prevent direct access to sensitive files that might be generated
-<FilesMatch "\.(bak|backup|old|tmp|log)$">
+# Security: Block access to sensitive files
+<FilesMatch "^\.">
     Order allow,deny
     Deny from all
 </FilesMatch>
 
-# Custom error pages for this directory
-ErrorDocument 403 "<html><body><h1>Access Denied</h1><p>You don't have permission to access this report.</p><p><a href='/admin.php'>← Back to Admin Dashboard</a></p></body></html>"
-ErrorDocument 404 "<html><body><h1>Report Not Found</h1><p>The requested evaluation report was not found.</p><p><a href='/reports/'>← Back to Reports Index</a></p></body></html>"
+<FilesMatch "\.(sql|log|conf|ini|bak|backup)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block access to includes directory from direct web access
+RewriteRule ^includes/ - [F,L]
+
+# Allow access to reports directory - using RewriteRule instead of Directory
+RewriteCond %{REQUEST_URI} ^/reports/
+RewriteRule ^reports/(.*)$ reports/$1 [L]
+
+# Special rules for reports directory access
+RewriteCond %{REQUEST_URI} ^/reports/
+RewriteRule ^reports/(.*)$ reports/$1 [L]
+
+# Error pages
+ErrorDocument 404 /error.php?code=404
+ErrorDocument 500 /error.php?code=500
+
+# PHP settings for Railway
+php_value upload_max_filesize 10M
+php_value post_max_size 10M
+php_value max_execution_time 300
+php_value memory_limit 256M
+
+# Cache static files
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType text/html "access plus 1 hour"
+    ExpiresByType text/csv "access plus 1 hour"
+</IfModule>
+
+# Gzip compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/csv
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options SAMEORIGIN
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# MIME types for better file handling
+<IfModule mod_mime.c>
+    AddType text/html .html
+    AddType text/csv .csv
+    AddType application/json .json
+</IfModule>
+
+# Prevent hotlinking of report files (optional security measure)
+# Comment out the next 4 lines if you have issues accessing reports
+#RewriteCond %{HTTP_REFERER} !^$
+#RewriteCond %{HTTP_REFERER} !^https?://(www\.)?yourdomain\.com [NC]
+#RewriteCond %{REQUEST_URI} ^/reports/.*\.(html|csv)$ [NC]
+#RewriteRule ^reports/.*$ - [F,L]
+
+# Custom 403 page for reports access denied
+ErrorDocument 403 "Access to this report file is restricted."
