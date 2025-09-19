@@ -796,7 +796,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q1_3" value="5"> 5</label>
                                     <label><input type="radio" name="q1_3" value="4"> 4</label>
                                     <label><input type="radio" name="q1_3" value="3"> 3</label>
-                                    <label><input type="adio" name="q1_3" value="2"> 2</label>
+                                    <label><input type="radio" name="q1_3" value="2"> 2</label>
                                     <label><input type="radio" name="q1_3" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
@@ -827,7 +827,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                 <div class="rating-options">
                                     <label><input type="radio" name="q1_5" value="5"> 5</label>
                                     <label><input type="radio" name="q1_5" value="4"> 4</label>
-                                    <label><input type="radio" name="q1_5" value="3"> 3</>
+                                    <label><input type="radio" name="q1_5" value="3"> 3</label>
                                     <label><input type="radio" name="q1_5" value="2"> 2</label>
                                     <label><input type="radio" name="q1_5" value="1"> 1</label>
                                 </div>
@@ -973,7 +973,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                         </td>
                     </tr>
                     <tr id="question-3-3" class="<?php echo $is_view_mode ? '' : 'required-rating'; ?>">
-                        <td3.3 Handles class and student's problem with fairness and understanding.</td>
+                        <td>3.3 Handles class and student's problem with fairness and understanding.</td>
                         <td>
                             <?php if ($is_view_mode): ?>
                                 <div class="view-mode-rating"><?php echo $existing_evaluation['q3_3']; ?></div>
@@ -1751,6 +1751,20 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                     if (modal) modal.style.display = 'none';
                 });
             }
+
+            // Synchronize radio button selections between English and Tagalog sections
+            const allRadioInputs = document.querySelectorAll('input[type="radio"]');
+            allRadioInputs.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const name = e.target.name;
+                    const value = e.target.value;
+                    // Find the corresponding radio button in the other language section
+                    const correspondingRadio = document.querySelector(`input[type="radio"][name="${name}"][value="${value}"]:not(#${e.target.id})`);
+                    if (correspondingRadio) {
+                        correspondingRadio.checked = true;
+                    }
+                });
+            });
         });
     </script>
 </body>
