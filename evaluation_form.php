@@ -1621,6 +1621,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                 document.querySelectorAll('.tagalog').forEach(el => el.style.display = 'none');
                 englishBtn.classList.add('active');
                 tagalogBtn.classList.remove('active');
+                updateProgress();
             });
         }
 
@@ -1630,7 +1631,38 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                 document.querySelectorAll('.tagalog').forEach(el => el.style.display = 'block');
                 englishBtn.classList.remove('active');
                 tagalogBtn.classList.add('active');
+                updateProgress();
             });
+        }
+
+        // Sync radio buttons between English and Tagalog
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const name = this.name;
+                const value = this.value;
+                const englishRadio = document.querySelector(`.english input[name="${name}"][value="${value}"]`);
+                const tagalogRadio = document.querySelector(`.tagalog input[name="${name}"][value="${value}"]`);
+                if (this.closest('.english') && tagalogRadio) {
+                    tagalogRadio.checked = true;
+                } else if (this.closest('.tagalog') && englishRadio) {
+                    englishRadio.checked = true;
+                }
+            });
+        });
+
+        // Sync comments between English and Tagalog
+        function syncComments(source, target) {
+            target.value = source.value;
+        }
+
+        if (positiveComment && positiveCommentTl) {
+            positiveComment.addEventListener('input', () => syncComments(positiveComment, positiveCommentTl));
+            positiveCommentTl.addEventListener('input', () => syncComments(positiveCommentTl, positiveComment));
+        }
+
+        if (negativeComment && negativeCommentTl) {
+            negativeComment.addEventListener('input', () => syncComments(negativeComment, negativeCommentTl));
+            negativeCommentTl.addEventListener('input', () => syncComments(negativeCommentTl, negativeComment));
         }
 
         // Define comment elements
@@ -1639,27 +1671,84 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
         const positiveCommentTl = document.getElementById('positive-comment-tl');
         const negativeCommentTl = document.getElementById('negative-comment-tl');
 
+        // Progress bar elements
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const submitBtn = document.getElementById('submit-btn');
+
+        // Total items: 20 radio groups + 2 comments
+        const totalItems = 22;
+
+        // Function to check if a comment is filled based on active language
+        function isCommentFilled() {
+            const isEnglishActive = englishBtn && englishBtn.classList.contains('active');
+            if (isEnglishActive) {
+                return positiveComment && positiveComment.value.trim() &&
+                       negativeComment && negativeComment.value.trim();
+            } else {
+                return positiveCommentTl && positiveCommentTl.value.trim() &&
+                       negativeCommentTl && negativeCommentTl.value.trim();
+            }
+        }
+
+        // Function to check if all radio groups are selected
+        function areAllRadiosSelected() {
+            const radioGroups = {};
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                if (!radioGroups[radio.name]) {
+                    radioGroups[radio.name] = [];
+                }
+                radioGroups[radio.name].push(radio);
+            });
+            for (const groupName in radioGroups) {
+                if (!radioGroups[groupName].some(radio => radio.checked)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Function to update progress bar
+        function updateProgress() {
+            let completed = 0;
+
+            // Check radio buttons (20 items)
+            if (areAllRadiosSelected()) {
+                completed += 20;
+            }
+
+            // Check comments (2 items)
+            if (isCommentFilled()) {
+                completed += 2;
+            }
+
+            const percentage = Math.round((completed / totalItems) * 100);
+            progressBar.style.width = percentage + '%';
+            progressText.textContent = 'Completion: ' + percentage + '%';
+
+            // Enable submit button if 100%
+            if (submitBtn) {
+                submitBtn.disabled = percentage < 100;
+            }
+        }
+
         // Highlight incomplete comments
         function highlightIncompleteComments() {
-            if (positiveComment && !positiveComment.value.trim()) {
-                positiveComment.style.borderColor = '#e74c3c';
-            } else if (positiveComment) {
-                positiveComment.style.borderColor = '#ddd';
-            }
-            if (negativeComment && !negativeComment.value.trim()) {
-                negativeComment.style.borderColor = '#e74c3c';
-            } else if (negativeComment) {
-                negativeComment.style.borderColor = '#ddd';
-            }
-            if (positiveCommentTl && !positiveCommentTl.value.trim()) {
-                positiveCommentTl.style.borderColor = '#e74c3c';
-            } else if (positiveCommentTl) {
-                positiveCommentTl.style.borderColor = '#ddd';
-            }
-            if (negativeCommentTl && !negativeCommentTl.value.trim()) {
-                negativeCommentTl.style.borderColor = '#e74c3c';
-            } else if (negativeCommentTl) {
-                negativeCommentTl.style.borderColor = '#ddd';
+            const isEnglishActive = englishBtn && englishBtn.classList.contains('active');
+            if (isEnglishActive) {
+                if (positiveComment) {
+                    positiveComment.style.borderColor = positiveComment.value.trim() ? '#ddd' : '#e74c3c';
+                }
+                if (negativeComment) {
+                    negativeComment.style.borderColor = negativeComment.value.trim() ? '#ddd' : '#e74c3c';
+                }
+            } else {
+                if (positiveCommentTl) {
+                    positiveCommentTl.style.borderColor = positiveCommentTl.value.trim() ? '#ddd' : '#e74c3c';
+                }
+                if (negativeCommentTl) {
+                    negativeCommentTl.style.borderColor = negativeCommentTl.value.trim() ? '#ddd' : '#e74c3c';
+                }
             }
         }
 
@@ -1701,7 +1790,19 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                     }
                 });
             }
-            // Call highlight function on load
+
+            // Add event listeners for progress update
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', updateProgress);
+            });
+
+            if (positiveComment) positiveComment.addEventListener('input', function() { updateProgress(); highlightIncompleteComments(); });
+            if (negativeComment) negativeComment.addEventListener('input', function() { updateProgress(); highlightIncompleteComments(); });
+            if (positiveCommentTl) positiveCommentTl.addEventListener('input', function() { updateProgress(); highlightIncompleteComments(); });
+            if (negativeCommentTl) negativeCommentTl.addEventListener('input', function() { updateProgress(); highlightIncompleteComments(); });
+
+            // Initial update
+            updateProgress();
             highlightIncompleteComments();
         });
     </script>
