@@ -70,7 +70,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #800000 0%, #500000 100%);
             color: #333;
             line-height: 1.6;
             min-height: 100vh;
@@ -91,14 +91,14 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             text-align: center;
             margin-bottom: 40px;
             padding-bottom: 25px;
-            border-bottom: 3px solid #4CAF50;
+            border-bottom: 3px solid #D4AF37;
         }
         
         .header h1 {
-            color: #2c3e50;
+            color: #800000;
             font-size: 2.2em;
             margin-bottom: 10px;
-            background: linear-gradient(135deg, #4CAF50, #45a049);
+            background: linear-gradient(135deg, #800000, #A52A2A);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -118,15 +118,15 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         .user-info {
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            background: linear-gradient(135deg, #F5F5DC 0%, #FFD700 100%);
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 30px;
-            border-left: 5px solid #2196F3;
+            border-left: 5px solid #D4AF37;
         }
         
         .user-info h3 {
-            color: #1976D2;
+            color: #800000;
             margin-bottom: 10px;
         }
         
@@ -138,22 +138,23 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         .info-item {
-            background: white;
+            background: #F5F5DC;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #D4AF37;
         }
         
         .info-item label {
             font-weight: 600;
-            color: #666;
+            color: #800000;
             font-size: 0.9em;
             display: block;
             margin-bottom: 5px;
         }
         
         .info-item span {
-            color: #2c3e50;
+            color: #500000;
             font-weight: bold;
         }
         
@@ -165,53 +166,54 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         .stat-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
             padding: 25px;
             border-radius: 15px;
             text-align: center;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid #4CAF50;
+            border-left: 5px solid #800000;
         }
         
         .stat-card h3 {
-            color: #4CAF50;
+            color: #800000;
             font-size: 2.5em;
             margin-bottom: 10px;
         }
         
         .stat-card p {
-            color: #6c757d;
+            color: #500000;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         
         .progress-card {
-            border-left-color: #2196F3;
+            border-left-color: #D4AF37;
         }
         
         .progress-card h3 {
-            color: #2196F3;
+            color: #800000;
         }
         
         .progress-bar {
             width: 100%;
             height: 20px;
-            background: #e9ecef;
+            background: #F5F5DC;
             border-radius: 10px;
             overflow: hidden;
             margin-top: 15px;
+            border: 1px solid #D4AF37;
         }
         
         .progress-fill {
             height: 100%;
-            background: linear-gradient(135deg, #4CAF50, #45a049);
+            background: linear-gradient(135deg, #800000, #A52A2A);
             border-radius: 10px;
             transition: width 0.5s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: #FFD700;
             font-size: 0.8em;
             font-weight: bold;
         }
@@ -228,11 +230,11 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         .teacher-card {
-            background: white;
+            background: #F5F5DC;
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid #4CAF50;
+            border-left: 5px solid #800000;
             transition: all 0.3s ease;
         }
         
@@ -242,18 +244,18 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         .teacher-card.evaluated {
-            border-left-color: #28a745;
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-left-color: #D4AF37;
+            background: linear-gradient(135deg, #FFEC8B 0%, #FFD700 100%);
         }
         
         .teacher-card h4 {
-            color: #2c3e50;
+            color: #800000;
             margin-bottom: 10px;
             font-size: 1.1em;
         }
         
         .teacher-card p {
-            color: #666;
+            color: #500000;
             margin-bottom: 15px;
         }
         
@@ -272,15 +274,15 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         .status-pending {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
+            background: #FFEC8B;
+            color: #800000;
+            border: 1px solid #D4AF37;
         }
         
         .status-completed {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #D4AF37;
+            color: #800000;
+            border: 1px solid #FFD700;
         }
         
         .alert {
@@ -293,58 +295,61 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         .alert-success {
-            color: #155724;
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            border-left: 5px solid #28a745;
+            color: #800000;
+            background: linear-gradient(135deg, #FFEC8B 0%, #FFD700 100%);
+            border-left: 5px solid #D4AF37;
         }
         
         .alert-error {
-            color: #721c24;
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            border-left: 5px solid #dc3545;
+            color: #800000;
+            background: linear-gradient(135deg, #FFEC8B 0%, #F5F5DC 100%);
+            border-left: 5px solid #800000;
         }
 
         .btn {
-    display: inline-block;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    color: white;
-    text-decoration: none;
-    border-radius: 25px;
-    font-weight: 600;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-    text-align: center;
-    font-size: 0.95em;
-}
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #800000 0%, #A52A2A 100%);
+            color: #FFD700;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.95em;
+        }
 
-.btn:hover {
-    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-}
+        .btn:hover {
+            background: linear-gradient(135deg, #A52A2A 0%, #800000 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            color: #FFEC8B;
+        }
 
-.btn-secondary {
-    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-}
+        .btn-secondary {
+            background: linear-gradient(135deg, #D4AF37 0%, #FFD700 100%);
+            color: #800000;
+        }
 
-.btn-secondary:hover {
-    background: linear-gradient(135deg, #1976D2 0%, #0d47a1 100%);
-}
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
+            color: #500000;
+        }
         
         .logout-container {
             text-align: center;
             margin-top: 40px;
             padding-top: 25px;
-            border-top: 2px solid #e9ecef;
+            border-top: 2px solid #D4AF37;
         }
         
         .logout-btn {
             display: inline-block;
-            background: #dc3545;
-            color: white;
+            background: linear-gradient(135deg, #800000 0%, #500000 100%);
+            color: #FFD700;
             padding: 12px 25px;
             text-decoration: none;
             border-radius: 5px;
@@ -355,27 +360,32 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         .logout-btn:hover {
-            background: #c82333;
+            background: linear-gradient(135deg, #500000 0%, #800000 100%);
             transform: translateY(-2px);
+            color: #FFEC8B;
         }
         
         .no-program-message {
             text-align: center;
             padding: 40px;
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            background: linear-gradient(135deg, #FFEC8B 0%, #F5F5DC 100%);
             border-radius: 10px;
             margin-top: 30px;
+            border: 1px solid #D4AF37;
         }
         
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #6c757d;
+            color: #500000;
+            background: #F5F5DC;
+            border-radius: 10px;
+            border: 1px solid #D4AF37;
         }
         
         .empty-state h3 {
             margin-bottom: 15px;
-            color: #495057;
+            color: #800000;
         }
         
         @media (max-width: 768px) {
@@ -396,9 +406,10 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 font-size: 1.8em;
             }
 
-             .header-content {
+            .header-content {
                 flex-direction: column;
                 text-align: center;
+            }
         }
     </style>
 </head>
@@ -469,7 +480,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             
             <div class="teachers-section">
                 <h2>👨‍🏫 Teachers Available for Evaluation</h2>
-                <p style="color: #666; margin-bottom: 20px;">
+                <p style="color: #800000; margin-bottom: 20px;">
                     Click "Evaluate Teacher" to start evaluating a teacher. Already evaluated teachers are marked as completed.
                 </p>
                 
