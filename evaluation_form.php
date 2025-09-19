@@ -247,7 +247,7 @@ if ($is_view_mode && $existing_evaluation) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher's Performance Evaluation - <?php echo htmlspecialchars($teacher['name']); ?></title>
+    <title>Teacher's Performance Evaluation - <?php echo htmlspecialchars($teacher_info['name']); ?></title>
 </head>
 <body>
     <style>
@@ -635,6 +635,7 @@ footer {
 }
 
     </style>
+
     <div class="container">
         <header>
             <div class="institution-name">PHILTECH GMA</div>
@@ -662,7 +663,7 @@ footer {
     </div>
 </div>
     </header>
-         <?php if ($teacher_info): ?>
+        <?php if ($teacher_info): ?>
             <div class="teacher-info">
                 <h3>Teacher Information</h3>
                 <div class="info-grid">
@@ -697,7 +698,7 @@ footer {
             <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); color: #155724; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #28a745;">
                 <h3>✅ Success!</h3>
                 <p><?php echo htmlspecialchars($success); ?></p>
-                <p style="margin-top: 15px;"><a href="student_dashboard.php" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashboard</a></p>
+                <p style="margin-top: 15px;"><a href="student_dashboard.php" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashb[...]
             </div>
         <?php endif; ?>
 
@@ -708,12 +709,12 @@ footer {
             </div>
         <?php endif; ?>
 
-        <?php if ($already_evaluated && empty($success)): ?>
+        <?php if ($is_view_mode && empty($success)): ?>
             <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); color: #856404; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #ffc107;">
                 <h3>ℹ️ Already Evaluated</h3>
                 <p>You have already submitted an evaluation for this teacher. You can view your evaluation or go back to the dashboard.</p>
                 <p style="margin-top: 15px;">
-                    <a href="student_dashboard.php" style="background: #ffc107; color: #856404; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;">← Back to Dashboard</a>
+                    <a href="student_dashboard.php" style="background: #ffc107; color: #856404; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;">← Back to Dashboar[...]
                 </p>
             </div>
         <?php endif; ?>
@@ -736,7 +737,7 @@ footer {
             <div class="rating-item">1 - Unsatisfactory</div>
         </div>
         
-        <?php if (!$already_evaluated): ?>
+        <?php if (!$is_view_mode): ?>
         <form id="evaluation-form" method="POST" action="">
             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <!-- English Content -->
@@ -1345,7 +1346,6 @@ footer {
             <button type="submit" class="submit-btn" id="submit-btn" disabled>Submit Evaluation</button>
         </form>
         <?php endif; ?>
-        
         <footer>
             <p>This evaluation will be kept confidential.</p>
             <p>© PHILTECH GMA</p>
