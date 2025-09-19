@@ -715,6 +715,32 @@ footer {
             <div class="evaluation-results" style="background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%); padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #4caf50;">
                 <h3>📊 Your Evaluation Details</h3>
                 <?php
+                // Calculate section averages
+                $section1_avg = ($existing_evaluation['q1_1'] + $existing_evaluation['q1_2'] + $existing_evaluation['q1_3'] + $existing_evaluation['q1_4'] + $existing_evaluation['q1_5'] + $existing_evaluation['q1_6']) / 6;
+                $section2_avg = ($existing_evaluation['q2_1'] + $existing_evaluation['q2_2'] + $existing_evaluation['q2_3'] + $existing_evaluation['q2_4']) / 4;
+                $section3_avg = ($existing_evaluation['q3_1'] + $existing_evaluation['q3_2'] + $existing_evaluation['q3_3'] + $existing_evaluation['q3_4']) / 4;
+                $section4_avg = ($existing_evaluation['q4_1'] + $existing_evaluation['q4_2'] + $existing_evaluation['q4_3'] + $existing_evaluation['q4_4'] + $existing_evaluation['q4_5'] + $existing_evaluation['q4_6']) / 6;
+
+                // Function to display bar chart for section
+                function display_section_bar($section_name, $avg) {
+                    $percentage = ($avg / 5) * 100;
+                    echo '<div style="margin-bottom: 20px; padding: 15px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">';
+                    echo '<p style="font-weight: 600; color: #2c3e50; margin-bottom: 10px;">' . htmlspecialchars($section_name) . ' - ' . number_format($avg, 1) . '/5</p>';
+                    echo '<div style="background: #ecf0f1; height: 25px; border-radius: 12px; overflow: hidden;">';
+                    echo '<div style="background: linear-gradient(90deg, #3498db, #2ecc71); height: 100%; width: ' . $percentage . '%; border-radius: 12px; transition: width 1s ease;"></div>';
+                    echo '</div>';
+                    echo '</div>';
+                }
+                ?>
+                <h4 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px;">Ratings Overview</h4>
+                <?php
+                display_section_bar('1. Teaching Competence', $section1_avg);
+                display_section_bar('2. Management Skills', $section2_avg);
+                display_section_bar('3. Guidance Skills', $section3_avg);
+                display_section_bar('4. Personal and Social Qualities/Skills', $section4_avg);
+                ?>
+
+                <?php
                 // Function to display question and selected rating with professional design
                 function display_question_rating($question, $rating) {
                     echo '<div style="margin-bottom: 15px; padding: 15px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">';
@@ -754,7 +780,22 @@ footer {
                 }
                 ?>
                 <h4 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px;">Comments</h4>
-                <p style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; font-size: 15px; color: #2c3e50; box-shadow: inset 0 0 5px rgba(0,0,0,0.05);"><?php echo nl2br(htmlspecialchars($existing_evaluation['comments'])); ?></p>
+                <?php
+                $comments = $existing_evaluation['comments'];
+                $parts = explode("\n", $comments);
+                $positive = str_replace("Positive: ", "", $parts[0] ?? '');
+                $negative = str_replace("Negative: ", "", $parts[1] ?? '');
+                ?>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1; background: #f9f9f9; padding: 15px; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05);">
+                        <h5 style="color: #27ae60; margin-bottom: 10px;">Positive Comments</h5>
+                        <p style="font-size: 15px; color: #2c3e50;"><?php echo nl2br(htmlspecialchars($positive)); ?></p>
+                    </div>
+                    <div style="flex: 1; background: #f9f9f9; padding: 15px; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05);">
+                        <h5 style="color: #e74c3c; margin-bottom: 10px;">Negative Comments</h5>
+                        <p style="font-size: 15px; color: #2c3e50;"><?php echo nl2br(htmlspecialchars($negative)); ?></p>
+                    </div>
+                </div>
                 <p style="margin-top: 15px;"><a href="student_dashboard.php" style="background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashboard</a></p>
             </div>
         <?php endif; ?>
