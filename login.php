@@ -1,8 +1,18 @@
 <?php
-// login.php - Minimalist, Premium Login
+// login.php - Enhanced login system
 session_start();
 
 require_once 'includes/security.php';
+
+// Check for logout message
+if (isset($_SESSION['logout_message'])) {
+    $success = $_SESSION['logout_message'];
+    unset($_SESSION['logout_message']);
+    
+    // Also check if user was admin to show appropriate redirect option
+    $was_admin = isset($_SESSION['user_type_was']) && $_SESSION['user_type_was'] === 'admin';
+    unset($_SESSION['user_type_was']);
+}
 
 // If user is already logged in, redirect appropriately
 if (isset($_SESSION['user_id'])) {
@@ -15,29 +25,45 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 
+// Include database connection
 require_once 'includes/db_connection.php';
 
 $error = '';
-$success = '';
+$success = isset($success) ? $success : '';
 
 // Handle login form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!validate_csrf_token($_POST['csrf_token'])) {
         die('CSRF token validation failed');
     }
+    
     try {
         $username = trim($_POST['username']);
         $password = trim($_POST['password']);
+        
+        // Validate input
         if (empty($username) || empty($password)) {
-            throw new Exception("Email/Username and password are required.");
+            throw new Exception("Username and password are required.");
         }
-        $stmt = query("SELECT id, username, password, user_type FROM users WHERE username = ? OR email = ?", [$username, $username]);
+        
+        // Check user in database
+        $stmt = query("SELECT id, username, password, user_type, full_name, student_id, program, section FROM users WHERE username = ?", [$username]);
         $user = fetch_assoc($stmt);
+        
         if ($user && password_verify($password, $user['password'])) {
+            // Valid login - create session
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['user_type'] = $user['user_type'];
+            $_SESSION['full_name'] = $user['full_name'];
+            $_SESSION['student_id'] = $user['student_id'];
+            $_SESSION['program'] = $user['program'];
+            $_SESSION['section'] = $user['section'];
+            
+            // Update last login time
             query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$user['id']]);
+            
+            // Redirect based on user type
             if ($user['user_type'] === 'admin') {
                 header('Location: admin.php');
                 exit;
@@ -46,8 +72,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             }
         } else {
-            throw new Exception("Invalid credentials.");
+            throw new Exception("Invalid username or password.");
         }
+        
     } catch (Exception $e) {
         $error = $e->getMessage();
     }
@@ -59,289 +86,434 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login • Evaluation System</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600&display=swap" rel="stylesheet">
+    <title>Login - Teacher Evaluation System</title>
     <style>
-        :root {
-            --maroon: #7B1F25;
-            --dark-maroon: #58131e;
-            --gold: #FFD700;
-            --light-gold: #FFF8DC;
-            --accent: #c3a86b;
-            --white: #fff;
-            --shadow: 0 4px 32px 0 rgba(123,31,37,0.09), 0 1.5px 4px 0 rgba(0,0,0,0.07);
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        html, body {
-            height: 100%;
-        }
+        
         body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
             min-height: 100vh;
-            background: radial-gradient(ellipse at 70% 40%, var(--gold) 0%, var(--maroon) 100%), linear-gradient(120deg, var(--light-gold) 0%, var(--gold) 100%);
-            background-blend-mode: multiply;
-            font-family: 'Inter', system-ui, sans-serif;
-            color: var(--dark-maroon);
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-        .login-card {
-            background: var(--white);
-            border-radius: 22px;
-            box-shadow: var(--shadow);
-            padding: 2.6rem 2.2rem 2rem 2.2rem;
-            max-width: 360px;
+        
+        .login-container {
+            max-width: 450px;
             width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            transform: translateY(-20px);
         }
-        .login-card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            background: linear-gradient(120deg,rgba(255,215,0,0.09),rgba(123,31,37,0.07));
-            border-radius: 22px;
-        }
-        .login-logo {
-            width: 54px;
-            height: 54px;
-            background: linear-gradient(135deg, var(--maroon), var(--gold));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.1rem;
-            box-shadow: 0 2px 10px rgba(123,31,37,0.14);
-            z-index: 2;
-            font-size: 2.1rem;
-            color: var(--white);
-        }
-        .login-title {
-            font-size: 1.36rem;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-            color: var(--maroon);
-            margin-bottom: 0.3rem;
-            z-index: 2;
-        }
-        .login-desc {
-            font-size: 1rem;
-            color: var(--dark-maroon);
-            opacity: 0.7;
-            margin-bottom: 1.5rem;
-            z-index: 2;
+        
+        .login-header {
             text-align: center;
+            margin-bottom: 35px;
+            padding-bottom: 25px;
+            border-bottom: 3px solid #4CAF50;
         }
-        form {
-            width: 100%;
-            z-index: 2;
+        
+        .login-header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.8em;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
+        
+        .login-header p {
+            color: #7f8c8d;
+            font-size: 0.95em;
+        }
+        
+        .institution-info {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            text-align: center;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .institution-info h3 {
+            color: #1976D2;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .institution-info p {
+            color: #666;
+            font-size: 0.85em;
+        }
+        
         .form-group {
-            margin-bottom: 1.2rem;
-            position: relative;
+            margin-bottom: 25px;
         }
-        .form-label {
+        
+        .form-group label {
             display: block;
-            font-size: 0.97rem;
-            font-weight: 500;
-            margin-bottom: 0.37rem;
-            color: var(--maroon);
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95em;
         }
-        .form-input {
+        
+        .form-group input {
             width: 100%;
-            padding: 0.76rem 2.3rem 0.76rem 2.25rem;
-            border-radius: 10px;
-            border: 1.5px solid #e5d7b0;
-            font-size: 1.02rem;
-            background: var(--light-gold);
-            color: var(--dark-maroon);
-            transition: border 0.2s;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        .form-group input:focus {
+            border-color: #4CAF50;
             outline: none;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.2);
+            background: white;
+            transform: translateY(-1px);
         }
-        .form-input:focus {
-            border-color: var(--maroon);
-            background: #fff8e1;
-        }
-        .form-icon {
-            position: absolute;
-            top: 50%;
-            left: 0.9rem;
-            transform: translateY(-50%);
-            color: var(--maroon);
-            font-size: 1.14rem;
-            opacity: 0.79;
-            pointer-events: none;
-        }
+        
         .login-btn {
             width: 100%;
-            margin-top: 0.1rem;
-            background: linear-gradient(90deg, var(--maroon), var(--gold) 110%);
-            color: var(--white);
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 15px;
             border: none;
-            border-radius: 10px;
-            padding: 0.8rem 0;
-            font-size: 1.08rem;
-            font-weight: 600;
-            letter-spacing: 0.03em;
-            box-shadow: 0 2px 14px 0 rgba(123,31,37,0.08);
+            border-radius: 8px;
             cursor: pointer;
-            transition: background 0.18s, transform 0.15s;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            margin-bottom: 20px;
         }
-        .login-btn:hover, .login-btn:focus {
-            background: linear-gradient(90deg, var(--gold) 0%, var(--maroon) 110%);
-            color: var(--maroon);
-            transform: translateY(-1.5px) scale(1.01);
+        
+        .login-btn:hover {
+            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
         }
-        .link-row {
+        
+        .login-btn:active {
+            transform: translateY(0);
+        }
+        
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .alert-error {
+            color: #721c24;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border-left: 4px solid #dc3545;
+        }
+        
+        .alert-success {
+            color: #155724;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-left: 4px solid #28a745;
+        }
+        
+        .demo-accounts {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 25px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .demo-accounts h4 {
+            color: #856404;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 0.95em;
+        }
+        
+        .demo-account {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
-            margin-top: 0.95rem;
-            font-size: 0.98em;
-            width: 100%;
-            z-index: 2;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .form-link {
-            color: var(--gold);
+        
+        .demo-account:last-child {
+            margin-bottom: 0;
+        }
+        
+        .demo-account-info {
+            flex: 1;
+        }
+        
+        .demo-account-type {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .demo-account-type.admin {
+            background: #e74c3c;
+        }
+        
+        .demo-account-type.student {
+            background: #3498db;
+        }
+        
+        .demo-credentials {
+            font-family: 'Courier New', monospace;
+            color: #2c3e50;
+            font-size: 0.85em;
+        }
+        
+        .use-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+        }
+        
+        .use-btn:hover {
+            background: #138496;
+            transform: translateY(-1px);
+        }
+        
+        .footer-links {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .footer-links a {
+            color: #2196F3;
             text-decoration: none;
-            font-weight: 500;
-            transition: color 0.16s;
+            font-size: 0.9em;
+            margin: 0 10px;
+            transition: color 0.3s ease;
         }
-        .form-link:hover {
-            color: var(--maroon);
+        
+        .footer-links a:hover {
+            color: #1976D2;
             text-decoration: underline;
         }
-        .signup-row {
-            margin-top: 1.3rem;
-            text-align: center;
-            width: 100%;
-            font-size: 1em;
-            z-index: 2;
+        
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
         }
-        .signup-link {
-            color: var(--maroon);
-            text-decoration: none;
-            font-weight: 600;
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        .signup-link:hover {
-            color: var(--gold);
-            text-decoration: underline;
-        }
-        .alert {
-            width: 100%;
-            padding: 0.85rem 1rem;
-            border-radius: 10px;
-            margin-bottom: 1.2rem;
-            font-size: 0.98em;
-            font-weight: 500;
-            z-index: 2;
-            text-align: center;
-        }
-        .alert-error {
-            background: linear-gradient(90deg, #f3c2c2 0%, #ffe5e5 100%);
-            color: #8e2929;
-            border-left: 4px solid #b81e1e;
-        }
-        .alert-success {
-            background: linear-gradient(90deg, #e0ffd5 0%, #fffbe5 100%);
-            color: #25601e;
-            border-left: 4px solid #74b81e;
-        }
-        @media (max-width: 600px) {
-            body {
-                padding: 1.5rem;
+        
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 25px;
+                margin: 10px;
             }
-            .login-card {
-                padding: 1.5rem 0.7rem 1.1rem 0.7rem;
-                max-width: 98vw;
+            
+            .login-header h1 {
+                font-size: 1.5em;
             }
-            .login-title {
-                font-size: 1.15rem;
+            
+            .demo-account {
+                flex-direction: column;
+                text-align: center;
             }
-        }
-        /* Background illustration (SVG) */
-        .bg-illustration {
-            position: absolute;
-            top: -25px; left: -40px;
-            z-index: 0;
-            width: 160px; height: 160px;
-            pointer-events: none;
-            opacity: 0.13;
-            filter: blur(1px);
-        }
-        .bg-illustration-right {
-            position: absolute;
-            bottom: -38px; right: -45px;
-            width: 130px; height: 120px;
-            z-index: 0;
-            opacity: 0.11;
-            filter: blur(1.5px);
+            
+            .demo-account-info {
+                margin-bottom: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <svg class="bg-illustration" viewBox="0 0 120 120" fill="none">
-        <ellipse cx="60" cy="60" rx="59" ry="53" fill="#FFD700"/>
-        <ellipse cx="40" cy="60" rx="24" ry="20" fill="#7B1F25"/>
-    </svg>
-    <svg class="bg-illustration-right" viewBox="0 0 120 120" fill="none">
-        <ellipse cx="60" cy="60" rx="59" ry="53" fill="#7B1F25"/>
-        <ellipse cx="80" cy="75" rx="24" ry="20" fill="#FFD700"/>
-    </svg>
-    <div class="login-card">
-        <div class="login-logo">
-            <span>🎓</span>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🎓 Login System</h1>
+            <p>Teacher Evaluation System</p>
         </div>
-        <div class="login-title">Sign In</div>
-        <div class="login-desc">Teacher Evaluation System</div>
+        
+        <div class="institution-info">
+            <h3>Philippine Technological Institute of Science Arts and Trade, Inc.</h3>
+            <p>GMA-BRANCH (2nd Semester 2024-2025)</p>
+        </div>
+        
         <?php if (!empty($error)): ?>
-            <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+            <div class="alert alert-error">❌ <?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
+        
         <?php if (!empty($success)): ?>
-            <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+            <div class="alert alert-success">✅ <?php echo htmlspecialchars($success); ?></div>
         <?php endif; ?>
-        <form method="POST" action="">
+        
+        <form method="POST" action="" id="loginForm">
             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <div class="form-group">
-                <span class="form-icon">
-                    <!-- User Icon -->
-                    <svg width="20" height="20" fill="none" style="vertical-align:middle" viewBox="0 0 20 20"><circle cx="10" cy="7" r="4.1" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 17c0-3.5 3-5.5 7.5-5.5s7.5 2 7.5 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                </span>
-                <label for="username" class="form-label">Email or Username</label>
-                <input type="text" name="username" id="username" class="form-input" required autocomplete="username" placeholder="Enter email or username" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
+                <label for="username">👤 Username</label>
+                <input type="text" 
+                       id="username" 
+                       name="username" 
+                       required 
+                       autocomplete="username"
+                       placeholder="Enter your username"
+                       value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
             </div>
+            
             <div class="form-group">
-                <span class="form-icon">
-                    <!-- Lock Icon -->
-                    <svg width="20" height="20" fill="none" style="vertical-align:middle" viewBox="0 0 20 20"><rect x="4" y="9" width="12" height="7" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M7 9V7a3 3 0 1 1 6 0v2" stroke="currentColor" stroke-width="1.3"/></svg>
-                </span>
-                <label for="password" class="form-label">Password</label>
-                <input type="password" name="password" id="password" class="form-input" required autocomplete="current-password" placeholder="Enter your password">
+                <label for="password">🔒 Password</label>
+                <input type="password" 
+                       id="password" 
+                       name="password" 
+                       required 
+                       autocomplete="current-password"
+                       placeholder="Enter your password">
             </div>
-            <button type="submit" class="login-btn">Login</button>
-            <div class="link-row">
-                <a href="forgot_password.php" class="form-link">Forgot Password?</a>
-                <a href="signup.php" class="form-link">Sign Up</a>
-            </div>
+            
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span class="loading-spinner" id="loadingSpinner"></span>
+                <span id="btnText">🚀 Sign In</span>
+            </button>
         </form>
-        <div class="signup-row">
-            Don't have an account?
-            <a href="signup.php" class="signup-link">Create one</a>
+        
+        <div class="demo-accounts">
+            <h4>🧪 Demo Accounts</h4>
+            
+            <div class="demo-account">
+                <div class="demo-account-info">
+                    <div class="demo-credentials"><strong>admin</strong> / admin123</div>
+                    <small>System Administrator</small>
+                </div>
+                <div>
+                    <span class="demo-account-type admin">Admin</span>
+                    <button type="button" class="use-btn" onclick="fillLogin('admin', 'admin123')">Use</button>
+                </div>
+            </div>
+            
+            <div class="demo-account">
+                <div class="demo-account-info">
+                    <div class="demo-credentials"><strong>student1</strong> / pass123</div>
+                    <small>Juan Dela Cruz (SHS)</small>
+                </div>
+                <div>
+                    <span class="demo-account-type student">Student</span>
+                    <button type="button" class="use-btn" onclick="fillLogin('student1', 'pass123')">Use</button>
+                </div>
+            </div>
+            
+            <div class="demo-account">
+                <div class="demo-account-info">
+                    <div class="demo-credentials"><strong>student3</strong> / pass123</div>
+                    <small>Pedro Garcia (College)</small>
+                </div>
+                <div>
+                    <span class="demo-account-type student">Student</span>
+                    <button type="button" class="use-btn" onclick="fillLogin('student3', 'pass123')">Use</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-links">
+            <a href="database_setup.php">🔧 Database Setup</a>
+            <a href="test_connection.php">🔍 Test Connection</a>
         </div>
     </div>
+
     <script>
-        // Center card fade-in
+        // Auto-fill login credentials
+        function fillLogin(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+            
+            // Add visual feedback
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.style.borderColor = '#4CAF50';
+                input.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
+                setTimeout(() => {
+                    input.style.borderColor = '#ddd';
+                    input.style.boxShadow = 'none';
+                }, 2000);
+            });
+        }
+        
+        // Form submission with loading state
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const btn = document.getElementById('loginBtn');
+            const spinner = document.getElementById('loadingSpinner');
+            const btnText = document.getElementById('btnText');
+            
+            // Show loading state
+            btn.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.textContent = 'Signing in...';
+            
+            // If there's an error, the page will reload and reset the button
+            // For successful login, user will be redirected
+        });
+        
+        // Add Enter key support for better UX
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const form = document.getElementById('loginForm');
+                if (form.checkValidity()) {
+                    form.submit();
+                }
+            }
+        });
+        
+        // Add some visual effects
         document.addEventListener('DOMContentLoaded', function() {
-            const card = document.querySelector('.login-card');
-            card.style.opacity = '0';
-            card.style.transform = 'scale(0.97) translateY(18px)';
+            const container = document.querySelector('.login-container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(-30px)';
+            
             setTimeout(() => {
-                card.style.transition = 'all 0.7s cubic-bezier(.19,1,.22,1)';
-                card.style.opacity = '1';
-                card.style.transform = 'scale(1) translateY(0)';
-            }, 120);
+                container.style.transition = 'all 0.6s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+        });
+        
+        // Focus on username input when page loads
+        window.addEventListener('load', function() {
             document.getElementById('username').focus();
         });
     </script>
