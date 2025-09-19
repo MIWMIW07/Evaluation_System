@@ -16,35 +16,6 @@ require_once 'includes/db_connection.php';
 $success = '';
 $error = '';
 
-// Handle program/section update
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
-    if (!validate_csrf_token($_POST['csrf_token'])) {
-        die('CSRF token validation failed');
-    }
-    
-    try {
-        $program = trim($_POST['program']);
-        $section = trim($_POST['section']);
-        
-        if (empty($program) || empty($section)) {
-            throw new Exception("Program and section are required.");
-        }
-        
-        // Update user information
-        query("UPDATE users SET program = ?, section = ? WHERE id = ?", 
-              [$program, $section, $_SESSION['user_id']]);
-        
-        // Update session variables
-        $_SESSION['program'] = $program;
-        $_SESSION['section'] = $section;
-        
-        $success = "✅ Your program and section have been updated successfully!";
-        
-    } catch (Exception $e) {
-        $error = "❌ " . $e->getMessage();
-    }
-}
-
 // Get student's current program and section
 $current_program = $_SESSION['program'];
 $current_section = $_SESSION['section'];
@@ -231,88 +202,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             font-weight: bold;
         }
         
-        .program-section-form {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            border-left: 5px solid #ffc107;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        
-        .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-        
-        .form-group select:focus {
-            border-color: #4CAF50;
-            outline: none;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
-        }
-        
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto;
-            gap: 20px;
-            align-items: end;
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-        
-        .btn:hover {
-            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
-        }
-        
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
-            box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-        }
-        
-        .btn-danger:hover {
-            background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
-            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
-        }
-        
         .teachers-section {
             margin-top: 30px;
         }
@@ -449,10 +338,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 grid-template-columns: 1fr;
             }
             
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            
             .teachers-grid {
                 grid-template-columns: 1fr;
             }
@@ -483,10 +368,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             <h3>👤 Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?>!</h3>
             <div class="info-grid">
                 <div class="info-item">
-                    <label>Student ID:</label>
-                    <span><?php echo htmlspecialchars($_SESSION['student_id']); ?></span>
-                </div>
-                <div class="info-item">
                     <label>Username:</label>
                     <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
                 </div>
@@ -508,51 +389,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         <?php if (!empty($error)): ?>
             <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
-        
-        <div class="program-section-form">
-            <h3>📚 Update Your Program & Section</h3>
-            <p style="margin-bottom: 20px; color: #666;">Please select your program and section to view available teachers for evaluation.</p>
-            
-            <form method="POST" action="">
-                <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
-                <input type="hidden" name="update_info" value="1">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="program">Program *</label>
-                        <select id="program" name="program" required>
-                            <option value="">Select Program</option>
-                            <option value="SHS" <?php echo ($current_program === 'SHS') ? 'selected' : ''; ?>>
-                                Senior High School (SHS)
-                            </option>
-                            <option value="COLLEGE" <?php echo ($current_program === 'COLLEGE') ? 'selected' : ''; ?>>
-                                College
-                            </option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="section">Section *</label>
-                        <select id="section" name="section" required>
-                            <option value="">Select Section</option>
-                            <!-- SHS Sections -->
-                            <option value="Grade 11-A" <?php echo ($current_section === 'Grade 11-A') ? 'selected' : ''; ?>>Grade 11-A</option>
-                            <option value="Grade 11-B" <?php echo ($current_section === 'Grade 11-B') ? 'selected' : ''; ?>>Grade 11-B</option>
-                            <option value="Grade 12-A" <?php echo ($current_section === 'Grade 12-A') ? 'selected' : ''; ?>>Grade 12-A</option>
-                            <option value="Grade 12-B" <?php echo ($current_section === 'Grade 12-B') ? 'selected' : ''; ?>>Grade 12-B</option>
-                            <!-- College Sections -->
-                            <option value="BSIT-1A" <?php echo ($current_section === 'BSIT-1A') ? 'selected' : ''; ?>>BSIT-1A</option>
-                            <option value="BSIT-2A" <?php echo ($current_section === 'BSIT-2A') ? 'selected' : ''; ?>>BSIT-2A</option>
-                            <option value="BSCS-1A" <?php echo ($current_section === 'BSCS-1A') ? 'selected' : ''; ?>>BSCS-1A</option>
-                            <option value="BSCS-2A" <?php echo ($current_section === 'BSCS-2A') ? 'selected' : ''; ?>>BSCS-2A</option>
-                            <option value="BSBA-1A" <?php echo ($current_section === 'BSBA-1A') ? 'selected' : ''; ?>>BSBA-1A</option>
-                            <option value="BSBA-2A" <?php echo ($current_section === 'BSBA-2A') ? 'selected' : ''; ?>>BSBA-2A</option>
-                        </select>
-                    </div>
-                    
-                    <button type="submit" class="btn">🔄 Update Info</button>
-                </div>
-            </form>
-        </div>
         
         <?php if (!empty($current_program) && !empty($current_section)): ?>
             <div class="stats-container">
@@ -625,7 +461,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         <?php else: ?>
             <div class="no-program-message">
                 <h3>🔧 Setup Required</h3>
-                <p>Please select your program and section above to view available teachers for evaluation.</p>
+                <p>Your program and section information is not set. Please contact administrator.</p>
             </div>
         <?php endif; ?>
         
@@ -639,49 +475,8 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
     </div>
 
     <script>
-        // Dynamic section options based on program
-        document.getElementById('program').addEventListener('change', function() {
-            const sectionSelect = document.getElementById('section');
-            const selectedProgram = this.value;
-            
-            // Clear current options except the first one
-            while (sectionSelect.children.length > 1) {
-                sectionSelect.removeChild(sectionSelect.lastChild);
-            }
-            
-            if (selectedProgram === 'SHS') {
-                const sections = [
-                    'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'
-                ];
-                
-                sections.forEach(section => {
-                    const option = document.createElement('option');
-                    option.value = section;
-                    option.textContent = section;
-                    sectionSelect.appendChild(option);
-                });
-            } else if (selectedProgram === 'COLLEGE') {
-                const sections = [
-                    'BSIT-1A', 'BSIT-1B', 'BSIT-2A', 'BSIT-2B',
-                    'BSCS-1A', 'BSCS-1B', 'BSCS-2A', 'BSCS-2B',
-                    'BSBA-1A', 'BSBA-1B', 'BSBA-2A', 'BSBA-2B',
-                    'BSE-1A', 'BSE-2A', 'BSHM-1A', 'BSHM-2A'
-                ];
-                
-                sections.forEach(section => {
-                    const option = document.createElement('option');
-                    option.value = section;
-                    option.textContent = section;
-                    sectionSelect.appendChild(option);
-                });
-            }
-        });
-        
-        // Trigger the change event on page load to set correct sections
+        // Animate stat cards
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('program').dispatchEvent(new Event('change'));
-            
-            // Animate stat cards
             const statCards = document.querySelectorAll('.stat-card');
             statCards.forEach((card, index) => {
                 setTimeout(() => {
@@ -695,13 +490,13 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     }, 100);
                 }, index * 150);
             });
-        });
-        
-        // Add confirmation for logout
-        document.querySelector('.logout-btn').addEventListener('click', function(e) {
-            if (!confirm('Are you sure you want to logout?')) {
-                e.preventDefault();
-            }
+            
+            // Add confirmation for logout
+            document.querySelector('.logout-btn').addEventListener('click', function(e) {
+                if (!confirm('Are you sure you want to logout?')) {
+                    e.preventDefault();
+                }
+            });
         });
     </script>
 </body>
