@@ -242,6 +242,16 @@ try {
             box-shadow: 0 10px 30px rgba(184, 134, 11, 0.5);
         }
         
+        .btn-logout {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+        
+        .btn-logout:hover {
+            background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+        }
+        
         .report-generation-section {
             background: linear-gradient(135deg, #FFF8DC 0%, #F5F5DC 100%);
             padding: 25px;
@@ -355,25 +365,6 @@ try {
             border-radius: 10px;
         }
         
-        .back-link {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: #800000;
-            color: white;
-            padding: 10px 15px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-        
-        .back-link:hover {
-            background: #A52A2A;
-            transform: translateY(-2px);
-        }
-        
         .no-data {
             text-align: center;
             padding: 40px;
@@ -417,13 +408,6 @@ try {
                 padding: 10px 8px;
             }
             
-            .back-link {
-                position: relative;
-                display: block;
-                width: fit-content;
-                margin: 10px auto 20px;
-            }
-            
             header h1 {
                 font-size: 1.8em;
             }
@@ -431,7 +415,6 @@ try {
     </style>
 </head>
 <body>
-    <a href="index.php" class="back-link">← Back to Evaluation Form</a>
     <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
     
     <div class="container">
@@ -620,6 +603,9 @@ try {
             <p style="margin-top: 10px;">
                 Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
             </p>
+            <div style="margin-top: 20px;">
+                <a href="logout.php" class="btn btn-logout">🚪 Logout</a>
+            </div>
         </div>
     </div>
 
