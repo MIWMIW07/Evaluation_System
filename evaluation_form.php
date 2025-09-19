@@ -747,7 +747,7 @@ footer {
                             <div class="view-mode-rating"><?php echo $existing_evaluation['q1_1']; ?></div>
                         <?php else: ?>
                             <div class="rating-options">
-                                <label><input type="radio" name="q1_1" value="5" class="required-rating"> 5</label>
+                                <label><input type="radio" name="q1_1" value="5"> 5</label>
                                 <label><input type="radio" name="q1_1" value="4"> 4</label>
                                 <label><input type="radio" name="q1_1" value="3"> 3</label>
                                 <label><input type="radio" name="q1_1" value="2"> 2</label>
@@ -985,7 +985,7 @@ footer {
                                 <label><input type="radio" name="q3_4" value="4"> 4</label>
                                 <label><input type="radio" name="q3_4" value="3"> 3</label>
                                 <label><input type="radio" name="q3_4" value="2"> 2</label>
-                                <label><input type="radio" name="q3_4" value="1"> 极</label>
+                                <label><input type="radio" name="q3_4" value="1"> 1</label>
                             </div>
                         <?php endif; ?>
                     </td>
@@ -1046,7 +1046,7 @@ footer {
                                 <label><input type="radio" name="q4_3" value="4"> 4</label>
                                 <label><input type="radio" name="q4_3" value="3"> 3</label>
                                 <label><input type="radio" name="q4_3" value="2"> 2</label>
-                                <label><input type="radio" name="q4_3"极="1"> 1</label>
+                                <label><input type="radio" name="q4_3" value="1"> 1</label>
                             </div>
                         <?php endif; ?>
                     </td>
@@ -1058,7 +1058,7 @@ footer {
                             <div class="view-mode-rating"><?php echo $existing_evaluation['q4_4']; ?></div>
                         <?php else: ?>
                             <div class="rating-options">
-                                <label><极 type="radio" name="q4_4" value="5"> 5</label>
+                                <label><input type="radio" name="q4_4" value="5"> 5</label>
                                 <label><input type="radio" name="q4_4" value="4"> 4</label>
                                 <label><input type="radio" name="q4_4" value="3"> 3</label>
                                 <label><input type="radio" name="q4_4" value="2"> 2</label>
@@ -1087,12 +1087,12 @@ footer {
                     <td>4.6 Has good diction, clear and modulated voice.</td>
                     <td>
                         <?php if ($is_view_mode): ?>
-                            <div class极="view-mode-rating"><?php echo $existing_evaluation['q4_6']; ?></div>
+                            <div class="view-mode-rating"><?php echo $existing_evaluation['q4_6']; ?></div>
                         <?php else: ?>
                             <div class="rating-options">
-                                <label><input type="radio" name="q4_6" value="5"> 5</极>
+                                <label><input type="radio" name="q4_6" value="5"> 5</label>
                                 <label><input type="radio" name="q4_6" value="4"> 4</label>
-                                <label><input type="radio" name="q4_极" value="3"> 3</label>
+                                <label><input type="radio" name="q4_6" value="3"> 3</label>
                                 <label><input type="radio" name="q4_6" value="2"> 2</label>
                                 <label><input type="radio" name="q4_6" value="1"> 1</label>
                             </div>
@@ -1136,7 +1136,7 @@ footer {
             <?php
             // Calculate average rating
             $total_rating = $existing_evaluation['q1_1'] + $existing_evaluation['q1_2'] + $existing_evaluation['q1_3'] + 
-                           $existing_evaluation['极1_4'] + $existing_evaluation['q1_5'] + $existing_evaluation['q1_6'] +
+                           $existing_evaluation['1_4'] + $existing_evaluation['q1_5'] + $existing_evaluation['q1_6'] +
                            $existing_evaluation['q2_1'] + $existing_evaluation['q2_2'] + $existing_evaluation['q2_3'] + 
                            $existing_evaluation['q2_4'] + $existing_evaluation['q3_1'] + $existing_evaluation['q3_2'] + 
                            $existing_evaluation['q3_3'] + $existing_evaluation['q3_4'] + $existing_evaluation['q4_1'] + 
