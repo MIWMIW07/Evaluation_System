@@ -1199,9 +1199,9 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                             <?php else: ?>
                                 <div class="rating-options">
                                     <label><input type="radio" name="q1_3" value="5"> 5</label>
-                                    <label><input type="radio" name="q1_3" value4"> 4</label>
+                                    <label><input type="radio" name="q1_3" value="4"> 4</label>
                                     <label><input type="radio" name="q1_3" value="3"> 3</label>
-                                    <abel><input type="radio" name="q1_3" value="2"> 2</label>
+                                    <label><input type="radio" name="q1_3" value="2"> 2</label>
                                     <label><input type="radio" name="q1_3" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
@@ -1302,7 +1302,6 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                     </tr>
                     <tr id="question-2-3-t" class="<?php echo $is_view_mode ? '' : 'required-rating'; ?>">
                         <td>2.3 Hinuhubog sa mga mag-aaral ang respeto at paggalang sa mga guro.</td>
-                        <>
                             <?php if ($is_view_mode): ?>
                                 <div class="view-mode-rating"><?php echo $existing_evaluation['q2_3']; ?></div>
                             <?php else: ?>
@@ -1311,7 +1310,7 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
                                     <label><input type="radio" name="q2_3" value="4"> 4</label>
                                     <label><input type="radio" name="q2_3" value="3"> 3</label>
                                     <label><input type="radio" name="q2_3" value="2"> 2</label>
-                                    <label><input type="radio" name="q2_3" value=""> 1</label>
+                                    <label><input type="radio" name="q2_3" value="1"> 1</label>
                                 </div>
                             <?php endif; ?>
                         </td>
@@ -1612,159 +1611,98 @@ if ($is_view_mode && !empty($existing_evaluation['comments'])) {
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const englishBtn = document.getElementById('english-btn');
-            const tagalogBtn = document.getElementById('tagalog-btn');
-            const englishContent = document.querySelectorAll('.english');
-            const tagalogContent = document.querySelectorAll('.tagalog');
-            const form = document.getElementById('evaluationForm');
-            const progressBar = document.getElementById('progress-bar');
-            const progressText = document.getElementById('progress-text');
-            const submitBtn = document.getElementById('submit-btn');
-            const incompleteNotice = document.getElementById('incomplete-notice');
-            const modal = document.getElementById('incomplete-modal');
-            const modalMessage = document.getElementById('modal-message');
-            const modalOkBtn = document.getElementById('modal-ok-btn');
-
-            // Language toggle functionality
-            if (englishBtn && tagalogBtn) {
-                englishBtn.addEventListener('click', () => {
-                    englishContent.forEach(el => el.style.display = 'block');
-                    tagalogContent.forEach(el => el.style.display = 'none');
-                    englishBtn.classList.add('active');
-                    tagalogBtn.classList.remove('active');
-                    updateProgress();
-                });
-
-                tagalogBtn.addEventListener('click', () => {
-                    englishContent.forEach(el => el.style.display = 'none');
-                    tagalogContent.forEach(el => el.style.display = 'block');
-                    tagalogBtn.classList.add('active');
-                    englishBtn.classList.remove('active');
-                    updateProgress();
-                });
-            }
-
-            // Update progress bar
-            function updateProgress() {
-                const radioInputs = document.querySelectorAll('input[type="radio"]');
-                const ratingNames = Array.from(radioInputs)
-                    .map(input => input.name)
-                    .filter((v, i, a) => a.indexOf(v) === i);
-
-                let totalRatings = ratingNames.length;
-                let answeredRatings = 0;
-                ratingNames.forEach(name => {
-                    if (document.querySelector(`input[name="${name}"]:checked`)) {
-                        answeredRatings++;
-                    }
-                });
-
-                // Comments: check both comment fields
-                const totalComments = 2;
-                let answeredComments = 0;
-                
-                // Check English comments
-                const positiveComment = document.getElementById('positive-comment');
-                const negativeComment = document.getElementById('negative-comment');
-                
-                // Check Tagalog comments
-                const positiveCommentTl = document.getElementById('positive-comment-tl');
-                const negativeCommentTl = document.getElementById('negative-comment-tl');
-                
-                if ((positiveComment && positiveComment.value.trim()) || (positiveCommentTl && positiveCommentTl.value.trim())) {
-                    answeredComments++;
-                }
-                if ((negativeComment && negativeComment.value.trim()) || (negativeCommentTl && negativeCommentTl.value.trim())) {
-                    answeredComments++;
-                }
-
-                const progress = ((answeredRatings / totalRatings) * 0.8 + (answeredComments / totalComments) * 0.2) * 100;
-                if (progressBar) progressBar.style.width = progress + '%';
-                if (progressText) progressText.textContent = `Completion: ${Math.round(progress)}%`;
-
-                if (submitBtn) {
-                    submitBtn.disabled = progress < 100;
-                }
-
-                // Show/hide incomplete notice
-                if (incompleteNotice) {
-                    incompleteNotice.style.display = progress < 100 ? 'block' : 'none';
-                }
-
-                // Highlight incomplete questions
-                ratingNames.forEach(name => {
-                    const row = document.querySelector(`input[name="${name}"]`)?.closest('tr');
-                    if (row && !document.querySelector(`input[name="${name}"]:checked`)) {
-                        row.classList.add('incomplete');
-                    } else if (row) {
-                        row.classList.remove('incomplete');
-                    }
-                });
-
-                // Highlight incomplete comments
-                if (positiveComment && !positiveComment.value.trim()) {
-                    positiveComment.style.borderColor = '#e74c3c';
-                } else if (positiveComment) {
-                    positiveComment.style.borderColor = '#ddd';
-                }
-                if (negativeComment && !negativeComment.value.trim()) {
-                    negativeComment.style.borderColor = '#e74c3c';
-                } else if (negativeComment) {
-                    negativeComment.style.borderColor = '#ddd';
-                }
-                if (positiveCommentTl && !positiveCommentTl.value.trim()) {
-                    positiveCommentTl.style.borderColor = '#e74c3c';
-                } else if (positiveCommentTl) {
-                    positiveCommentTl.style.borderColor = '#ddd';
-                }
-                if (negativeCommentTl && !negativeCommentTl.value.trim()) {
-                    negativeCommentTl.style.borderColor = '#e74c3c';
-                } else if (negativeCommentTl) {
-                    negativeCommentTl.style.borderolor = '#ddd';
-                }
-            }
-
-            // Listen to changes
-            if (form) {
-                form.addEventListener('change', updateProgress);
-                form.addEventListener('input', updateProgress);
-                
-                // Initial update
-                updateProgress();
-
-                // Form submit validation
-                form.addEventListener('submit', (e) => {
-                    updateProgress();
-                    
-                    if (submitBtn.disabled) {
-                        e.preventDefault();
-                        if (modal) modal.style.display = 'flex';
-                    }
-                });
-            }
-
-            // Modal button
-            if (modalOkBtn) {
-                modalOkBtn.addEventListener('click', () => {
-                    if (modal) modal.style.display = 'none';
-                });
-            }
-
-            // Synchronize radio button selections between English and Tagalog sections
-            const allRadioInputs = document.querySelectorAll('input[type="radio"]');
-            allRadioInputs.forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    const name = e.target.name;
-                    const value = e.target.value;
-                    // Find the corresponding radio button in the other language section
-                    const correspondingRadio = document.querySelector(`input[type="radio"][name="${name}"][value="${value}"]:not(#${e.target.id})`);
-                    if (correspondingRadio) {
-                        correspondingRadio.checked = true;
-                    }
-                });
+<script>
+        // Language toggle functionality
+        const englishBtn = document.getElementById('english-btn');
+        const tagalogBtn = document.getElementById('tagalog-btn');
+        if (englishBtn) {
+            englishBtn.addEventListener('click', function() {
+                document.querySelectorAll('.english').forEach(el => el.style.display = 'block');
+                document.querySelectorAll('.tagalog').forEach(el => el.style.display = 'none');
+                englishBtn.classList.add('active');
+                tagalogBtn.classList.remove('active');
             });
+        }
+
+        if (tagalogBtn) {
+            tagalogBtn.addEventListener('click', function() {
+                document.querySelectorAll('.english').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.tagalog').forEach(el => el.style.display = 'block');
+                englishBtn.classList.remove('active');
+                tagalogBtn.classList.add('active');
+            });
+        }
+
+        // Define comment elements
+        const positiveComment = document.getElementById('positive-comment');
+        const negativeComment = document.getElementById('negative-comment');
+        const positiveCommentTl = document.getElementById('positive-comment-tl');
+        const negativeCommentTl = document.getElementById('negative-comment-tl');
+
+        // Highlight incomplete comments
+        function highlightIncompleteComments() {
+            if (positiveComment && !positiveComment.value.trim()) {
+                positiveComment.style.borderColor = '#e74c3c';
+            } else if (positiveComment) {
+                positiveComment.style.borderColor = '#ddd';
+            }
+            if (negativeComment && !negativeComment.value.trim()) {
+                negativeComment.style.borderColor = '#e74c3c';
+            } else if (negativeComment) {
+                negativeComment.style.borderColor = '#ddd';
+            }
+            if (positiveCommentTl && !positiveCommentTl.value.trim()) {
+                positiveCommentTl.style.borderColor = '#e74c3c';
+            } else if (positiveCommentTl) {
+                positiveCommentTl.style.borderColor = '#ddd';
+            }
+            if (negativeCommentTl && !negativeCommentTl.value.trim()) {
+                negativeCommentTl.style.borderColor = '#e74c3c';
+            } else if (negativeCommentTl) {
+                negativeCommentTl.style.borderColor = '#ddd';
+            }
+        }
+
+        // Form validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('evaluationForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    let valid = true;
+                    const radioGroups = {};
+
+                    // Collect all radio buttons
+                    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                        if (!radioGroups[radio.name]) {
+                            radioGroups[radio.name] = [];
+                        }
+                        radioGroups[radio.name].push(radio);
+                    });
+
+                    // Check if all required radio groups have a selection
+                    for (const groupName in radioGroups) {
+                        const groupSelected = radioGroups[groupName].some(radio => radio.checked);
+                        if (!groupSelected) {
+                            valid = false;
+                            // Highlight the first unselected group
+                            if (!radioGroups[groupName][0].closest('tr').classList.contains('missing')) {
+                                radioGroups[groupName][0].closest('tr').classList.add('missing');
+                                setTimeout(() => {
+                                    radioGroups[groupName][0].closest('tr').scrollIntoView({behavior: 'smooth', block: 'center'});
+                                }, 100);
+                            }
+                            break;
+                        }
+                    }
+
+                    if (!valid) {
+                        e.preventDefault();
+                        alert('Please complete all rating fields before submitting.');
+                    }
+                });
+            }
+            // Call highlight function on load
+            highlightIncompleteComments();
         });
     </script>
 </body>
