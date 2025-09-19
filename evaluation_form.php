@@ -334,6 +334,45 @@ h3 {
     margin-bottom: 15px;
 }
 
+.teacher-info {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #2196F3;
+        }
+        
+        .teacher-info h3 {
+            color: #1976D2;
+            margin-bottom: 15px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .info-item label {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9em;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .info-item span {
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
 .instructions {
     background-color: #f8f9fa;
     padding: 15px;
