@@ -1,18 +1,8 @@
 <?php
-// login.php - Enhanced login system
+// login.php - Minimalist, Premium Login
 session_start();
 
 require_once 'includes/security.php';
-
-// Check for logout message
-if (isset($_SESSION['logout_message'])) {
-    $success = $_SESSION['logout_message'];
-    unset($_SESSION['logout_message']);
-    
-    // Also check if user was admin to show appropriate redirect option
-    $was_admin = isset($_SESSION['user_type_was']) && $_SESSION['user_type_was'] === 'admin';
-    unset($_SESSION['user_type_was']);
-}
 
 // If user is already logged in, redirect appropriately
 if (isset($_SESSION['user_id'])) {
@@ -25,45 +15,29 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 
-// Include database connection
 require_once 'includes/db_connection.php';
 
 $error = '';
-$success = isset($success) ? $success : '';
+$success = '';
 
 // Handle login form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!validate_csrf_token($_POST['csrf_token'])) {
         die('CSRF token validation failed');
     }
-    
     try {
         $username = trim($_POST['username']);
         $password = trim($_POST['password']);
-        
-        // Validate input
         if (empty($username) || empty($password)) {
-            throw new Exception("Username and password are required.");
+            throw new Exception("Email/Username and password are required.");
         }
-        
-        // Check user in database
-        $stmt = query("SELECT id, username, password, user_type, full_name, student_id, program, section FROM users WHERE username = ?", [$username]);
+        $stmt = query("SELECT id, username, password, user_type FROM users WHERE username = ? OR email = ?", [$username, $username]);
         $user = fetch_assoc($stmt);
-        
         if ($user && password_verify($password, $user['password'])) {
-            // Valid login - create session
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['user_type'] = $user['user_type'];
-            $_SESSION['full_name'] = $user['full_name'];
-            $_SESSION['student_id'] = $user['student_id'];
-            $_SESSION['program'] = $user['program'];
-            $_SESSION['section'] = $user['section'];
-            
-            // Update last login time
             query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$user['id']]);
-            
-            // Redirect based on user type
             if ($user['user_type'] === 'admin') {
                 header('Location: admin.php');
                 exit;
@@ -72,9 +46,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             }
         } else {
-            throw new Exception("Invalid username or password.");
+            throw new Exception("Invalid credentials.");
         }
-        
     } catch (Exception $e) {
         $error = $e->getMessage();
     }
@@ -86,9 +59,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Teacher Evaluation System</title>
+    <title>Login • Evaluation System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600&display=swap" rel="stylesheet">
     <style>
-:root {
+        :root {
             --maroon: #7B1F25;
             --dark-maroon: #58131e;
             --gold: #FFD700;
@@ -315,155 +290,58 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <ellipse cx="60" cy="60" rx="59" ry="53" fill="#7B1F25"/>
         <ellipse cx="80" cy="75" rx="24" ry="20" fill="#FFD700"/>
     </svg>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>🎓 Login System</h1>
-            <p>Teacher Evaluation System</p>
+    <div class="login-card">
+        <div class="login-logo">
+            <span>🎓</span>
         </div>
-        
-        <div class="institution-info">
-            <h3>Philippine Technological Institute of Science Arts and Trade, Inc.</h3>
-            <p>GMA-BRANCH (2nd Semester 2024-2025)</p>
-        </div>
-        
+        <div class="login-title">Sign In</div>
+        <div class="login-desc">Teacher Evaluation System</div>
         <?php if (!empty($error)): ?>
-            <div class="alert alert-error">❌ <?php echo htmlspecialchars($error); ?></div>
+            <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
-        
         <?php if (!empty($success)): ?>
-            <div class="alert alert-success">✅ <?php echo htmlspecialchars($success); ?></div>
+            <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
         <?php endif; ?>
-        
-        <form method="POST" action="" id="loginForm">
+        <form method="POST" action="">
             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <div class="form-group">
-                <label for="username">👤 Username</label>
-                <input type="text" 
-                       id="username" 
-                       name="username" 
-                       required 
-                       autocomplete="username"
-                       placeholder="Enter your username"
-                       value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
+                <span class="form-icon">
+                    <!-- User Icon -->
+                    <svg width="20" height="20" fill="none" style="vertical-align:middle" viewBox="0 0 20 20"><circle cx="10" cy="7" r="4.1" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 17c0-3.5 3-5.5 7.5-5.5s7.5 2 7.5 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                </span>
+                <label for="username" class="form-label">Email or Username</label>
+                <input type="text" name="username" id="username" class="form-input" required autocomplete="username" placeholder="Enter email or username" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
             </div>
-            
             <div class="form-group">
-                <label for="password">🔒 Password</label>
-                <input type="password" 
-                       id="password" 
-                       name="password" 
-                       required 
-                       autocomplete="current-password"
-                       placeholder="Enter your password">
+                <span class="form-icon">
+                    <!-- Lock Icon -->
+                    <svg width="20" height="20" fill="none" style="vertical-align:middle" viewBox="0 0 20 20"><rect x="4" y="9" width="12" height="7" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M7 9V7a3 3 0 1 1 6 0v2" stroke="currentColor" stroke-width="1.3"/></svg>
+                </span>
+                <label for="password" class="form-label">Password</label>
+                <input type="password" name="password" id="password" class="form-input" required autocomplete="current-password" placeholder="Enter your password">
             </div>
-            
-            <button type="submit" class="login-btn" id="loginBtn">
-                <span class="loading-spinner" id="loadingSpinner"></span>
-                <span id="btnText">🚀 Sign In</span>
-            </button>
+            <button type="submit" class="login-btn">Login</button>
+            <div class="link-row">
+                <a href="forgot_password.php" class="form-link">Forgot Password?</a>
+                <a href="signup.php" class="form-link">Sign Up</a>
+            </div>
         </form>
-        
-        <div class="demo-accounts">
-            <h4>🧪 Demo Accounts</h4>
-            
-            <div class="demo-account">
-                <div class="demo-account-info">
-                    <div class="demo-credentials"><strong>admin</strong> / admin123</div>
-                    <small>System Administrator</small>
-                </div>
-                <div>
-                    <span class="demo-account-type admin">Admin</span>
-                    <button type="button" class="use-btn" onclick="fillLogin('admin', 'admin123')">Use</button>
-                </div>
-            </div>
-            
-            <div class="demo-account">
-                <div class="demo-account-info">
-                    <div class="demo-credentials"><strong>student1</strong> / pass123</div>
-                    <small>Juan Dela Cruz (SHS)</small>
-                </div>
-                <div>
-                    <span class="demo-account-type student">Student</span>
-                    <button type="button" class="use-btn" onclick="fillLogin('student1', 'pass123')">Use</button>
-                </div>
-            </div>
-            
-            <div class="demo-account">
-                <div class="demo-account-info">
-                    <div class="demo-credentials"><strong>student3</strong> / pass123</div>
-                    <small>Pedro Garcia (College)</small>
-                </div>
-                <div>
-                    <span class="demo-account-type student">Student</span>
-                    <button type="button" class="use-btn" onclick="fillLogin('student3', 'pass123')">Use</button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="footer-links">
-            <a href="database_setup.php">🔧 Database Setup</a>
-            <a href="test_connection.php">🔍 Test Connection</a>
+        <div class="signup-row">
+            Don't have an account?
+            <a href="signup.php" class="signup-link">Create one</a>
         </div>
     </div>
-
     <script>
-        // Auto-fill login credentials
-        function fillLogin(username, password) {
-            document.getElementById('username').value = username;
-            document.getElementById('password').value = password;
-            
-            // Add visual feedback
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.style.borderColor = '#4CAF50';
-                input.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
-                setTimeout(() => {
-                    input.style.borderColor = '#ddd';
-                    input.style.boxShadow = 'none';
-                }, 2000);
-            });
-        }
-        
-        // Form submission with loading state
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            const btn = document.getElementById('loginBtn');
-            const spinner = document.getElementById('loadingSpinner');
-            const btnText = document.getElementById('btnText');
-            
-            // Show loading state
-            btn.disabled = true;
-            spinner.style.display = 'inline-block';
-            btnText.textContent = 'Signing in...';
-            
-            // If there's an error, the page will reload and reset the button
-            // For successful login, user will be redirected
-        });
-        
-        // Add Enter key support for better UX
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const form = document.getElementById('loginForm');
-                if (form.checkValidity()) {
-                    form.submit();
-                }
-            }
-        });
-        
-        // Add some visual effects
+        // Center card fade-in
         document.addEventListener('DOMContentLoaded', function() {
-            const container = document.querySelector('.login-container');
-            container.style.opacity = '0';
-            container.style.transform = 'translateY(-30px)';
-            
+            const card = document.querySelector('.login-card');
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.97) translateY(18px)';
             setTimeout(() => {
-                container.style.transition = 'all 0.6s ease';
-                container.style.opacity = '1';
-                container.style.transform = 'translateY(0)';
-            }, 100);
-        });
-        
-        // Focus on username input when page loads
-        window.addEventListener('load', function() {
+                card.style.transition = 'all 0.7s cubic-bezier(.19,1,.22,1)';
+                card.style.opacity = '1';
+                card.style.transform = 'scale(1) translateY(0)';
+            }, 120);
             document.getElementById('username').focus();
         });
     </script>
