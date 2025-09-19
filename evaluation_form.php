@@ -97,7 +97,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             $ratings["q4_$i"] = $rating;
         }
 
-        $comments = trim($_POST['comments'] ?? '');
+        $positive = trim($_POST['q5-positive-en'] ?? $_POST['q5-positive-tl'] ?? '');
+        $negative = trim($_POST['q5-negative-en'] ?? $_POST['q5-negative-tl'] ?? '');
+        $comments = "Positive: $positive\nNegative: $negative";
 
         // Insert evaluation using PostgreSQL syntax
         $insert_sql = "INSERT INTO evaluations (user_id, student_id, student_name, section, program, teacher_id, subject, 
@@ -711,17 +713,46 @@ footer {
 
         <?php if ($is_view_mode && $existing_evaluation): ?>
             <div class="evaluation-results" style="background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%); padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #4caf50;">
-                <h3>📊 Your Evaluation Summary</h3>
-                <p><strong>Average Rating:</strong> <?php echo $average_rating; ?>/5 - <strong><?php echo $performance_level; ?></strong></p>
-                <div class="rating-scale" style="margin: 20px 0;">
-                    <div class="rating-item">5 - Outstanding</div>
-                    <div class="rating-item">4 - Very Satisfactory</div>
-                    <div class="rating-item">3 - Good/Satisfactory</div>
-                    <div class="rating-item">2 - Fair</div>
-                    <div class="rating-item">1 - Unsatisfactory</div>
-                </div>
-                <p><strong>Comments:</strong></p>
-                <p style="background: #f9f9f9; padding: 10px; border-radius: 5px;"><?php echo nl2br(htmlspecialchars($existing_evaluation['comments'])); ?></p>
+                <h3>📊 Your Evaluation Details</h3>
+                <?php
+                // Function to display question and selected rating
+                function display_question_rating($question, $rating) {
+                    echo '<div style="margin-bottom: 10px;">';
+                    echo '<strong>' . htmlspecialchars($question) . '</strong><br>';
+                    echo 'Rating: ' . htmlspecialchars($rating) . '/5';
+                    echo '</div>';
+                }
+                ?>
+                <h4>1. Teaching Competence</h4>
+                <?php
+                foreach ($section1_questions as $key => $question) {
+                    $rating = $existing_evaluation["q1_" . substr($key, 2)] ?? 'N/A';
+                    display_question_rating($question, $rating);
+                }
+                ?>
+                <h4>2. Management Skills</h4>
+                <?php
+                foreach ($section2_questions as $key => $question) {
+                    $rating = $existing_evaluation["q2_" . substr($key, 2)] ?? 'N/A';
+                    display_question_rating($question, $rating);
+                }
+                ?>
+                <h4>3. Guidance Skills</h4>
+                <?php
+                foreach ($section3_questions as $key => $question) {
+                    $rating = $existing_evaluation["q3_" . substr($key, 2)] ?? 'N/A';
+                    display_question_rating($question, $rating);
+                }
+                ?>
+                <h4>4. Personal and Social Qualities/Skills</h4>
+                <?php
+                foreach ($section4_questions as $key => $question) {
+                    $rating = $existing_evaluation["q4_" . substr($key, 2)] ?? 'N/A';
+                    display_question_rating($question, $rating);
+                }
+                ?>
+                <h4>Comments</h4>
+                <p style="white-space: pre-wrap; background: #f9f9f9; padding: 10px; border-radius: 5px;"><?php echo nl2br(htmlspecialchars($existing_evaluation['comments'])); ?></p>
                 <p style="margin-top: 15px;"><a href="student_dashboard.php" style="background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashboard</a></p>
             </div>
         <?php endif; ?>
@@ -1550,6 +1581,12 @@ footer {
         }
     });
 });
+
+// Set progress to 100% in view mode
+if (<?php echo $is_view_mode ? 'true' : 'false'; ?>) {
+    document.getElementById('progress-bar').style.width = '100%';
+    document.getElementById('progress-text').textContent = 'Completion: 100%';
+}
 </script>
 </body>
 </html>
