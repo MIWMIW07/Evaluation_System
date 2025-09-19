@@ -1,5 +1,5 @@
 # .htaccess for PHP Teacher Evaluation System on Railway
-# This prevents infinite redirect loops and supports reports directory
+# Fixed version without Directory directives
 
 RewriteEngine On
 
@@ -21,34 +21,7 @@ RewriteRule ^.*$ - [L]
 # Block access to includes directory from direct web access
 RewriteRule ^includes/ - [F,L]
 
-# Allow access to reports directory and its contents
-<Directory "reports">
-    Options +Indexes +FollowSymLinks
-    AllowOverride All
-    Order allow,deny
-    Allow from all
-    
-    # Enable directory browsing for reports
-    IndexOptions FancyIndexing HTMLTable SuppressDescription
-    DirectoryIndex index.html
-    
-    # Allow HTML and CSV files in reports
-    <Files "*.html">
-        Allow from all
-    </Files>
-    
-    <Files "*.csv">
-        Allow from all
-    </Files>
-    
-    # Prevent execution of PHP files in reports directory for security
-    <Files "*.php">
-        Order allow,deny
-        Deny from all
-    </Files>
-</Directory>
-
-# Special rules for reports directory access
+# Allow access to reports directory - using RewriteRule instead of Directory
 RewriteCond %{REQUEST_URI} ^/reports/
 RewriteRule ^reports/(.*)$ reports/$1 [L]
 
@@ -97,13 +70,6 @@ php_value memory_limit 256M
     Header always set X-XSS-Protection "1; mode=block"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
-    
-    # Special headers for reports directory
-    <Directory "reports">
-        Header always set Cache-Control "public, max-age=3600"
-        Header always unset X-Frame-Options
-        Header always set X-Frame-Options SAMEORIGIN
-    </Directory>
 </IfModule>
 
 # MIME types for better file handling
@@ -113,11 +79,5 @@ php_value memory_limit 256M
     AddType application/json .json
 </IfModule>
 
-# Prevent hotlinking of report files (optional security measure)
-RewriteCond %{HTTP_REFERER} !^$
-RewriteCond %{HTTP_REFERER} !^https?://(www\.)?yourdomain\.com [NC]
-RewriteCond %{REQUEST_URI} ^/reports/.*\.(html|csv)$ [NC]
-RewriteRule ^reports/.*$ - [F,L]
-
 # Custom 403 page for reports access denied
-ErrorDocument 403 "Access to this report file is restricted."
+ErrorDocument 403 "Access to this file is restricted."
