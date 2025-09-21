@@ -12,7 +12,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     die('Access Denied: Admin access required for database setup.');
 }
 
-
 // Include database connection with correct path
 require_once 'includes/db_connection.php';
 
@@ -90,6 +89,84 @@ try {
     $pdo->exec($create_evaluations_table);
     $setup_messages[] = "✅ Evaluations table created/verified";
     
+    // ===============================================
+    // NEW TABLES FOR COMPLETE DATABASE IMPLEMENTATION
+    // ===============================================
+    
+    // 1. CREATE SECTIONS TABLE
+    $create_sections_table = "CREATE TABLE IF NOT EXISTS sections (
+        id SERIAL PRIMARY KEY,
+        section_code VARCHAR(20) UNIQUE NOT NULL,
+        section_name VARCHAR(100) NOT NULL,
+        program VARCHAR(50) NOT NULL,
+        year_level VARCHAR(20),
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )";
+    
+    $pdo->exec($create_sections_table);
+    $setup_messages[] = "✅ Sections table created/verified";
+    
+    // 2. CREATE STUDENTS TABLE
+    $create_students_table = "CREATE TABLE IF NOT EXISTS students (
+        id SERIAL PRIMARY KEY,
+        student_id VARCHAR(30) UNIQUE,
+        last_name VARCHAR(50) NOT NULL,
+        first_name VARCHAR(50) NOT NULL,
+        middle_name VARCHAR(50),
+        full_name VARCHAR(150) NOT NULL,
+        section_id INTEGER REFERENCES sections(id),
+        is_active BOOLEAN DEFAULT true,
+        enrolled_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )";
+    
+    $pdo->exec($create_students_table);
+    $setup_messages[] = "✅ Students table created/verified";
+    
+    // 3. CREATE SECTION_TEACHERS TABLE
+    $create_section_teachers_table = "CREATE TABLE IF NOT EXISTS section_teachers (
+        id SERIAL PRIMARY KEY,
+        section_id INTEGER REFERENCES sections(id),
+        teacher_id INTEGER REFERENCES teachers(id),
+        subject VARCHAR(100),
+        is_active BOOLEAN DEFAULT true,
+        assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(section_id, teacher_id)
+    )";
+    
+    $pdo->exec($create_section_teachers_table);
+    $setup_messages[] = "✅ Section Teachers table created/verified";
+    
+    // 4. UPDATE EXISTING USERS TABLE
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS student_table_id INTEGER REFERENCES students(id)");
+        $setup_messages[] = "✅ Users table updated with student_table_id column";
+    } catch (Exception $e) {
+        $setup_messages[] = "ℹ️ Users table already has student_table_id column";
+    }
+    
+    try {
+        $pdo->exec("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_student_id_key");
+        $setup_messages[] = "✅ Removed student_id unique constraint if it existed";
+    } catch (Exception $e) {
+        $setup_messages[] = "ℹ️ No student_id constraint to remove";
+    }
+    
+    // 5. UPDATE TEACHERS TABLE
+    try {
+        $pdo->exec("ALTER TABLE teachers ADD COLUMN IF NOT EXISTS department VARCHAR(50)");
+        $setup_messages[] = "✅ Teachers table updated with department column";
+    } catch (Exception $e) {
+        $setup_messages[] = "ℹ️ Teachers table already has department column";
+    }
+    
+    try {
+        $pdo->exec("ALTER TABLE teachers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true");
+        $setup_messages[] = "✅ Teachers table updated with is_active column";
+    } catch (Exception $e) {
+        $setup_messages[] = "ℹ️ Teachers table already has is_active column";
+    }
+    
     // Insert sample admin user (only if doesn't exist)
     $check_admin = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
     $check_admin->execute(['admin']);
@@ -148,253 +225,456 @@ try {
         }
     }
     
+    // ===============================================
+    // INSERT SECTIONS DATA
+    // ===============================================
+    
+    $sections = [
+        // College Sections
+        ['BSCS-1M1', 'BS Computer Science 1st Year Morning Section 1', 'COLLEGE', '1st Year'],
+        ['BSCS-2N1', 'BS Computer Science 2nd Year Night Section 1', 'COLLEGE', '2nd Year'],
+        ['BSCS-3M1', 'BS Computer Science 3rd Year Morning Section 1', 'COLLEGE', '3rd Year'],
+        ['BSCS-4N1', 'BS Computer Science 4th Year Night Section 1', 'COLLEGE', '4th Year'],
+        ['BSOA-1M1', 'BS Office Administration 1st Year Morning Section 1', 'COLLEGE', '1st Year'],
+        ['BSOA-2N1', 'BS Office Administration 2nd Year Night Section 1', 'COLLEGE', '2nd Year'],
+        ['BSOA-3M1', 'BS Office Administration 3rd Year Morning Section 1', 'COLLEGE', '3rd Year'],
+        ['BSOA-4N1', 'BS Office Administration 4th Year Night Section 1', 'COLLEGE', '4th Year'],
+        ['EDUC-1M1', 'Bachelor of Elementary Education 1st Year Morning Section 1', 'COLLEGE', '1st Year'],
+        ['EDUC-2N1', 'Bachelor of Elementary Education 2nd Year Night Section 1', 'COLLEGE', '2nd Year'],
+        ['EDUC-3M1', 'Bachelor of Elementary Education 3rd Year Morning Section 1', 'COLLEGE', '3rd Year'],
+        ['EDUC-4M1', 'Bachelor of Elementary Education 4th Year Morning Section 1', 'COLLEGE', '4th Year'],
+        ['EDUC-4N1', 'Bachelor of Elementary Education 4th Year Night Section 1', 'COLLEGE', '4th Year'],
+        ['BSCS-1SC', 'BS Computer Science 1st Year Sunday Class', 'COLLEGE', '1st Year'],
+        ['BSCS-2SC', 'BS Computer Science 2nd Year Sunday Class', 'COLLEGE', '2nd Year'],
+        ['BSOA-1SC', 'BS Office Administration 1st Year Sunday Class', 'COLLEGE', '1st Year'],
+        ['BSOA-2SC', 'BS Office Administration 2nd Year Sunday Class', 'COLLEGE', '2nd Year'],
+        ['BTVTED-1SC', 'Bachelor of Technical Vocational Teacher Education 1st Year Sunday Class', 'COLLEGE', '1st Year'],
+        ['BTVTED-2SC', 'Bachelor of Technical Vocational Teacher Education 2nd Year Sunday Class', 'COLLEGE', '2nd Year'],
+        
+        // SHS Grade 11 Sections
+        ['ABM1M1', 'Accountancy Business Management Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
+        ['ABM1M2', 'Accountancy Business Management Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
+        ['ABM1N1', 'Accountancy Business Management Grade 11 Night Section 1', 'SHS', 'Grade 11'],
+        ['HUMSS1M1', 'Humanities and Social Sciences Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
+        ['HUMSS1M2', 'Humanities and Social Sciences Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
+        ['HUMSS1M3', 'Humanities and Social Sciences Grade 11 Morning Section 3', 'SHS', 'Grade 11'],
+        ['HUMSS1M4', 'Humanities and Social Sciences Grade 11 Morning Section 4', 'SHS', 'Grade 11'],
+        ['HUMSS1M5', 'Humanities and Social Sciences Grade 11 Morning Section 5', 'SHS', 'Grade 11'],
+        ['HUMSS1N1', 'Humanities and Social Sciences Grade 11 Night Section 1', 'SHS', 'Grade 11'],
+        ['HUMSS1N2', 'Humanities and Social Sciences Grade 11 Night Section 2', 'SHS', 'Grade 11'],
+        ['HUMSS1N3', 'Humanities and Social Sciences Grade 11 Night Section 3', 'SHS', 'Grade 11'],
+        ['HE1M1', 'Home Economics Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
+        ['HE1M2', 'Home Economics Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
+        ['HE1M3', 'Home Economics Grade 11 Morning Section 3', 'SHS', 'Grade 11'],
+        ['HE1M4', 'Home Economics Grade 11 Morning Section 4', 'SHS', 'Grade 11'],
+        ['HE1N1', 'Home Economics Grade 11 Night Section 1', 'SHS', 'Grade 11'],
+        ['HE1N2', 'Home Economics Grade 11 Night Section 2', 'SHS', 'Grade 11'],
+        ['ICT1M1', 'Information and Communication Technology Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
+        ['ICT1M2', 'Information and Communication Technology Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
+        ['ICT1N1', 'Information and Communication Technology Grade 11 Night Section 1', 'SHS', 'Grade 11'],
+        ['ICT1N2', 'Information and Communication Technology Grade 11 Night Section 2', 'SHS', 'Grade 11'],
+        
+        // SHS Grade 12 Sections  
+        ['HUMSS3M1', 'Humanities and Social Sciences Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
+        ['HUMSS3M2', 'Humanities and Social Sciences Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
+        ['HUMSS3M3', 'Humanities and Social Sciences Grade 12 Morning Section 3', 'SHS', 'Grade 12'],
+        ['HUMSS3M4', 'Humanities and Social Sciences Grade 12 Morning Section 4', 'SHS', 'Grade 12'],
+        ['HUMSS3N1', 'Humanities and Social Sciences Grade 12 Night Section 1', 'SHS', 'Grade 12'],
+        ['HUMSS3N2', 'Humanities and Social Sciences Grade 12 Night Section 2', 'SHS', 'Grade 12'],
+        ['HUMSS3N3', 'Humanities and Social Sciences Grade 12 Night Section 3', 'SHS', 'Grade 12'],
+        ['HUMSS3N4', 'Humanities and Social Sciences Grade 12 Night Section 4', 'SHS', 'Grade 12'],
+        ['HE3M1', 'Home Economics Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
+        ['HE3M2', 'Home Economics Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
+        ['HE3M3', 'Home Economics Grade 12 Morning Section 3', 'SHS', 'Grade 12'],
+        ['HE3M4', 'Home Economics Grade 12 Morning Section 4', 'SHS', 'Grade 12'],
+        ['HE3N1', 'Home Economics Grade 12 Night Section 1', 'SHS', 'Grade 12'],
+        ['HE3N2', 'Home Economics Grade 12 Night Section 2', 'SHS', 'Grade 12'],
+        ['HE3N3', 'Home Economics Grade 12 Night Section 3', 'SHS', 'Grade 12'],
+        ['HE3N4', 'Home Economics Grade 12 Night Section 4', 'SHS', 'Grade 12'],
+        ['ICT3M1', 'Information and Communication Technology Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
+        ['ICT3M2', 'Information and Communication Technology Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
+        ['ICT3N1', 'Information and Communication Technology Grade 12 Night Section 1', 'SHS', 'Grade 12'],
+        ['ICT3N2', 'Information and Communication Technology Grade 12 Night Section 2', 'SHS', 'Grade 12'],
+        ['ABM3M1', 'Accountancy Business Management Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
+        ['ABM3M2', 'Accountancy Business Management Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
+        ['ABM3N1', 'Accountancy Business Management Grade 12 Night Section 1', 'SHS', 'Grade 12'],
+        
+        // Sunday Classes SHS
+        ['ABM-SUNDAY CLASS', 'Accountancy Business Management Sunday Class', 'SHS', 'Mixed'],
+        ['HUMSS-SUNDAY CLASS', 'Humanities and Social Sciences Sunday Class', 'SHS', 'Mixed'],
+        ['HE-SUNDAY CLASS', 'Home Economics Sunday Class', 'SHS', 'Mixed'],
+        ['ICT-SUNDAY CLASS', 'Information and Communication Technology Sunday Class', 'SHS', 'Mixed']
+    ];
+    
+    $sections_created = 0;
+    foreach ($sections as $section) {
+        $check_section = $pdo->prepare("SELECT COUNT(*) FROM sections WHERE section_code = ?");
+        $check_section->execute([$section[0]]);
+        
+        if ($check_section->fetchColumn() == 0) {
+            $insert_section = $pdo->prepare("INSERT INTO sections (section_code, section_name, program, year_level) VALUES (?, ?, ?, ?)");
+            $insert_section->execute($section);
+            $sections_created++;
+        }
+    }
+    $setup_messages[] = "✅ {$sections_created} sections created/verified";
+    
+    // ===============================================
+    // INSERT STUDENTS DATA
+    // ===============================================
+    
+    // COLLEGE STUDENTS
+    
+    // BSCS-1M1 (Complete list)
+    $bscs1m1_students = [
+        ['ABAÑO', 'SHAWN ROVIC', 'PARREÑO', 'SHAWN ROVIC PARREÑO ABAÑO'],
+        ['ANDRES', 'ALLYSA', 'LIBRANDO', 'ALLYSA LIBRANDO ANDRES'],
+        ['CARDIENTE', 'SHIENA', 'AMANTE', 'SHIENA AMANTE CARDIENTE'],
+        ['CERNA', 'SHAYRA', 'OMILIG', 'SHAYRA OMILIG CERNA'],
+        ['CORTES', 'MARRY JOY', 'LUVIDECES', 'MARRY JOY LUVIDECES CORTES'],
+        ['DALUZ', 'MA. KATE JASMIN', 'PORTACIO', 'MA. KATE JASMIN PORTACIO DALUZ'],
+        ['ESTOCADO', 'LEOVY JOY', 'CARBONELLO', 'LEOVY JOY CARBONELLO ESTOCADO'],
+        ['GARCERA', 'ANGELA', '', 'ANGELA GARCERA'],
+        ['JACINTO', 'MA. CLARISSA', 'BAUTISTA', 'MA. CLARISSA BAUTISTA JACINTO'],
+        ['LABAGALA', 'TRISHA MAE', 'CADILE', 'TRISHA MAE CADILE LABAGALA'],
+        ['MUSCA', 'ROSALINDA', '', 'ROSALINDA MUSCA'],
+        ['RAFANAN', 'ROSELYN', 'LANORIA', 'ROSELYN LANORIA RAFANAN'],
+        ['SAYNO', 'JANILLE', 'BASINANG', 'JANILLE BASINANG SAYNO'],
+        ['ZARSUELO', 'JENNICA ROSE', 'BAMBIBO', 'JENNICA ROSE BAMBIBO ZARSUELO'],
+        ['ABIGUELA', 'RAYBAN', 'NAVEA', 'RAYBAN NAVEA ABIGUELA'],
+        ['ADONIS', 'JARED', 'DICHUPA', 'JARED DICHUPA ADONIS'],
+        ['AMABAO', 'EZEKIEL JEAN', '', 'EZEKIEL JEAN AMABAO'],
+        ['BULADO', 'JOHN PAUL', 'VALEROSO', 'JOHN PAUL VALEROSO BULADO'],
+        ['CADILE', 'BENCH JOSH', 'MENDOZA', 'BENCH JOSH MENDOZA CADILE'],
+        ['CUEVAS', 'CYRUS', 'MARTINEZ', 'CYRUS MARTINEZ CUEVAS'],
+        ['DIOQUINO', 'FRANCIS', 'RECTO', 'FRANCIS RECTO DIOQUINO'],
+        ['FALCON', 'KARL ANTHONY', 'VERSOZA', 'KARL ANTHONY VERSOZA FALCON'],
+        ['KEMPIS', 'BRIAN JOSH', 'ACIDO', 'BRIAN JOSH ACIDO KEMPIS'],
+        ['LACUARIN', 'CYRUS', 'MARMETO', 'CYRUS MARMETO LACUARIN'],
+        ['LLEGANIA', 'LANCE ALLANDY', 'MONTILLA', 'LANCE ALLANDY MONTILLA LLEGANIA'],
+        ['LOREDO', 'CLARENCE', 'CASTUCIANO', 'CLARENCE CASTUCIANO LOREDO'],
+        ['LORICA', 'JOSEPH', 'PAMIN', 'JOSEPH PAMIN LORICA'],
+        ['MEDROSO', 'VICENTE', 'VENCIO', 'VICENTE VENCIO MEDROSO'],
+        ['NOVICIO', 'ACESON', 'LAWA', 'ACESON LAWA NOVICIO'],
+        ['QUIRANTE', 'IZEUS JAKE', 'E', 'IZEUS JAKE E QUIRANTE'],
+        ['ROA', 'MICHAEL', 'RAMALLOSA', 'MICHAEL RAMALLOSA ROA'],
+        ['SAMILLANO', 'EDRIAN', 'PESTAÑO', 'EDRIAN PESTAÑO SAMILLANO'],
+        ['VALLEJO', 'JOHN KENNETH ADRIAN', 'EMBESTRO', 'JOHN KENNETH ADRIAN EMBESTRO VALLEJO'],
+        ['VERDOQUILLO', 'LEMUEL', 'HITALIA', 'LEMUEL HITALIA VERDOQUILLO'],
+        ['VILLANUEVA', 'ROWIE', 'PADEL', 'ROWIE PADEL VILLANUEVA']
+    ];
+    
+    $students_created = 0;
+    $section_id = $pdo->query("SELECT id FROM sections WHERE section_code = 'BSCS-1M1'")->fetchColumn();
+    
+    foreach ($bscs1m1_students as $student) {
+        $check_student = $pdo->prepare("SELECT COUNT(*) FROM students WHERE full_name = ? AND section_id = ?");
+        $check_student->execute([$student[3], $section_id]);
+        
+        if ($check_student->fetchColumn() == 0) {
+            $insert_student = $pdo->prepare("INSERT INTO students (last_name, first_name, middle_name, full_name, section_id) VALUES (?, ?, ?, ?, ?)");
+            $insert_student->execute([$student[0], $student[1], $student[2], $student[3], $section_id]);
+            $students_created++;
+        }
+    }
+    $setup_messages[] = "✅ {$students_created} students created for BSCS-1M1";
+    
+    // BSCS-3M1 (Complete list)
+    $bscs3m1_students = [
+        ['AMADO', 'MYRLINE', 'CASUPANG', 'MYRLINE CASUPANG AMADO'],
+        ['AWAT', 'ARIANNE LEIH', 'AZUPARDO', 'ARIANNE LEIH AZUPARDO AWAT'],
+        ['DALUZ', 'LORRAINE', 'PORTACIO', 'LORRAINE PORTACIO DALUZ'],
+        ['MARTINEZ', 'ANGELICA ANNE', 'CAJEPE', 'ANGELICA ANNE CAJEPE MARTINEZ'],
+        ['TRINIDAD', 'JESLYN', 'SURUIZ', 'JESLYN SURUIZ TRINIDAD'],
+        ['ADORNA', 'KENNETH', 'WAGA', 'KENNETH WAGA ADORNA'],
+        ['CABRITIT', 'JAYNIEL', 'SANTIAGO', 'JAYNIEL SANTIAGO CABRITIT'],
+        ['CELMAR', 'PETER PAUL', '', 'PETER PAUL CELMAR'],
+        ['CORDIAL', 'LOUIS ALFRED', 'GUTIERREZ', 'LOUIS ALFRED GUTIERREZ CORDIAL'],
+        ['DACULA', 'CHRISTIAN', 'PASCO', 'CHRISTIAN PASCO DACULA'],
+        ['DE RAMOS', 'JOHN VINCENT', 'PAILONA', 'JOHN VINCENT PAILONA DE RAMOS'],
+        ['DELA CRUZ', 'PRINCE WILLIAM VINCENT', 'ESCARDA', 'PRINCE WILLIAM VINCENT ESCARDA DELA CRUZ'],
+        ['ELIJORDE', 'DANILO', 'LAVILLA', 'DANILO LAVILLA ELIJORDE'],
+        ['ISRAEL', 'GABRIEL', 'VARGAS', 'GABRIEL VARGAS ISRAEL'],
+        ['LEVARDO', 'RIQUIE LARREY', 'MANGILIT', 'RIQUIE LARREY MANGILIT LEVARDO'],
+        ['MANGILIT', 'MARK LANDER', 'GARCIA', 'MARK LANDER GARCIA MANGILIT'],
+        ['MICOSA', 'MERVIN', 'D', 'MERVIN D MICOSA'],
+        ['MONTESCLAROS', 'MICO', 'C', 'MICO C MONTESCLAROS'],
+        ['NAVARRO', 'CHRISTIAN SHUCKS', 'CABANLIT', 'CHRISTIAN SHUCKS CABANLIT NAVARRO'],
+        ['OMAYAN', 'KING NATHANIEL', 'A', 'KING NATHANIEL A OMAYAN'],
+        ['RAÑESES', 'MHAYTHAN JAMES', 'APOSTOL', 'MHAYTHAN JAMES APOSTOL RAÑESES'],
+        ['RESTRIVERA', 'ZAIMON JAMES', 'SEGUILLA', 'ZAIMON JAMES SEGUILLA RESTRIVERA'],
+        ['TOQUE', 'CHRISTOPHER GLEN', 'RESURRECCION', 'CHRISTOPHER GLEN RESURRECCION TOQUE']
+    ];
+    
+    $students_created = 0;
+    $section_id = $pdo->query("SELECT id FROM sections WHERE section_code = 'BSCS-3M1'")->fetchColumn();
+    
+    foreach ($bscs3m1_students as $student) {
+        $check_student = $pdo->prepare("SELECT COUNT(*) FROM students WHERE full_name = ? AND section_id = ?");
+        $check_student->execute([$student[3], $section_id]);
+        
+        if ($check_student->fetchColumn() == 0) {
+            $insert_student = $pdo->prepare("INSERT INTO students (last_name, first_name, middle_name, full_name, section_id) VALUES (?, ?, ?, ?, ?)");
+            $insert_student->execute([$student[0], $student[1], $student[2], $student[3], $section_id]);
+            $students_created++;
+        }
+    }
+    $setup_messages[] = "✅ {$students_created} students created for BSCS-3M1";
+    
+    // SHS STUDENTS - ABM1M1 (First 20 students as example)
+    $abm1m1_students = [
+        ['ADVINCULA', 'LEBRON JAMES', 'B.', 'LEBRON JAMES B. ADVINCULA'],
+        ['ARTIOLA', 'ALBERT', 'N.', 'ALBERT N. ARTIOLA'],
+        ['BRAGAT', 'JOHN MICO', 'L.', 'JOHN MICO L. BRAGAT'],
+        ['CLAVO', 'JOSHUA', 'C.', 'JOSHUA C. CLAVO'],
+        ['HUIT', 'ADRIAN DAVE', 'G.', 'ADRIAN DAVE G. HUIT'],
+        ['JORGE', 'ROGERICK', 'L.', 'ROGERICK L. JORGE'],
+        ['ORGAS', 'JOHN', 'J.', 'JOHN J. ORGAS'],
+        ['OTACAN', 'DARYL', 'C.', 'DARYL C. OTACAN'],
+        ['ALANO', 'JHILIAN', 'G.', 'JHILIAN G. ALANO'],
+        ['ARLANTE', 'ARLIE MAY', 'R.', 'ARLIE MAY R. ARLANTE'],
+        ['AUDENCIAL', 'MARY ELAINE', 'A.', 'MARY ELAINE A. AUDENCIAL'],
+        ['BERNARDINO', 'RAZHEN', 'M.', 'RAZHEN M. BERNARDINO'],
+        ['CERTIZA', 'ALMERA JOY', 'B.', 'ALMERA JOY B. CERTIZA'],
+        ['CLARIDAD', 'JESSA', 'E.', 'JESSA E. CLARIDAD'],
+        ['CTRUZ', 'CHRISTINE', 'C.', 'CHRISTINE C. CRUZ'],
+        ['DABODA', 'ROXANNE', 'B.', 'ROXANNE B. DABODA'],
+        ['DACULA', 'KAREN CLAIRE', 'P.', 'KAREN CLAIRE P. DACULA'],
+        ['ESTRADA', 'MARIVIC', 'M.', 'MARIVIC M. ESTRADA'],
+        ['INABANG', 'NORJANNAH', 'D.', 'NORJANNAH D. INABANG'],
+        ['ONGCAL', 'CLARISSE ANNE', 'B.', 'CLARISSE ANNE B. ONGCAL']
+    ];
+    
+    $students_created = 0;
+    $section_id = $pdo->query("SELECT id FROM sections WHERE section_code = 'ABM1M1'")->fetchColumn();
+    
+    foreach ($abm1m1_students as $student) {
+        $check_student = $pdo->prepare("SELECT COUNT(*) FROM students WHERE full_name = ? AND section_id = ?");
+        $check_student->execute([$student[3], $section_id]);
+        
+        if ($check_student->fetchColumn() == 0) {
+            $insert_student = $pdo->prepare("INSERT INTO students (last_name, first_name, middle_name, full_name, section_id) VALUES (?, ?, ?, ?, ?)");
+            $insert_student->execute([$student[0], $student[1], $student[2], $student[3], $section_id]);
+            $students_created++;
+        }
+    }
+    $setup_messages[] = "✅ {$students_created} students created for ABM1M1";
+    
+    // ===============================================
+    // COMPLETE SECTION TEACHER ASSIGNMENTS
+    // ===============================================
+    
+    // First, let's insert the teachers from your data
+    $college_teachers = [
+        ['MR. VELE', 'Computer Programming', 'COLLEGE', 'Computer Science'],
+        ['MR. RODRIGUEZ', 'Database Systems', 'COLLEGE', 'Computer Science'],
+        ['MR. JIMENEZ', 'Web Development', 'COLLEGE', 'Computer Science'],
+        ['MS. RENDORA', 'Mathematics', 'COLLEGE', 'Mathematics'],
+        ['MR. LACERNA', 'Programming Fundamentals', 'COLLEGE', 'Computer Science'],
+        ['MR. ATIENZA', 'Business Management', 'COLLEGE', 'Business'],
+        ['MR. ICABANDE', 'System Analysis', 'COLLEGE', 'Computer Science'],
+        ['MR. PATIAM', 'Network Administration', 'COLLEGE', 'Computer Science'],
+        ['MS. VELE', 'English Communication', 'COLLEGE', 'Languages'],
+        ['MR. V. GORDON', 'Statistics', 'COLLEGE', 'Mathematics'],
+        ['MR. GORDON', 'Advanced Statistics', 'COLLEGE', 'Mathematics'],
+        ['MS. DIMAPILIS', 'Office Administration', 'COLLEGE', 'Business'],
+        ['MR. ELLO', 'Educational Psychology', 'COLLEGE', 'Education'],
+        ['MS. IGHARAS', 'Business Communication', 'COLLEGE', 'Business'],
+        ['MS. OCTAVO', 'Accounting', 'COLLEGE', 'Business'],
+        ['MR. CALCEÑA', 'Business Law', 'COLLEGE', 'Business'],
+        ['MS. CARMONA', 'Educational Management', 'COLLEGE', 'Education'],
+        ['MR. MATILA', 'Research Methods', 'COLLEGE', 'Education'],
+        ['MR. VALENZUELA', 'Philosophy', 'COLLEGE', 'Humanities'],
+        ['MR. ORNACHO', 'Physical Education', 'COLLEGE', 'Physical Education'],
+        ['MS. TESORO', 'Child Development', 'COLLEGE', 'Education'],
+        ['MS. MAGNO', 'Educational Technology', 'COLLEGE', 'Education'],
+        ['MR. PATALEN', 'Advanced Programming', 'COLLEGE', 'Computer Science'],
+        ['MR. ESPEÑA', 'Software Engineering', 'COLLEGE', 'Computer Science'],
+        ['MS. GENTEROY', 'Entrepreneurship', 'COLLEGE', 'Business']
+    ];
+    
+    $shs_teachers = [
+        ['MS. TINGSON', 'Food and Beverage Services', 'SHS', 'Technical Vocational'],
+        ['MRS. YABUT', 'English', 'SHS', 'Languages'],
+        ['MS. LAGUADOR', 'Mathematics', 'SHS', 'Mathematics'],
+        ['MR. SANTOS', 'Science', 'SHS', 'Sciences'],
+        ['MS. ANGELES', 'Filipino', 'SHS', 'Languages'],
+        ['MR. ALCEDO', 'Physical Education', 'SHS', 'Physical Education'],
+        ['MRS. TESORO', 'Values Education', 'SHS', 'Humanities'],
+        ['MR. UMALI', 'Social Studies', 'SHS', 'Social Sciences'],
+        ['MR. R. GORDON', 'Statistics and Probability', 'SHS', 'Mathematics'],
+        ['MR. GARCIA', 'Earth Science', 'SHS', 'Sciences'],
+        ['MS. ROQUIOS', 'Practical Research', 'SHS', 'Research'],
+        ['MS. GAJIRAN', 'Computer Programming', 'SHS', 'Technical Vocational'],
+        ['MS. RIVERA', 'Business Math', 'SHS', 'Mathematics'],
+        ['MR. BATILES', 'Food and Beverage Services', 'SHS', 'Technical Vocational'],
+        ['MS. LIBRES', 'Computer Systems Servicing', 'SHS', 'Technical Vocational'],
+        ['MS. CARMONA', 'Oral Communication', 'SHS', 'Languages']
+    ];
+    
+    $teachers_created = 0;
+    foreach (array_merge($college_teachers, $shs_teachers) as $teacher) {
+        $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND subject = ?");
+        $check_teacher->execute([$teacher[0], $teacher[1]]);
+        
+        if ($check_teacher->fetchColumn() == 0) {
+            $insert_teacher = $pdo->prepare("INSERT INTO teachers (name, subject, program, department) VALUES (?, ?, ?, ?)");
+            $insert_teacher->execute($teacher);
+            $teachers_created++;
+        }
+    }
+    $setup_messages[] = "✅ {$teachers_created} teachers created/verified";
+    
+    // COLLEGE SECTION TEACHER ASSIGNMENTS
+    
+    // BSCS-1M1 Teachers
+    $bscs1m1_teachers = [
+        ['MR. VELE', 'Computer Programming'],
+        ['MR. RODRIGUEZ', 'Database Systems'],
+        ['MR. JIMENEZ', 'Web Development'],
+        ['MS. RENDORA', 'Mathematics'],
+        ['MR. LACERNA', 'Programming Fundamentals'],
+        ['MR. ATIENZA', 'Business Management']
+    ];
+    
+    $section_teachers_created = 0;
+    $section_id = $pdo->query("SELECT id FROM sections WHERE section_code = 'BSCS-1M1'")->fetchColumn();
+    
+    foreach ($bscs1m1_teachers as $teacher) {
+        $teacher_id = $pdo->prepare("SELECT id FROM teachers WHERE name = ? AND subject = ?");
+        $teacher_id->execute([$teacher[0], $teacher[1]]);
+        $teacher_id = $teacher_id->fetchColumn();
+        
+        if ($teacher_id) {
+            $check_assignment = $pdo->prepare("SELECT COUNT(*) FROM section_teachers WHERE section_id = ? AND teacher_id = ?");
+            $check_assignment->execute([$section_id, $teacher_id]);
+            
+            if ($check_assignment->fetchColumn() == 0) {
+                $insert_assignment = $pdo->prepare("INSERT INTO section_teachers (section_id, teacher_id, subject) VALUES (?, ?, ?)");
+                $insert_assignment->execute([$section_id, $teacher_id, $teacher[1]]);
+                $section_teachers_created++;
+            }
+        }
+    }
+    $setup_messages[] = "✅ {$section_teachers_created} teacher assignments created for BSCS-1M1";
+    
+    // SHS SECTION TEACHER ASSIGNMENTS
+    
+    // ABM1M1 Teachers (Based on SHS_GRADE11_TEACHERS.docx)
+    $abm1m1_teachers = [
+        ['MS. TINGSON', 'Business Management'],
+        ['MS. RIVERA', 'Business Mathematics'],
+        ['MR. SANTOS', 'General Science'],
+        ['MS. ANGELES', 'Filipino'],
+        ['MR. ALCEDO', 'Physical Education'],
+        ['MS. TESORO', 'Values Education'],
+        ['MR. UMALI', 'Social Studies'],
+        ['MS. LAGUADOR', 'Mathematics'],
+        ['MR. CALCEÑA', 'Business Law'],
+        ['MS. GAJIRAN', 'Computer Applications']
+    ];
+    
+    $section_teachers_created = 0;
+    $section_id = $pdo->query("SELECT id FROM sections WHERE section_code = 'ABM1M1'")->fetchColumn();
+    
+    foreach ($abm1m1_teachers as $teacher) {
+        $teacher_id = $pdo->prepare("SELECT id FROM teachers WHERE name = ? AND subject = ?");
+        $teacher_id->execute([$teacher[0], $teacher[1]]);
+        $teacher_id = $teacher_id->fetchColumn();
+        
+        if ($teacher_id) {
+            $check_assignment = $pdo->prepare("SELECT COUNT(*) FROM section_teachers WHERE section_id = ? AND teacher_id = ?");
+            $check_assignment->execute([$section_id, $teacher_id]);
+            
+            if ($check_assignment->fetchColumn() == 0) {
+                $insert_assignment = $pdo->prepare("INSERT INTO section_teachers (section_id, teacher_id, subject) VALUES (?, ?, ?)");
+                $insert_assignment->execute([$section_id, $teacher_id, $teacher[1]]);
+                $section_teachers_created++;
+            }
+        }
+    }
+    $setup_messages[] = "✅ {$section_teachers_created} teacher assignments created for ABM1M1";
+    
     $setup_messages[] = "🎉 Database setup completed successfully!";
     
+} catch (PDOException $e) {
+    $errors[] = "❌ Database Error: " . $e->getMessage();
 } catch (Exception $e) {
-    $errors[] = "❌ Database setup failed: " . $e->getMessage();
+    $errors[] = "❌ General Error: " . $e->getMessage();
 }
-?>
 
+// Display results
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Setup - Teacher Evaluation System</title>
+    <title>Database Setup - Faculty Evaluation System</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
+            font-family: Arial, sans-serif;
             line-height: 1.6;
-            min-height: 100vh;
+            margin: 0;
             padding: 20px;
+            background-color: #f4f4f4;
         }
-        
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background-color: #fff;
-            padding: 40px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 25px;
-            border-bottom: 3px solid #4CAF50;
-        }
-        
-        .header h1 {
-            color: #2c3e50;
-            font-size: 2.2em;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .setup-results {
-            margin-bottom: 30px;
-        }
-        
-        .message {
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            font-weight: 500;
-        }
-        
-        .message.success {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            color: #155724;
-            border-left: 5px solid #28a745;
-        }
-        
-        .message.error {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            color: #721c24;
-            border-left: 5px solid #dc3545;
-        }
-        
-        .btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            color: white;
-            padding: 15px 30px;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-            margin: 10px 5px;
-        }
-        
-        .btn:hover {
-            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
-        }
-        
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
-            box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
-        }
-        
-        .action-buttons {
-            text-align: center;
-            margin-top: 30px;
-        }
-        
-        .demo-accounts {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-            padding: 25px;
-            border-radius: 10px;
-            margin-top: 30px;
-            border-left: 5px solid #ffc107;
-        }
-        
-        .demo-accounts h3 {
-            color: #856404;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .account-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
-        
-        .account-card {
             background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .account-type {
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        
-        .credentials {
-            font-family: 'Courier New', monospace;
-            background: #f8f9fa;
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 8px;
-        }
-        
-        .warning {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-            color: #856404;
             padding: 20px;
-            border-radius: 8px;
-            margin-top: 30px;
-            border-left: 5px solid #ffc107;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                padding: 20px;
-            }
-            
-            .action-buttons {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .btn {
-                width: 100%;
-                max-width: 300px;
-                margin: 5px 0;
-            }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #dff0d8;
+            border-left: 4px solid #3c763d;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            border-left: 4px solid #a94442;
+            color: #a94442;
+        }
+        .info {
+            background-color: #d9edf7;
+            border-left: 4px solid #31708f;
+            color: #31708f;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🔧 Database Setup</h1>
-            <p>Teacher Evaluation System</p>
-            <p>Setting up database for Railway PostgreSQL deployment...</p>
-        </div>
+        <h1>Database Setup Results</h1>
         
-        <div class="setup-results">
-            <?php if (!empty($setup_messages)): ?>
-                <?php foreach ($setup_messages as $message): ?>
-                    <div class="message success"><?php echo htmlspecialchars($message); ?></div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-            
-            <?php if (!empty($errors)): ?>
-                <?php foreach ($errors as $error): ?>
-                    <div class="message error"><?php echo htmlspecialchars($error); ?></div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-        
-        <?php if (empty($errors)): ?>
-            <div class="demo-accounts">
-                <h3>📋 Demo Accounts Created</h3>
-                <div class="account-grid">
-                    <div class="account-card">
-                        <div class="account-type">🔑 Admin Account</div>
-                        <div class="credentials">Username: admin<br>Password: admin123</div>
-                        <small>System Administrator Access</small>
-                    </div>
-                    
-                    <div class="account-card">
-                        <div class="account-type">🎓 Student Accounts</div>
-                        <div class="credentials">
-                            student1 / pass123 (SHS)<br>
-                            student2 / pass123 (SHS)<br>
-                            student3 / pass123 (College)<br>
-                            student4 / pass123 (College)
-                        </div>
-                        <small>Sample student accounts</small>
-                    </div>
-                </div>
-            </div>
+        <?php if (!empty($errors)): ?>
+            <?php foreach ($errors as $error): ?>
+                <div class="message error"><?php echo $error; ?></div>
+            <?php endforeach; ?>
         <?php endif; ?>
         
-        <div class="action-buttons">
-            <a href="login.php" class="btn">🚀 Go to Login</a>
-            <a href="test_connection.php" class="btn btn-secondary">🔍 Test Database Connection</a>
-            <?php if (!empty($errors)): ?>
-                <a href="database_setup.php" class="btn" onclick="location.reload();">🔄 Retry Setup</a>
-            <?php endif; ?>
+        <?php if (!empty($setup_messages)): ?>
+            <?php foreach ($setup_messages as $message): ?>
+                <div class="message success"><?php echo $message; ?></div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+        
+        <div class="message info">
+            <strong>Note:</strong> This setup script should only be run once during initial installation.
+            For security reasons, you should restrict access to this file after setup is complete.
         </div>
         
-        <div class="warning">
-            <h3>⚠️ Security Notice</h3>
-            <p><strong>Important:</strong> After completing the initial setup, you should restrict access to this database setup page by uncommenting the security check code in the file, or remove this file from production.</p>
-            <p>This page should only be accessible during initial deployment setup.</p>
-        </div>
-        
-        <div style="text-align: center; margin-top: 40px; padding-top: 25px; border-top: 2px solid #e9ecef; color: #6c757d;">
-            <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
-            <p>Teacher Evaluation System - Database Setup</p>
-        </div>
+        <p><a href="index.php">Return to Login</a></p>
     </div>
 </body>
 </html>
-
