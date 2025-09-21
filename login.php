@@ -1,4 +1,4 @@
- <?php
+<?php
 // login.php - Enhanced login system
 session_start();
 
@@ -168,6 +168,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
         
+        /* Removed the top border line by commenting out this section */
+        /*
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-gold), var(--goldenrod), var(--primary-gold));
+            border-radius: 25px 25px 0 0;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        */
+        
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
         .login-header {
             text-align: center;
             margin-bottom: 40px;
@@ -210,8 +230,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         
         .login-header h1 {
-            font-family: popins, sans-serif;
-            font-size: 1.5em;
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2em;
             font-weight: 700;
             color: var(--dark-maroon);
             margin-bottom: 15px;
@@ -271,6 +291,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         
         .institution-info h3 {
+            font-family: 'Playfair Display', serif;
             color: var(--maroon);
             font-size: 1.2em;
             font-weight: 600;
@@ -342,6 +363,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         .form-group input:focus::placeholder {
             opacity: 0.6;
+        }
+        
+        /* Bounce animation for completed inputs */
+        .form-group input.bounce {
+            animation: inputBounce 0.5s ease;
+        }
+        
+        @keyframes inputBounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
         }
         
         .login-btn {
@@ -754,7 +792,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <!-- Add your logo image here - update the src path as needed -->
             <img src="logo.png" alt="School Logo" class="logo">
             <div>
-                <h1>Academic Portal</h1>
+                <h1>🎓 Academic Portal</h1>
                 <p>Teacher Evaluation System</p>
             </div>
         </div>
@@ -775,7 +813,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <form method="POST" action="" id="loginForm">
             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <div class="form-group">
-                <label for="username">Username</label>
+                <label for="username">👤 Username</label>
                 <input type="text" 
                        id="username" 
                        name="username" 
@@ -786,7 +824,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password">🔒 Password</label>
                 <input type="password" 
                        id="password" 
                        name="password" 
