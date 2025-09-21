@@ -416,7 +416,7 @@ try {
     // First, let's insert the teachers from your data
     $college_teachers = [
         ['MR. VELE','COLLEGE'],
-        ['MR. RODRIGUEZ' 'COLLEGE'],
+        ['MR. RODRIGUEZ', 'COLLEGE'],
         ['MR. JIMENEZ', 'COLLEGE'],
         ['MS. RENDORA', 'COLLEGE'],
         ['MR. LACERNA', 'COLLEGE'],
@@ -888,6 +888,7 @@ $setup_messages[] = "✅ All college and SHS section assignments completed succe
     </div>
 </body>
 </html>
+
 
 
 
