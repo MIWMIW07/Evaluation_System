@@ -624,7 +624,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                             <option value="ABM-3M2" <?php echo ($current_section === 'ABM-3M2') ? 'selected' : ''; ?>>ABM-3M2</option>
                             <option value="ABM-3N1" <?php echo ($current_section === 'ABM-3N1') ? 'selected' : ''; ?>>ABM-3N1</option>
                             <option value="ABM-SUNDAY CLASS" <?php echo ($current_section === 'ABM-SUNDAY CLASS') ? 'selected' : ''; ?>>ABM-SUNDAY CLASS</option>
-                            <option value="HUMSS-1M1" <?php echo ($current_section === 'HUMSS-1M1') ? 'selected' : ''; ?>>HUMSS-1M1/option>
+                            <option value="HUMSS-1M1" <?php echo ($current_section === 'HUMSS-1M1') ? 'selected' : ''; ?>>HUMSS-1M1</option>
                             <option value="HUMSS-1M2" <?php echo ($current_section === 'HUMSS-1M2') ? 'selected' : ''; ?>>HUMSS-1M2</option>
                             <option value="HUMSS-1M3" <?php echo ($current_section === 'HUMSS-1M3') ? 'selected' : ''; ?>>HUMSS-1M3</option>
                             <option value="HUMSS-1M4" <?php echo ($current_section === 'HUMSS-1M4') ? 'selected' : ''; ?>>HUMSS-1M4</option>
