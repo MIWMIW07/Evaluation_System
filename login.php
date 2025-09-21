@@ -844,6 +844,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         `;
         document.head.appendChild(style);
+
+        document.addEventListener('DOMContentLoaded', function() {
+    const usernameInput = document.getElementById('username');
+    
+    if (usernameInput) {
+        // Add placeholder text
+        usernameInput.placeholder = 'Enter your full name (e.g. Juan Dela Cruz)';
+        
+        // Add input formatting
+        usernameInput.addEventListener('input', function(e) {
+            // Convert to title case for better matching
+            let value = e.target.value;
+            // Basic title case conversion
+            value = value.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+            if (value !== e.target.value) {
+                e.target.value = value;
+            }
+        });
+    }
+});
+
+// Update the demo accounts section in login.php
+function fillLogin(username, password) {
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    
+    usernameInput.value = username;
+    passwordInput.value = password;
+    usernameInput.focus();
+}
     </script>
 </body>
 </html>
