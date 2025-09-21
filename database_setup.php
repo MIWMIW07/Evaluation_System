@@ -476,17 +476,17 @@ try {
         ['MS. VELE','SHS']
     ];
     
-    foreach ($all_teachers as $teacher) {
-    $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND department = ?");
-    $check_teacher->execute([$teacher[0], $teacher[1]]);
-    
-    if ($check_teacher->fetchColumn() == 0) {
-        $insert_teacher = $pdo->prepare("INSERT INTO teachers (name, subject, department) VALUES (?, ?, ?)");
-        $insert_teacher->execute([$teacher[0], 'General', $teacher[1]]);
-        $teachers_created++;
+    $teachers_created = 0;
+    foreach (array_merge($college_teachers, $shs_teachers) as $teacher) {
+        $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND subject = ?");
+        $check_teacher->execute([$teacher[0], $teacher[1]]);
+        
+        if ($check_teacher->fetchColumn() == 0) {
+            $insert_teacher = $pdo->prepare("INSERT INTO teachers (name, subject, program, department) VALUES (?, ?, ?, ?)");
+            $insert_teacher->execute($teacher);
+            $teachers_created++;
+        }
     }
-}
-$setup_messages[] = "✅ {$teachers_created} additional teachers created/verified";
     $setup_messages[] = "✅ {$teachers_created} teachers created/verified";
     
    // COLLEGE SECTION ASSIGNMENTS
@@ -892,6 +892,7 @@ $setup_messages[] = "✅ All college and SHS section assignments completed succe
     </div>
 </body>
 </html>
+
 
 
 
