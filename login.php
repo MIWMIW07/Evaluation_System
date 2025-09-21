@@ -82,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$show_preloader) {
 } 
 
 // If login successful (existing session or just logged in), show preloader and exit
-if (($show_preloader && $redirect_url) || isset($success)) {
+if ($show_preloader && $redirect_url) {
     ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -113,64 +113,69 @@ if (($show_preloader && $redirect_url) || isset($success)) {
                 flex-direction: column;
                 transition: opacity 0.4s;
             }
-            .circle-border {
-                width: 170px;
-                height: 170px;
-                border-radius: 50%;
-                border: 6px solid goldenrod;
-                border-top: 6px solid gold;
-                border-bottom: 6px solid maroon;
-                border-left: 6px solid lightgoldenrodyellow;
-                border-right: 6px solid darkred;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                animation: spinBorder 3s linear infinite, glow 2s ease-in-out infinite alternate;
-                box-shadow: 0 0 20px goldenrod, 0 0 40px maroon;
-            }
-            .circle-border img {
-                width: 100px;
-                height: 100px;
-                animation: spinLogo 5s linear infinite;
-            }
-            @keyframes spinBorder {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            @keyframes spinLogo {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(-360deg); }
-            }
-            @keyframes glow {
-                0% { box-shadow: 0 0 10px goldenrod, 0 0 20px maroon; }
-                100% { box-shadow: 0 0 30px gold, 0 0 60px darkred; }
-            }
+             /* Circular border */
+    .circle-border {
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      border: 6px solid goldenrod;
+      border-top: 6px solid gold;
+      border-bottom: 6px solid maroon;
+      border-left: 6px solid lightgoldenrodyellow;
+      border-right: 6px solid darkred;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: spinBorder 3s linear infinite, glow 2s ease-in-out infinite alternate;
+      box-shadow: 0 0 20px goldenrod, 0 0 40px maroon;
+    }
+
+    /* Rotating logo */
+    .circle-border img {
+      width: 100px;
+      height: 100px;
+      animation: spinLogo 5s linear infinite;
+
+    }
+
+    /* Animations */
+    @keyframes spinBorder {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes spinLogo {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(-360deg); }
+    }
+
+    @keyframes glow {
+      0% { box-shadow: 0 0 10px goldenrod, 0 0 20px maroon; }
+      100% { box-shadow: 0 0 30px gold, 0 0 60px darkred; }
+    }
+  </style>
         </style>
     </head>
     <body>
         <div id="preloader">
-            <div class="circle-border">
-                <img src="logo.png" alt="Logo">
-            </div>
-        </div>
+    <div class="circle-border">
+      <img src="logo.png" alt="Logo">
+    </div>
+  </div>
         <script>
-            setTimeout(() => {
-                document.getElementById("preloader").style.display = "none";
-                // Redirect after preloader
-                <?php if (!empty($redirect_url)): ?>
-                    window.location.href = "<?php echo $redirect_url; ?>";
-                <?php else: ?>
-                    window.location.href = "login.php?showMessage=1";
-                <?php endif; ?>
-            }, 3000);
-        </script>
+setTimeout(() => {
+  document.getElementById("preloader").style.display = "none";
+  // Redirect after preloader
+  window.location.href = "<?php echo $redirect_url; ?>";
+}, 3000);
+</script>
+
     </body>
     </html>
     <?php
     exit;
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
