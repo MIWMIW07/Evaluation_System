@@ -195,52 +195,52 @@ try {
         ['EDUC-2SC', 'Bachelor of Technical Vocational Teacher Education 2nd Year Sunday Class', 'COLLEGE', '2nd Year'],
         
         // SHS Grade 11 Sections
-        ['ABM1M1', 'Accountancy Business Management Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
-        ['ABM1M2', 'Accountancy Business Management Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
-        ['ABM1N1', 'Accountancy Business Management Grade 11 Night Section 1', 'SHS', 'Grade 11'],
-        ['HUMSS1M1', 'Humanities and Social Sciences Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
-        ['HUMSS1M2', 'Humanities and Social Sciences Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
-        ['HUMSS1M3', 'Humanities and Social Sciences Grade 11 Morning Section 3', 'SHS', 'Grade 11'],
-        ['HUMSS1M4', 'Humanities and Social Sciences Grade 11 Morning Section 4', 'SHS', 'Grade 11'],
-        ['HUMSS1M5', 'Humanities and Social Sciences Grade 11 Morning Section 5', 'SHS', 'Grade 11'],
-        ['HUMSS1N1', 'Humanities and Social Sciences Grade 11 Night Section 1', 'SHS', 'Grade 11'],
-        ['HUMSS1N2', 'Humanities and Social Sciences Grade 11 Night Section 2', 'SHS', 'Grade 11'],
-        ['HUMSS1N3', 'Humanities and Social Sciences Grade 11 Night Section 3', 'SHS', 'Grade 11'],
-        ['HE1M1', 'Home Economics Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
-        ['HE1M2', 'Home Economics Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
-        ['HE1M3', 'Home Economics Grade 11 Morning Section 3', 'SHS', 'Grade 11'],
-        ['HE1M4', 'Home Economics Grade 11 Morning Section 4', 'SHS', 'Grade 11'],
-        ['HE1N1', 'Home Economics Grade 11 Night Section 1', 'SHS', 'Grade 11'],
-        ['HE1N2', 'Home Economics Grade 11 Night Section 2', 'SHS', 'Grade 11'],
-        ['ICT1M1', 'Information and Communication Technology Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
-        ['ICT1M2', 'Information and Communication Technology Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
-        ['ICT1N1', 'Information and Communication Technology Grade 11 Night Section 1', 'SHS', 'Grade 11'],
-        ['ICT1N2', 'Information and Communication Technology Grade 11 Night Section 2', 'SHS', 'Grade 11'],
+        ['ABM-1M1', 'Accountancy Business Management Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
+        ['ABM-1M2', 'Accountancy Business Management Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
+        ['ABM-1N1', 'Accountancy Business Management Grade 11 Night Section 1', 'SHS', 'Grade 11'],
+        ['HUMSS-1M1', 'Humanities and Social Sciences Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
+        ['HUMSS-1M2', 'Humanities and Social Sciences Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
+        ['HUMSS-1M3', 'Humanities and Social Sciences Grade 11 Morning Section 3', 'SHS', 'Grade 11'],
+        ['HUMSS-1M4', 'Humanities and Social Sciences Grade 11 Morning Section 4', 'SHS', 'Grade 11'],
+        ['HUMSS-1M5', 'Humanities and Social Sciences Grade 11 Morning Section 5', 'SHS', 'Grade 11'],
+        ['HUMSS-1N1', 'Humanities and Social Sciences Grade 11 Night Section 1', 'SHS', 'Grade 11'],
+        ['HUMSS-1N2', 'Humanities and Social Sciences Grade 11 Night Section 2', 'SHS', 'Grade 11'],
+        ['HUMSS-1N3', 'Humanities and Social Sciences Grade 11 Night Section 3', 'SHS', 'Grade 11'],
+        ['HE-1M1', 'Home Economics Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
+        ['HE-1M2', 'Home Economics Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
+        ['HE-1M3', 'Home Economics Grade 11 Morning Section 3', 'SHS', 'Grade 11'],
+        ['HE-1M4', 'Home Economics Grade 11 Morning Section 4', 'SHS', 'Grade 11'],
+        ['HE-1N1', 'Home Economics Grade 11 Night Section 1', 'SHS', 'Grade 11'],
+        ['HE-1N2', 'Home Economics Grade 11 Night Section 2', 'SHS', 'Grade 11'],
+        ['ICT-1M1', 'Information and Communication Technology Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
+        ['ICT-1M2', 'Information and Communication Technology Grade 11 Morning Section 2', 'SHS', 'Grade 11'],
+        ['ICT-1N1', 'Information and Communication Technology Grade 11 Night Section 1', 'SHS', 'Grade 11'],
+        ['ICT-1N2', 'Information and Communication Technology Grade 11 Night Section 2', 'SHS', 'Grade 11'],
         
         // SHS Grade 12 Sections  
-        ['HUMSS3M1', 'Humanities and Social Sciences Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
-        ['HUMSS3M2', 'Humanities and Social Sciences Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
-        ['HUMSS3M3', 'Humanities and Social Sciences Grade 12 Morning Section 3', 'SHS', 'Grade 12'],
-        ['HUMSS3M4', 'Humanities and Social Sciences Grade 12 Morning Section 4', 'SHS', 'Grade 12'],
-        ['HUMSS3N1', 'Humanities and Social Sciences Grade 12 Night Section 1', 'SHS', 'Grade 12'],
-        ['HUMSS3N2', 'Humanities and Social Sciences Grade 12 Night Section 2', 'SHS', 'Grade 12'],
-        ['HUMSS3N3', 'Humanities and Social Sciences Grade 12 Night Section 3', 'SHS', 'Grade 12'],
-        ['HUMSS3N4', 'Humanities and Social Sciences Grade 12 Night Section 4', 'SHS', 'Grade 12'],
-        ['HE3M1', 'Home Economics Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
-        ['HE3M2', 'Home Economics Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
-        ['HE3M3', 'Home Economics Grade 12 Morning Section 3', 'SHS', 'Grade 12'],
-        ['HE3M4', 'Home Economics Grade 12 Morning Section 4', 'SHS', 'Grade 12'],
-        ['HE3N1', 'Home Economics Grade 12 Night Section 1', 'SHS', 'Grade 12'],
-        ['HE3N2', 'Home Economics Grade 12 Night Section 2', 'SHS', 'Grade 12'],
-        ['HE3N3', 'Home Economics Grade 12 Night Section 3', 'SHS', 'Grade 12'],
-        ['HE3N4', 'Home Economics Grade 12 Night Section 4', 'SHS', 'Grade 12'],
-        ['ICT3M1', 'Information and Communication Technology Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
-        ['ICT3M2', 'Information and Communication Technology Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
-        ['ICT3N1', 'Information and Communication Technology Grade 12 Night Section 1', 'SHS', 'Grade 12'],
-        ['ICT3N2', 'Information and Communication Technology Grade 12 Night Section 2', 'SHS', 'Grade 12'],
-        ['ABM3M1', 'Accountancy Business Management Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
-        ['ABM3M2', 'Accountancy Business Management Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
-        ['ABM3N1', 'Accountancy Business Management Grade 12 Night Section 1', 'SHS', 'Grade 12'],
+        ['HUMSS-3M1', 'Humanities and Social Sciences Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
+        ['HUMSS-3M2', 'Humanities and Social Sciences Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
+        ['HUMSS-3M3', 'Humanities and Social Sciences Grade 12 Morning Section 3', 'SHS', 'Grade 12'],
+        ['HUMSS-3M4', 'Humanities and Social Sciences Grade 12 Morning Section 4', 'SHS', 'Grade 12'],
+        ['HUMSS-3N1', 'Humanities and Social Sciences Grade 12 Night Section 1', 'SHS', 'Grade 12'],
+        ['HUMSS-3N2', 'Humanities and Social Sciences Grade 12 Night Section 2', 'SHS', 'Grade 12'],
+        ['HUMSS-3N3', 'Humanities and Social Sciences Grade 12 Night Section 3', 'SHS', 'Grade 12'],
+        ['HUMSS-3N4', 'Humanities and Social Sciences Grade 12 Night Section 4', 'SHS', 'Grade 12'],
+        ['HE-3M1', 'Home Economics Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
+        ['HE-3M2', 'Home Economics Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
+        ['HE-3M3', 'Home Economics Grade 12 Morning Section 3', 'SHS', 'Grade 12'],
+        ['HE-3M4', 'Home Economics Grade 12 Morning Section 4', 'SHS', 'Grade 12'],
+        ['HE-3N1', 'Home Economics Grade 12 Night Section 1', 'SHS', 'Grade 12'],
+        ['HE-3N2', 'Home Economics Grade 12 Night Section 2', 'SHS', 'Grade 12'],
+        ['HE-3N3', 'Home Economics Grade 12 Night Section 3', 'SHS', 'Grade 12'],
+        ['HE-3N4', 'Home Economics Grade 12 Night Section 4', 'SHS', 'Grade 12'],
+        ['ICT-3M1', 'Information and Communication Technology Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
+        ['ICT-3M2', 'Information and Communication Technology Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
+        ['ICT-3N1', 'Information and Communication Technology Grade 12 Night Section 1', 'SHS', 'Grade 12'],
+        ['ICT-3N2', 'Information and Communication Technology Grade 12 Night Section 2', 'SHS', 'Grade 12'],
+        ['ABM-3M1', 'Accountancy Business Management Grade 12 Morning Section 1', 'SHS', 'Grade 12'],
+        ['ABM-3M2', 'Accountancy Business Management Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
+        ['ABM-3N1', 'Accountancy Business Management Grade 12 Night Section 1', 'SHS', 'Grade 12'],
         
         // Sunday Classes SHS
         ['ABM-SUNDAY CLASS', 'Accountancy Business Management Sunday Class', 'SHS', 'Mixed'],
@@ -409,50 +409,65 @@ try {
     
     // First, let's insert the teachers from your data
     $college_teachers = [
-        ['MR. VELE', 'Computer Programming', 'COLLEGE', 'Computer Science'],
-        ['MR. RODRIGUEZ', 'Database Systems', 'COLLEGE', 'Computer Science'],
-        ['MR. JIMENEZ', 'Web Development', 'COLLEGE', 'Computer Science'],
-        ['MS. RENDORA', 'Mathematics', 'COLLEGE', 'Mathematics'],
-        ['MR. LACERNA', 'Programming Fundamentals', 'COLLEGE', 'Computer Science'],
-        ['MR. ATIENZA', 'Business Management', 'COLLEGE', 'Business'],
-        ['MR. ICABANDE', 'System Analysis', 'COLLEGE', 'Computer Science'],
-        ['MR. PATIAM', 'Network Administration', 'COLLEGE', 'Computer Science'],
-        ['MS. VELE', 'English Communication', 'COLLEGE', 'Languages'],
-        ['MR. V. GORDON', 'Statistics', 'COLLEGE', 'Mathematics'],
-        ['MR. GORDON', 'Advanced Statistics', 'COLLEGE', 'Mathematics'],
-        ['MS. DIMAPILIS', 'Office Administration', 'COLLEGE', 'Business'],
-        ['MR. ELLO', 'Educational Psychology', 'COLLEGE', 'Education'],
-        ['MS. IGHARAS', 'Business Communication', 'COLLEGE', 'Business'],
-        ['MS. OCTAVO', 'Accounting', 'COLLEGE', 'Business'],
-        ['MR. CALCEÑA', 'Business Law', 'COLLEGE', 'Business'],
-        ['MS. CARMONA', 'Educational Management', 'COLLEGE', 'Education'],
-        ['MR. MATILA', 'Research Methods', 'COLLEGE', 'Education'],
-        ['MR. VALENZUELA', 'Philosophy', 'COLLEGE', 'Humanities'],
-        ['MR. ORNACHO', 'Physical Education', 'COLLEGE', 'Physical Education'],
-        ['MS. TESORO', 'Child Development', 'COLLEGE', 'Education'],
-        ['MS. MAGNO', 'Educational Technology', 'COLLEGE', 'Education'],
-        ['MR. PATALEN', 'Advanced Programming', 'COLLEGE', 'Computer Science'],
-        ['MR. ESPEÑA', 'Software Engineering', 'COLLEGE', 'Computer Science'],
-        ['MS. GENTEROY', 'Entrepreneurship', 'COLLEGE', 'Business']
+        ['MR. VELE','COLLEGE'],
+        ['MR. RODRIGUEZ' 'COLLEGE'],
+        ['MR. JIMENEZ', 'COLLEGE'],
+        ['MS. RENDORA', 'COLLEGE'],
+        ['MR. LACERNA', 'COLLEGE'],
+        ['MR. ATIENZA', 'COLLEGE'],
+        ['MR. ICABANDE', 'COLLEGE'],
+        ['MR. PATIAM', 'COLLEGE'],
+        ['MS. VELE', 'COLLEGE'],
+        ['MR. RAIVEN GORDON', 'COLLEGE'],
+        ['MS. DIMAPILIS', 'COLLEGE'],
+        ['MR. ELLO', 'COLLEGE'],
+        ['MS. IGHARAS', 'COLLEGE'],
+        ['MS. OCTAVO', 'COLLEGE'],
+        ['MR. CALCEÑA', 'COLLEGE'],
+        ['MS. CARMONA', 'COLLEGE'],
+        ['MR. MATILA', 'COLLEGE'],
+        ['MR. VALENZUELA', 'COLLEGE'],
+        ['MR. ORNACHO', 'COLLEGE'],
+        ['MS. TESORO', 'COLLEGE'],
+        ['MS. MAGNO', 'COLLEGE'],
+        ['MR. PATALEN', 'COLLEGE'],
+        ['MR. ESPEÑA', 'COLLEGE'],
+        ['MS. GENTEROY', 'COLLEGE']
     ];
     
     $shs_teachers = [
-        ['MS. TINGSON', 'Food and Beverage Services', 'SHS', 'Technical Vocational'],
-        ['MRS. YABUT', 'English', 'SHS', 'Languages'],
-        ['MS. LAGUADOR', 'Mathematics', 'SHS', 'Mathematics'],
-        ['MR. SANTOS', 'Science', 'SHS', 'Sciences'],
-        ['MS. ANGELES', 'Filipino', 'SHS', 'Languages'],
-        ['MR. ALCEDO', 'Physical Education', 'SHS', 'Physical Education'],
-        ['MRS. TESORO', 'Values Education', 'SHS', 'Humanities'],
-        ['MR. UMALI', 'Social Studies', 'SHS', 'Social Sciences'],
-        ['MR. R. GORDON', 'Statistics and Probability', 'SHS', 'Mathematics'],
-        ['MR. GARCIA', 'Earth Science', 'SHS', 'Sciences'],
-        ['MS. ROQUIOS', 'Practical Research', 'SHS', 'Research'],
-        ['MS. GAJIRAN', 'Computer Programming', 'SHS', 'Technical Vocational'],
-        ['MS. RIVERA', 'Business Math', 'SHS', 'Mathematics'],
-        ['MR. BATILES', 'Food and Beverage Services', 'SHS', 'Technical Vocational'],
-        ['MS. LIBRES', 'Computer Systems Servicing', 'SHS', 'Technical Vocational'],
-        ['MS. CARMONA', 'Oral Communication', 'SHS', 'Languages']
+        ['MS. TINGSON', 'SHS'],
+        ['MRS. YABUT', 'SHS'],
+        ['MS. LAGUADOR', 'SHS'],
+        ['MR. SANTOS', 'SHS'],
+        ['MS. ANGELES', 'SHS'],
+        ['MR. ALCEDO', 'SHS'],
+        ['MRS. TESORO', 'SHS'],
+        ['MR. UMALI', 'SHS'],
+        ['MR. RAINIEL GORDON'],
+        ['MR. GARCIA', 'SHS'],
+        ['MS. ROQUIOS', 'SHS'],
+        ['MS. GAJIRAN', 'SHS'],
+        ['MS. RIVERA', 'SHS'],
+        ['MR. BATILES', 'SHS'],
+        ['MS. LIBRES', 'SHS'],
+        ['MS. CARMONA', 'SHS'],
+        ['MR. CALCEÑA','SHS'],
+        ['MS. GENTEROY','SHS'],
+        ['MR. RAIVEN GORDON','SHS'],
+        ['MR. ICABANDE','SHS'],
+        ['MS. IGHARAS','SHS'],
+        ['MR. JIMENEZ','SHS'],
+        ['MR. LACERNA','SHS'],
+        ['MS. MAGNO','SHS'],
+        ['MR. MATILA','SHS'],
+        ['MR. ORNACHO','SHS'],
+        ['MR. PATIAM','SHS'],
+        ['MS. RENDORA','SHS'],
+        ['MR. RODRIGUEZ','SHS'],
+        ['MR. VALENZUELA','SHS'],
+        ['MR. VELE','SHS'],
+        ['MS. VELE','SHS']
     ];
     
     $teachers_created = 0;
@@ -500,6 +515,38 @@ try {
         }
     }
     $setup_messages[] = "✅ {$section_teachers_created} teacher assignments created for BSCS-1M1";
+
+    // BSCS-2N1 Teachers
+    $bscs2n1_teachers = [
+        ['MR. VELE', 'Computer Programming'],
+        ['MR. RODRIGUEZ', 'Database Systems'],
+        ['MR. JIMENEZ', 'Web Development'],
+        ['MS. RENDORA', 'Mathematics'],
+        ['MR. ICABANDE', 'Programming Fundamentals'],
+        ['MR. PATIAM', 'Business Management']
+        ['MR. GORDON', 'Programming']
+    ];
+    
+    $section_teachers_created = 0;
+    $section_id = $pdo->query("SELECT id FROM sections WHERE section_code = 'BSCS-2N1'")->fetchColumn();
+    
+    foreach ($bscs1m1_teachers as $teacher) {
+        $teacher_id = $pdo->prepare("SELECT id FROM teachers WHERE name = ? AND subject = ?");
+        $teacher_id->execute([$teacher[0], $teacher[1]]);
+        $teacher_id = $teacher_id->fetchColumn();
+        
+        if ($teacher_id) {
+            $check_assignment = $pdo->prepare("SELECT COUNT(*) FROM section_teachers WHERE section_id = ? AND teacher_id = ?");
+            $check_assignment->execute([$section_id, $teacher_id]);
+            
+            if ($check_assignment->fetchColumn() == 0) {
+                $insert_assignment = $pdo->prepare("INSERT INTO section_teachers (section_id, teacher_id, subject) VALUES (?, ?, ?)");
+                $insert_assignment->execute([$section_id, $teacher_id, $teacher[1]]);
+                $section_teachers_created++;
+            }
+        }
+    }
+    $setup_messages[] = "✅ {$section_teachers_created} teacher assignments created for BSCS-2N1";
     
     // SHS SECTION TEACHER ASSIGNMENTS
     
@@ -621,6 +668,7 @@ try {
     </div>
 </body>
 </html>
+
 
 
 
