@@ -180,51 +180,6 @@ try {
         $setup_messages[] = "ℹ️ Admin user already exists";
     }
     
-    // Insert sample student users
-    $sample_students = [
-        ['student1', 'pass123', 'Juan Dela Cruz', 'STU001', 'SHS', 'Grade 11-A'],
-        ['student2', 'pass123', 'Maria Santos', 'STU002', 'SHS', 'Grade 12-A'],
-        ['student3', 'pass123', 'Pedro Garcia', 'STU003', 'COLLEGE', 'BSIT-1A'],
-        ['student4', 'pass123', 'Ana Reyes', 'STU004', 'COLLEGE', 'BSCS-1A']
-    ];
-    
-    foreach ($sample_students as $student) {
-        $check_student = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
-        $check_student->execute([$student[0]]);
-        
-        if ($check_student->fetchColumn() == 0) {
-            $student_password = password_hash($student[1], PASSWORD_DEFAULT);
-            $insert_student = $pdo->prepare("INSERT INTO users (username, password, user_type, full_name, student_id, program, section) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $insert_student->execute([
-                $student[0], $student_password, 'student', 
-                $student[2], $student[3], $student[4], $student[5]
-            ]);
-            $setup_messages[] = "✅ Student user created: {$student[0]} ({$student[2]})";
-        }
-    }
-    
-    // Insert sample teachers
-    $sample_teachers = [
-        ['Prof. Roberto Martinez', 'Mathematics', 'SHS'],
-        ['Prof. Elena Rodriguez', 'English', 'SHS'],
-        ['Prof. Michael Chen', 'Science', 'SHS'],
-        ['Dr. Sarah Johnson', 'Programming Fundamentals', 'COLLEGE'],
-        ['Prof. David Lopez', 'Database Systems', 'COLLEGE'],
-        ['Dr. Lisa Wang', 'Web Development', 'COLLEGE'],
-        ['Prof. Carlos Mendoza', 'Business Management', 'COLLEGE']
-    ];
-    
-    foreach ($sample_teachers as $teacher) {
-        $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND subject = ?");
-        $check_teacher->execute([$teacher[0], $teacher[1]]);
-        
-        if ($check_teacher->fetchColumn() == 0) {
-            $insert_teacher = $pdo->prepare("INSERT INTO teachers (name, subject, program) VALUES (?, ?, ?)");
-            $insert_teacher->execute($teacher);
-            $setup_messages[] = "✅ Teacher created: {$teacher[0]} - {$teacher[1]}";
-        }
-    }
-    
     // ===============================================
     // INSERT SECTIONS DATA
     // ===============================================
@@ -678,3 +633,4 @@ try {
     </div>
 </body>
 </html>
+
