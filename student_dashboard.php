@@ -670,15 +670,21 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                             <option value="BSCS-2N1" <?php echo ($current_section === 'BSCS-2N1') ? 'selected' : ''; ?>>BSCS-2N1</option>
                             <option value="BSCS-3M1" <?php echo ($current_section === 'BSCS-3M1') ? 'selected' : ''; ?>>BSCS-3M1</option>
                             <option value="BSCS-4N1" <?php echo ($current_section === 'BSCS-4N1') ? 'selected' : ''; ?>>BSCS-4N1</option>
+                            <option value="BSCS-1SC" <?php echo ($current_section === 'BSCS-1SC') ? 'selected' : ''; ?>>BSCS-1SC</option>
+                            <option value="BSCS-2SC" <?php echo ($current_section === 'BSCS-2SC') ? 'selected' : ''; ?>>BSCS-2SC</option>
                             <option value="BSOA-1M1" <?php echo ($current_section === 'BSOA-1M1') ? 'selected' : ''; ?>>BSOA-1M1</option>
                             <option value="BSOA-2N1" <?php echo ($current_section === 'BSOA-2N1') ? 'selected' : ''; ?>>BSOA-2N1</option>
                             <option value="BSOA-3M1" <?php echo ($current_section === 'BSOA-3M1') ? 'selected' : ''; ?>>BSOA-3M1</option>
                             <option value="BSOA-4N1" <?php echo ($current_section === 'BSOA-4N1') ? 'selected' : ''; ?>>BSOA-4N1</option>
+                            <option value="BSOA-1SC" <?php echo ($current_section === 'BSOA-1SC') ? 'selected' : ''; ?>>BSOA-1SC</option>
+                            <option value="BSOA-2SC" <?php echo ($current_section === 'BSOA-2SC') ? 'selected' : ''; ?>>BSOA-2SC</option>
                             <option value="EDUC-1M1" <?php echo ($current_section === 'EDUC-1M1') ? 'selected' : ''; ?>>EDUC-1M1</option>
                             <option value="EDUC-2N1" <?php echo ($current_section === 'EDUC-2N1') ? 'selected' : ''; ?>>EDUC-2N1</option>
                             <option value="EDUC-3M1" <?php echo ($current_section === 'EDUC-3M1') ? 'selected' : ''; ?>>EDUC-3M1</option>
                             <option value="EDUC-4M1" <?php echo ($current_section === 'EDUC-4M1') ? 'selected' : ''; ?>>EDUC-4M1</option>
                             <option value="EDUC-4N1" <?php echo ($current_section === 'EDUC-4N1') ? 'selected' : ''; ?>>EDUC-4N1</option>
+                            <option value="EDUC-1SC" <?php echo ($current_section === 'EDUC-1SC') ? 'selected' : ''; ?>>EDUC-1SC</option>
+                            <option value="EDUC-2SC" <?php echo ($current_section === 'EDUC-2SC') ? 'selected' : ''; ?>>EDUC-2SC</option>
                         </select>
                     </div>
                     
