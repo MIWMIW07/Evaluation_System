@@ -46,8 +46,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
 }
 
 // Get student's current program and section
-$current_program = $_SESSION['program'];
-$current_section = $_SESSION['section'];
+$current_section = $_SESSION['section'] ?? '';
+$current_program = $_SESSION['program'] ?? '';
 
 // Get teachers based on student's program
 $teachers_result = [];
@@ -60,17 +60,43 @@ try {
     $evaluated_teachers_result = fetch_all($evaluated_stmt);
     $evaluated_teachers = array_column($evaluated_teachers_result, 'teacher_id');
 } catch (Exception $e) {
-    $error = "❌ Could not load evaluation data: " . $e->getMessage();
+    $error = "Could not load evaluation data: " . $e->getMessage();
 }
 
-// Get teachers for student's program
-if (!empty($current_program)) {
+// Get teachers for student's section using the new structure
+if (!empty($current_section)) {
     try {
-        $teachers_stmt = query("SELECT id, name, subject FROM teachers WHERE program = ? ORDER BY name", 
-                              [$current_program]);
+        $teachers_stmt = query("
+            SELECT DISTINCT
+                t.id, 
+                t.name, 
+                COALESCE(st.subject, t.subject) as subject,
+                t.department
+            FROM teachers t
+            JOIN section_teachers st ON t.id = st.teacher_id
+            JOIN sections sec ON st.section_id = sec.id
+            WHERE sec.section_code = ?
+              AND st.is_active = true
+              AND t.is_active = true
+            ORDER BY t.name", 
+            [$current_section]
+        );
         $teachers_result = fetch_all($teachers_stmt);
+        
+        if (empty($teachers_result)) {
+            // Fallback: try to get teachers by program if no section-specific teachers found
+            $teachers_stmt = query("
+                SELECT id, name, subject, department 
+                FROM teachers 
+                WHERE program = ? AND is_active = true 
+                ORDER BY name", 
+                [$current_program]
+            );
+            $teachers_result = fetch_all($teachers_stmt);
+        }
+        
     } catch (Exception $e) {
-        $error = "❌ Could not load teachers list: " . $e->getMessage();
+        $error = "Could not load teachers list: " . $e->getMessage();
         $teachers_result = [];
     }
 } else {
