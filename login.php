@@ -124,15 +124,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         
         .login-header h1 {
-            color: #800000; /* maroon base color */
+            color: #2c3e50;
             margin-bottom: 10px;
             font-size: 1.8em;
-            background: linear-gradient(270deg, #FFD700, #FFECB3, #800000, #4B0000, #800000, #FFECB3, #FFD700);
-            background-size: 1400% 1400%;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: gradientAnimation 10s ease infinite;
         }
         
         .login-header p {
@@ -362,19 +360,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             .demo-account-info {
                 margin-bottom: 10px;
-            }
-        }
-        
-        /* Gradient animation keyframes */
-        @keyframes gradientAnimation {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
             }
         }
     </style>
