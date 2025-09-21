@@ -39,18 +39,6 @@ try {
     $pdo->exec($create_users_table);
     $setup_messages[] = "✅ Users table created/verified";
     
-    // Create teachers table
-    $create_teachers_table = "CREATE TABLE IF NOT EXISTS teachers (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        subject VARCHAR(100) NOT NULL,
-        program VARCHAR(50) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )";
-    
-    $pdo->exec($create_teachers_table);
-    $setup_messages[] = "✅ Teachers table created/verified";
-    
     // Create evaluations table
     $create_evaluations_table = "CREATE TABLE IF NOT EXISTS evaluations (
         id SERIAL PRIMARY KEY,
@@ -633,5 +621,6 @@ try {
     </div>
 </body>
 </html>
+
 
 
