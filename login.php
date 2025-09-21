@@ -169,6 +169,7 @@ if (($show_preloader && $redirect_url) || isset($success)) {
     <?php
     exit;
 }
+?>
 
 
 <!DOCTYPE html>
