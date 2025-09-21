@@ -482,8 +482,8 @@ try {
         $check_teacher->execute([$teacher[0], $teacher[1]]);
         
         if ($check_teacher->fetchColumn() == 0) {
-            $insert_teacher = $pdo->prepare("INSERT INTO teachers (name, subject, program, department) VALUES (?, ?, ?, ?)");
-            $insert_teacher->execute($teacher);
+            $insert_teacher = $pdo->prepare("INSERT INTO teachers (name, subject, department) VALUES (?, ?, ?)");
+            $insert_teacher->execute([$teacher[0], $teacher[1], $teacher[1]]);
             $teachers_created++;
         }
     }
@@ -892,6 +892,7 @@ $setup_messages[] = "✅ All college and SHS section assignments completed succe
     </div>
 </body>
 </html>
+
 
 
 
