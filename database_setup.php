@@ -530,7 +530,7 @@ try {
     $section_teachers_created = 0;
     $section_id = $pdo->query("SELECT id FROM sections WHERE section_code = 'BSCS-2N1'")->fetchColumn();
     
-    foreach ($bscs1m1_teachers as $teacher) {
+    foreach ($bscs2n1_teachers as $teacher) {
         $teacher_id = $pdo->prepare("SELECT id FROM teachers WHERE name = ? AND subject = ?");
         $teacher_id->execute([$teacher[0], $teacher[1]]);
         $teacher_id = $teacher_id->fetchColumn();
@@ -668,6 +668,7 @@ try {
     </div>
 </body>
 </html>
+
 
 
 
