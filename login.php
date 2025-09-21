@@ -168,21 +168,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
         
-        /* Removed the top border line by commenting out this section */
-        /*
-        .login-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary-gold), var(--goldenrod), var(--primary-gold));
-            border-radius: 25px 25px 0 0;
-            animation: shimmer 3s ease-in-out infinite;
-        }
-        */
-        
         @keyframes shimmer {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
@@ -231,7 +216,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         .login-header h1 {
             font-family: 'Playfair Display', serif;
-            font-size: 2.2em;
             font-weight: 700;
             color: var(--dark-maroon);
             margin-bottom: 15px;
@@ -792,7 +776,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <!-- Add your logo image here - update the src path as needed -->
             <img src="logo.png" alt="School Logo" class="logo">
             <div>
-                <h1>🎓 Academic Portal</h1>
+                <h1>Academic Portal</h1>
                 <p>Teacher Evaluation System</p>
             </div>
         </div>
@@ -813,7 +797,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <form method="POST" action="" id="loginForm">
             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <div class="form-group">
-                <label for="username">👤 Username</label>
+                <label for="username">Username</label>
                 <input type="text" 
                        id="username" 
                        name="username" 
@@ -824,7 +808,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             
             <div class="form-group">
-                <label for="password">🔒 Password</label>
+                <label for="password">Password</label>
                 <input type="password" 
                        id="password" 
                        name="password" 
@@ -835,7 +819,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             <button type="submit" class="login-btn" id="loginBtn">
                 <span class="loading-spinner" id="loadingSpinner"></span>
-                <span id="btnText">🚀 Sign In</span>
+                <span id="btnText">Sign In</span>
             </button>
         </form>
         
@@ -989,22 +973,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     this.style.animation = 'none';
                 });
             }, 1000);
-            
-            // Add input completion detection for bounce animation
-            const inputs = document.querySelectorAll('#username, #password');
-            inputs.forEach(input => {
-                input.addEventListener('blur', function() {
-                    if (this.value.length > 0) {
-                        this.classList.add('bounce');
-                        
-                        // Remove the class after animation completes
-                        setTimeout(() => {
-                            this.classList.remove('bounce');
-                        }, 500);
-                    }
-                });
-            });
-        });
         
         // Add input interaction effects
         document.querySelectorAll('.form-group input').forEach(input => {
