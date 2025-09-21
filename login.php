@@ -62,6 +62,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             // Update last login time
             query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$user['id']]);
+
+            // Set flag to show preloader
+            $_SESSION['show_preloader'] = true;
             
             // Redirect based on user type
             if ($user['user_type'] === 'admin') {
