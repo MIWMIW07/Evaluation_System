@@ -476,8 +476,7 @@ try {
         ['MS. VELE','SHS']
     ];
     
-    $teachers_created = 0;
-foreach ($all_teachers as $teacher) {
+    foreach ($all_teachers as $teacher) {
     $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND department = ?");
     $check_teacher->execute([$teacher[0], $teacher[1]]);
     
@@ -893,6 +892,7 @@ $setup_messages[] = "✅ All college and SHS section assignments completed succe
     </div>
 </body>
 </html>
+
 
 
 
