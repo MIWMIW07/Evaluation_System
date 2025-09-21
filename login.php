@@ -1090,6 +1090,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         `;
         document.head.appendChild(style);
+
+                        // Add input completion detection for bounce animation
+            const inputs = document.querySelectorAll('#username, #password');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value.length > 0) {
+                        this.classList.add('bounce');
+                        
+                        // Remove the class after animation completes
+                        setTimeout(() => {
+                            this.classList.remove('bounce');
+                        }, 500);
+                    }
+                });
+            });
+        });
         
         // Enhanced credential filling with success animation
         window.fillLogin = function(username, password) {
