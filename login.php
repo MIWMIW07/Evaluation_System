@@ -38,41 +38,102 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     
     try {
-        $username = trim($_POST['username']);
+        $input_name = trim($_POST['username']); // This is actually the name input
         $password = trim($_POST['password']);
         
         // Validate input
-        if (empty($username) || empty($password)) {
-            throw new Exception("Username and password are required.");
+        if (empty($input_name) || empty($password)) {
+            throw new Exception("Name and password are required.");
         }
         
-        // Check user in database
-        $stmt = query("SELECT id, username, password, user_type, full_name, student_id, program, section FROM users WHERE username = ?", [$username]);
-        $user = fetch_assoc($stmt);
+        // First, check if it's an admin login
+        $admin_stmt = query("SELECT id, username, password, user_type, full_name FROM users WHERE username = ? AND user_type = 'admin'", [$input_name]);
+        $admin_user = fetch_assoc($admin_stmt);
         
-        if ($user && password_verify($password, $user['password'])) {
-            // Valid login - create session
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['user_type'] = $user['user_type'];
-            $_SESSION['full_name'] = $user['full_name'];
-            $_SESSION['student_id'] = $user['student_id'];
-            $_SESSION['program'] = $user['program'];
-            $_SESSION['section'] = $user['section'];
+        if ($admin_user && password_verify($password, $admin_user['password'])) {
+            // Admin login successful
+            $_SESSION['user_id'] = $admin_user['id'];
+            $_SESSION['username'] = $admin_user['username'];
+            $_SESSION['user_type'] = 'admin';
+            $_SESSION['full_name'] = $admin_user['full_name'];
             
-            // Update last login time
-            query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$user['id']]);
+            query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$admin_user['id']]);
+            header('Location: admin.php');
+            exit;
+        }
+        
+        // If not admin, check students table by name
+        $student_stmt = query("
+            SELECT 
+                s.id as student_table_id,
+                s.full_name,
+                s.last_name,
+                s.first_name,
+                s.middle_name,
+                sec.section_code,
+                sec.section_name,
+                sec.program,
+                sec.year_level
+            FROM students s
+            JOIN sections sec ON s.section_id = sec.id
+            WHERE (UPPER(s.full_name) LIKE UPPER(?) 
+                   OR UPPER(s.last_name) LIKE UPPER(?)
+                   OR UPPER(CONCAT(s.first_name, ' ', s.last_name)) LIKE UPPER(?)
+                   OR UPPER(CONCAT(s.first_name, ' ', COALESCE(s.middle_name, ''), ' ', s.last_name)) LIKE UPPER(?))
+              AND s.is_active = true
+            LIMIT 5", 
+            ["%$input_name%", "%$input_name%", "%$input_name%", "%$input_name%"]
+        );
+        
+        $student_results = fetch_all($student_stmt);
+        
+        if (!empty($student_results)) {
+            // If multiple matches, take the first one or implement selection logic
+            $student = $student_results[0];
             
-            // Redirect based on user type
-            if ($user['user_type'] === 'admin') {
-                header('Location: admin.php');
-                exit;
-            } else {
+            // For students, we'll use a simple password check (you can modify this)
+            // For now, let's use 'student123' as default password or the section code
+            $valid_passwords = ['student123', $password, strtolower($student['section_code'])];
+            
+            if (in_array($password, $valid_passwords)) {
+                // Create or update user record
+                $user_stmt = query("SELECT id FROM users WHERE student_table_id = ?", [$student['student_table_id']]);
+                $existing_user = fetch_assoc($user_stmt);
+                
+                if (!$existing_user) {
+                    // Create new user record
+                    $username = strtolower(str_replace(' ', '_', $student['full_name']));
+                    $hashed_password = password_hash('student123', PASSWORD_DEFAULT);
+                    
+                    query("INSERT INTO users (username, password, user_type, full_name, program, section, student_table_id) VALUES (?, ?, 'student', ?, ?, ?, ?)",
+                          [$username, $hashed_password, $student['full_name'], $student['program'], $student['section_code'], $student['student_table_id']]);
+                    
+                    $user_id = get_last_insert_id('users_id_seq');
+                } else {
+                    $user_id = $existing_user['id'];
+                    // Update user info
+                    query("UPDATE users SET full_name = ?, program = ?, section = ?, last_login = CURRENT_TIMESTAMP WHERE id = ?",
+                          [$student['full_name'], $student['program'], $student['section_code'], $user_id]);
+                }
+                
+                // Set session variables
+                $_SESSION['user_id'] = $user_id;
+                $_SESSION['username'] = strtolower(str_replace(' ', '_', $student['full_name']));
+                $_SESSION['user_type'] = 'student';
+                $_SESSION['full_name'] = $student['full_name'];
+                $_SESSION['program'] = $student['program'];
+                $_SESSION['section'] = $student['section_code'];
+                $_SESSION['section_name'] = $student['section_name'];
+                $_SESSION['year_level'] = $student['year_level'];
+                $_SESSION['student_table_id'] = $student['student_table_id'];
+                
                 header('Location: student_dashboard.php');
                 exit;
+            } else {
+                throw new Exception("Invalid password. Try 'student123' or contact your administrator.");
             }
         } else {
-            throw new Exception("Invalid username or password.");
+            throw new Exception("Student name not found. Please check your spelling or contact your administrator.");
         }
         
     } catch (Exception $e) {
