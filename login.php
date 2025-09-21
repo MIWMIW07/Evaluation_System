@@ -62,9 +62,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             // Update last login time
             query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$user['id']]);
-
-            // Set flag to show preloader
-            $_SESSION['show_preloader'] = true;
             
             // Redirect based on user type
             if ($user['user_type'] === 'admin') {
@@ -141,73 +138,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
             33% { transform: translateY(-10px) rotate(1deg); }
             66% { transform: translateY(5px) rotate(-1deg); }
-        }
-
-        /* Preloader Styles */
-        .preloader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, var(--dark-maroon) 0%, var(--maroon) 25%, var(--goldenrod) 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
-        }
-        
-        .preloader.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .preloader-content {
-            text-align: center;
-        }
-        
-        .preloader-logo {
-            width: 120px;
-            height: 120px;
-            animation: rotate 2s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        .preloader-text {
-            color: white;
-            font-size: 18px;
-            font-weight: 500;
-            font-family: 'Inter', sans-serif;
-            margin-top: 20px;
-        }
-        
-        .preloader-progress {
-            width: 200px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
-            margin: 20px auto;
-            overflow: hidden;
-        }
-        
-        .preloader-progress-bar {
-            height: 100%;
-            width: 0%;
-            background: var(--primary-gold);
-            border-radius: 2px;
-            transition: width 5s linear;
-        }
-        
-        @keyframes rotate {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
         }
         
         .login-container {
@@ -828,18 +758,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </style>
 </head>
 <body>
-
-    <!-- Preloader -->
-    <div class="preloader" id="preloader">
-        <div class="preloader-content">
-            <img src="logo.png" alt="School Logo" class="preloader-logo">
-            <div class="preloader-text">Logging you in...</div>
-            <div class="preloader-progress">
-                <div class="preloader-progress-bar" id="preloader-progress"></div>
-            </div>
-        </div>
-    </div>
-    
     <!-- Floating particles -->
     <div class="floating-particles">
         <div class="particle"></div>
@@ -904,6 +822,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <span id="btnText">Sign In</span>
             </button>
         </form>
+
+        <!-- Full-page overlay for rotating logo loading animation -->
+        <div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(255, 255, 255, 0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+            <img src="logo.png" alt="Loading Logo" id="rotatingLogo" style="width: 120px; height: 120px; animation: rotateLogo 5s linear infinite;">
+        </div>
         
         <div class="demo-accounts">
             <h4>🧪 Demo Accounts</h4>
@@ -1188,55 +1111,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 });
             });
         });
-
-        // Preloader functionality
-        const preloader = document.getElementById('preloader');
-        const progressBar = document.getElementById('preloader-progress');
-        let redirectUrl = '';
-        
-        // Function to show preloader and redirect after 5 seconds
-        function showPreloaderAndRedirect(url) {
-            redirectUrl = url;
-            preloader.classList.add('active');
-            
-            // Animate progress bar
-            progressBar.style.width = '100%';
-            
-            // Redirect after 5 seconds
-            setTimeout(() => {
-                window.location.href = redirectUrl;
-            }, 5000);
-        }
-        
-        // Check if we need to show preloader (after successful login)
-        <?php if (isset($_SESSION['show_preloader']) && $_SESSION['show_preloader']): ?>
-            <?php 
-                // Determine redirect URL based on user type
-                $redirectUrl = ($_SESSION['user_type'] === 'admin') ? 'admin.php' : 'student_dashboard.php';
-                // Clear the flag
-                unset($_SESSION['show_preloader']);
-            ?>
-            showPreloaderAndRedirect('<?php echo $redirectUrl; ?>');
-        <?php endif; ?>
-        
-        // Form submission with enhanced loading state
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            const btn = document.getElementById('loginBtn');
-            const spinner = document.getElementById('loadingSpinner');
-            const btnText = document.getElementById('btnText');
-            
-            // Show loading state with animation
-            btn.disabled = true;
-            btn.style.transform = 'scale(0.98)';
-            spinner.style.display = 'inline-block';
-            btnText.textContent = 'Authenticating...';
-            
-            // Add pulse effect
-            btn.style.animation = 'pulse 1.5s infinite';
-            
-            // If there's an error, the page will reload and reset the button
-            // For successful login, user will be redirected
-        });
         
         // Enhanced credential filling with success animation
         window.fillLogin = function(username, password) {
@@ -1308,6 +1182,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             });
         });
-    </script>
+        </script>
+
+    <script>
+        // CSS keyframes for rotating logo animation
+        const style = document.createElement('style');
+        style.type = 'text/css';
+        style.innerHTML = `
+            @keyframes rotateLogo {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Handle form submission to show rotating logo for 5 seconds before submitting
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent immediate form submission
+
+            // Show the loading overlay with rotating logo
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+
+            // Disable form inputs and button to prevent interaction
+            const formElements = this.elements;
+            for (let i = 0; i < formElements.length; i++) {
+                formElements[i].disabled = true;
+            }
+
+            // After 5 seconds, submit the form programmatically
+            setTimeout(() => {
+                this.submit();
+            }, 5000);
+        });
+        </script>
 </body>
 </html>
