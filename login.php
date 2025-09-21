@@ -163,13 +163,13 @@ if ($show_preloader && $redirect_url) {
     </div>
   </div>
         <script>
-    // Preloader duration
-    setTimeout(() => {
-      document.getElementById("preloader").style.display = "none";
-      // Redirect after preloader
-      window.location.href = "dashboard.php"; 
-    }, 3000); // 5 seconds
-  </script>
+setTimeout(() => {
+  document.getElementById("preloader").style.display = "none";
+  // Redirect after preloader
+  window.location.href = "<?php echo $redirect_url; ?>";
+}, 3000);
+</script>
+
     </body>
     </html>
     <?php
