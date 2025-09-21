@@ -450,7 +450,7 @@ try {
         ['MR. ALCEDO', 'SHS'],
         ['MRS. TESORO', 'SHS'],
         ['MR. UMALI', 'SHS'],
-        ['MR. RAINIEL GORDON'],
+        ['MR. RAINIEL GORDON','SHS'],
         ['MR. GARCIA', 'SHS'],
         ['MS. ROQUIOS', 'SHS'],
         ['MS. GAJIRAN', 'SHS'],
@@ -892,6 +892,7 @@ $setup_messages[] = "✅ All college and SHS section assignments completed succe
     </div>
 </body>
 </html>
+
 
 
 
