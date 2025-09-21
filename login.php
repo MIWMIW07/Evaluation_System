@@ -92,19 +92,20 @@ if ($show_preloader && $redirect_url) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             body, html {
-                margin: 0;
-                padding: 0;
-                width: 100vw;
-                height: 100vh;
+                width: 100%;
+                height: 100%;
                 background: linear-gradient(135deg, #4A0012 0%, #800020 25%, #DAA520 100%);
                 overflow: hidden;
+                display: flex;
+                justify-content: center;
+                align-items: center;
             }
             .preloader-overlay {
                 position: fixed;
                 top: 0; left: 0;
                 width: 100vw;
                 height: 100vh;
-                background: rgba(255,248,220, 0.97);
+                background: linear-gradient(135deg, maroon, darkmaroon, goldenrod);
                 z-index: 99999;
                 display: flex;
                 align-items: center;
@@ -112,43 +113,63 @@ if ($show_preloader && $redirect_url) {
                 flex-direction: column;
                 transition: opacity 0.4s;
             }
-            .preloader-logo {
-                width: 140px;
-                height: 140px;
-                animation: rotate-logo 1.5s linear infinite;
-                margin-bottom: 40px;
-                filter: drop-shadow(0 6px 35px rgba(212,175,55,0.18));
-            }
-            @keyframes rotate-logo {
-                from { transform: rotate(0deg);}
-                to   { transform: rotate(360deg);}
-            }
-            .preloader-text {
-                font-family: 'Playfair Display', serif;
-                color: #800020;
-                font-size: 1.25em;
-                font-weight: 700;
-                letter-spacing: 1px;
-                margin-top: 10px;
-                animation: fadein 2s ease-in;
-            }
-            @keyframes fadein {
-                from { opacity: 0; }
-                to   { opacity: 1; }
-            }
+             /* Circular border */
+    .circle-border {
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      border: 6px solid goldenrod;
+      border-top: 6px solid gold;
+      border-bottom: 6px solid maroon;
+      border-left: 6px solid lightgoldenrodyellow;
+      border-right: 6px solid darkred;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: spinBorder 3s linear infinite, glow 2s ease-in-out infinite alternate;
+      box-shadow: 0 0 20px goldenrod, 0 0 40px maroon;
+    }
+
+    /* Rotating logo */
+    .circle-border img {
+      width: 100px;
+      height: 100px;
+      animation: spinLogo 5s linear infinite;
+
+    }
+
+    /* Animations */
+    @keyframes spinBorder {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes spinLogo {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(-360deg); }
+    }
+
+    @keyframes glow {
+      0% { box-shadow: 0 0 10px goldenrod, 0 0 20px maroon; }
+      100% { box-shadow: 0 0 30px gold, 0 0 60px darkred; }
+    }
+  </style>
         </style>
     </head>
     <body>
-        <div class="preloader-overlay" id="preloader">
-            <img src="logo.png" alt="Logo" class="preloader-logo">
-            <div class="preloader-text">Welcome! Redirecting to your dashboard...</div>
-        </div>
+        <div id="preloader">
+    <div class="circle-border">
+      <img src="logo.png" alt="Logo">
+    </div>
+  </div>
         <script>
-            // Wait 5 seconds, then redirect
-            setTimeout(function(){
-                window.location.href = <?php echo json_encode($redirect_url); ?>;
-            }, 5000);
-        </script>
+    // Preloader duration
+    setTimeout(() => {
+      document.getElementById("preloader").style.display = "none";
+      // Redirect after preloader
+      window.location.href = "dashboard.php"; 
+    }, 3000); // 5 seconds
+  </script>
     </body>
     </html>
     <?php
@@ -291,7 +312,6 @@ if ($show_preloader && $redirect_url) {
         
         .login-header h1 {
             font-family: 'Playfair Display', serif;
-            font-size: 2.2em;
             font-weight: 700;
             color: var(--dark-maroon);
             margin-bottom: 15px;
@@ -852,7 +872,7 @@ if ($show_preloader && $redirect_url) {
             <!-- Add your logo image here - update the src path as needed -->
             <img src="logo.png" alt="School Logo" class="logo">
             <div>
-                <h1>🎓 Academic Portal</h1>
+                <h1>Academic Portal</h1>
                 <p>Teacher Evaluation System</p>
             </div>
         </div>
@@ -873,7 +893,7 @@ if ($show_preloader && $redirect_url) {
         <form method="POST" action="" id="loginForm">
             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <div class="form-group">
-                <label for="username">👤 Username</label>
+                <label for="username"> Username</label>
                 <input type="text" 
                        id="username" 
                        name="username" 
@@ -884,7 +904,7 @@ if ($show_preloader && $redirect_url) {
             </div>
             
             <div class="form-group">
-                <label for="password">🔒 Password</label>
+                <label for="password"> Password</label>
                 <input type="password" 
                        id="password" 
                        name="password" 
@@ -895,12 +915,12 @@ if ($show_preloader && $redirect_url) {
             
             <button type="submit" class="login-btn" id="loginBtn">
                 <span class="loading-spinner" id="loadingSpinner"></span>
-                <span id="btnText">🚀 Sign In</span>
+                <span id="btnText"> Sign In</span>
             </button>
         </form>
         
         <div class="demo-accounts">
-            <h4>🧪 Demo Accounts</h4>
+            <h4> Demo Accounts</h4>
             
             <div class="demo-account">
                 <div class="demo-account-info">
