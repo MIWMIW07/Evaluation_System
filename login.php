@@ -14,15 +14,17 @@ if (isset($_SESSION['logout_message'])) {
     unset($_SESSION['user_type_was']);
 }
 
-// If user is already logged in, redirect appropriately
+$show_preloader = false;
+$redirect_url = "";
+
+// If user is already logged in, show preloader and redirect
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['user_type'] === 'admin') {
-        header('Location: admin.php');
-        exit;
+        $redirect_url = 'admin.php';
     } else {
-        header('Location: student_dashboard.php');
-        exit;
+        $redirect_url = 'student_dashboard.php';
     }
+    $show_preloader = true;
 }
 
 // Include database connection
@@ -32,7 +34,7 @@ $error = '';
 $success = isset($success) ? $success : '';
 
 // Handle login form submission
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && !$show_preloader) {
     if (!validate_csrf_token($_POST['csrf_token'])) {
         die('CSRF token validation failed');
     }
@@ -63,14 +65,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Update last login time
             query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$user['id']]);
             
-            // Redirect based on user type
+            // Set redirect url and show preloader
             if ($user['user_type'] === 'admin') {
-                header('Location: admin.php');
-                exit;
+                $redirect_url = 'admin.php';
             } else {
-                header('Location: student_dashboard.php');
-                exit;
+                $redirect_url = 'student_dashboard.php';
             }
+            $show_preloader = true;
         } else {
             throw new Exception("Invalid username or password.");
         }
@@ -78,6 +79,80 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } catch (Exception $e) {
         $error = $e->getMessage();
     }
+} 
+
+// If login successful (existing session or just logged in), show preloader and exit
+if ($show_preloader && $redirect_url) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Redirecting...</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body, html {
+                margin: 0;
+                padding: 0;
+                width: 100vw;
+                height: 100vh;
+                background: linear-gradient(135deg, #4A0012 0%, #800020 25%, #DAA520 100%);
+                overflow: hidden;
+            }
+            .preloader-overlay {
+                position: fixed;
+                top: 0; left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(255,248,220, 0.97);
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                transition: opacity 0.4s;
+            }
+            .preloader-logo {
+                width: 140px;
+                height: 140px;
+                animation: rotate-logo 1.5s linear infinite;
+                margin-bottom: 40px;
+                filter: drop-shadow(0 6px 35px rgba(212,175,55,0.18));
+            }
+            @keyframes rotate-logo {
+                from { transform: rotate(0deg);}
+                to   { transform: rotate(360deg);}
+            }
+            .preloader-text {
+                font-family: 'Playfair Display', serif;
+                color: #800020;
+                font-size: 1.25em;
+                font-weight: 700;
+                letter-spacing: 1px;
+                margin-top: 10px;
+                animation: fadein 2s ease-in;
+            }
+            @keyframes fadein {
+                from { opacity: 0; }
+                to   { opacity: 1; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="preloader-overlay" id="preloader">
+            <img src="logo.png" alt="Logo" class="preloader-logo">
+            <div class="preloader-text">Welcome! Redirecting to your dashboard...</div>
+        </div>
+        <script>
+            // Wait 5 seconds, then redirect
+            setTimeout(function(){
+                window.location.href = <?php echo json_encode($redirect_url); ?>;
+            }, 5000);
+        </script>
+    </body>
+    </html>
+    <?php
+    exit;
 }
 ?>
 
