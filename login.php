@@ -87,176 +87,420 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Teacher Evaluation System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-gold: #D4AF37;
+            --light-gold: #F7E98E;
+            --maroon: #800020;
+            --dark-maroon: #4A0012;
+            --goldenrod: #DAA520;
+            --cream: #FFF8DC;
+            --shadow-light: rgba(212, 175, 55, 0.2);
+            --shadow-dark: rgba(74, 0, 18, 0.3);
+            --text-dark: #2C1810;
+            --text-light: #8B7355;
+        }
+        
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            line-height: 1.6;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--dark-maroon) 0%, var(--maroon) 25%, var(--goldenrod) 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(247, 233, 142, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(218, 165, 32, 0.1) 0%, transparent 50%);
+            animation: backgroundFloat 20s ease-in-out infinite;
+        }
+        
+        @keyframes backgroundFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-10px) rotate(1deg); }
+            66% { transform: translateY(5px) rotate(-1deg); }
         }
         
         .login-container {
-            max-width: 450px;
+            max-width: 480px;
             width: 100%;
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-            transform: translateY(-20px);
+            background: linear-gradient(145deg, rgba(255, 248, 220, 0.95), rgba(255, 248, 220, 0.9));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 50px 45px;
+            border-radius: 25px;
+            box-shadow: 
+                0 25px 50px var(--shadow-dark),
+                0 0 0 1px rgba(212, 175, 55, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            position: relative;
+            z-index: 1;
+            animation: containerSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes containerSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-gold), var(--goldenrod), var(--primary-gold));
+            border-radius: 25px 25px 0 0;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
         
         .login-header {
             text-align: center;
-            margin-bottom: 35px;
-            padding-bottom: 25px;
-            border-bottom: 3px solid #4CAF50;
+            margin-bottom: 40px;
+            animation: headerFadeIn 1s ease-out 0.3s both;
+        }
+        
+        @keyframes headerFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .login-header h1 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-            font-size: 1.8em;
-            background: linear-gradient(135deg, #4CAF50, #45a049);
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2em;
+            font-weight: 700;
+            color: var(--dark-maroon);
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--maroon), var(--primary-gold));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            position: relative;
         }
         
         .login-header p {
-            color: #7f8c8d;
-            font-size: 0.95em;
+            color: var(--text-light);
+            font-size: 1.1em;
+            font-weight: 400;
+            letter-spacing: 0.5px;
         }
         
         .institution-info {
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 25px;
+            background: linear-gradient(135deg, var(--cream) 0%, rgba(212, 175, 55, 0.1) 100%);
+            border: 2px solid var(--primary-gold);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 35px;
             text-align: center;
-            border-left: 4px solid #2196F3;
+            position: relative;
+            animation: institutionSlideIn 1s ease-out 0.5s both;
+            overflow: hidden;
+        }
+        
+        .institution-info::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--primary-gold), var(--goldenrod), var(--primary-gold));
+            border-radius: 15px;
+            z-index: -1;
+            animation: borderGlow 4s ease-in-out infinite;
+        }
+        
+        @keyframes borderGlow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes institutionSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
         
         .institution-info h3 {
-            color: #1976D2;
-            font-size: 0.9em;
-            margin-bottom: 5px;
+            font-family: 'Playfair Display', serif;
+            color: var(--maroon);
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.3;
         }
         
         .institution-info p {
-            color: #666;
-            font-size: 0.85em;
+            color: var(--text-dark);
+            font-size: 0.95em;
+            font-weight: 500;
         }
         
         .form-group {
             margin-bottom: 25px;
+            animation: formGroupSlideIn 0.6s ease-out both;
+        }
+        
+        .form-group:nth-child(2) { animation-delay: 0.7s; }
+        .form-group:nth-child(3) { animation-delay: 0.8s; }
+        
+        @keyframes formGroupSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--dark-maroon);
             font-size: 0.95em;
+            letter-spacing: 0.3px;
         }
         
         .form-group input {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            padding: 18px 20px;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
             font-size: 16px;
-            transition: all 0.3s ease;
-            background: #fafafa;
+            font-family: 'Inter', sans-serif;
+            background: rgba(255, 248, 220, 0.8);
+            color: var(--text-dark);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
         }
         
         .form-group input:focus {
-            border-color: #4CAF50;
+            border-color: var(--primary-gold);
             outline: none;
-            box-shadow: 0 0 15px rgba(76, 175, 80, 0.2);
-            background: white;
-            transform: translateY(-1px);
+            box-shadow: 
+                0 0 0 4px rgba(212, 175, 55, 0.2),
+                0 8px 25px rgba(212, 175, 55, 0.15);
+            background: var(--cream);
+            transform: translateY(-2px);
+        }
+        
+        .form-group input::placeholder {
+            color: var(--text-light);
+            transition: opacity 0.3s ease;
+        }
+        
+        .form-group input:focus::placeholder {
+            opacity: 0.6;
         }
         
         .login-btn {
             width: 100%;
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            background: linear-gradient(135deg, var(--maroon) 0%, var(--primary-gold) 50%, var(--maroon) 100%);
+            background-size: 200% 200%;
             color: white;
-            padding: 15px;
+            padding: 18px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 16px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-            margin-bottom: 20px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.5px;
+            transition: all 0.4s ease;
+            box-shadow: 
+                0 8px 25px var(--shadow-dark),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+            animation: btnSlideIn 0.6s ease-out 0.9s both;
+        }
+        
+        @keyframes btnSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s ease;
         }
         
         .login-btn:hover {
-            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+            background-position: 100% 100%;
+            transform: translateY(-3px);
+            box-shadow: 
+                0 15px 35px var(--shadow-dark),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        
+        .login-btn:hover::before {
+            left: 100%;
         }
         
         .login-btn:active {
-            transform: translateY(0);
+            transform: translateY(-1px);
+        }
+        
+        .login-btn:disabled {
+            opacity: 0.8;
+            cursor: not-allowed;
+            transform: none;
         }
         
         .alert {
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
+            padding: 18px 20px;
+            margin-bottom: 25px;
+            border-radius: 12px;
             font-weight: 500;
+            border: 1px solid;
+            animation: alertSlideIn 0.5s ease-out;
+        }
+        
+        @keyframes alertSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
         
         .alert-error {
-            color: #721c24;
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            border-left: 4px solid #dc3545;
+            color: var(--dark-maroon);
+            background: linear-gradient(135deg, #ffe6e6, #ffd6d6);
+            border-color: var(--maroon);
+            border-left: 4px solid var(--maroon);
         }
         
         .alert-success {
-            color: #155724;
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            border-left: 4px solid #28a745;
+            color: var(--dark-maroon);
+            background: linear-gradient(135deg, var(--light-gold), var(--cream));
+            border-color: var(--primary-gold);
+            border-left: 4px solid var(--primary-gold);
         }
         
         .demo-accounts {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 25px;
-            border-left: 4px solid #ffc107;
+            background: linear-gradient(135deg, rgba(255, 248, 220, 0.8), rgba(247, 233, 142, 0.3));
+            border: 2px solid var(--light-gold);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            animation: demoSlideIn 0.8s ease-out 1.1s both;
+        }
+        
+        @keyframes demoSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .demo-accounts h4 {
-            color: #856404;
-            margin-bottom: 15px;
+            color: var(--maroon);
+            margin-bottom: 20px;
             text-align: center;
-            font-size: 0.95em;
+            font-size: 1.1em;
+            font-weight: 600;
+            font-family: 'Playfair Display', serif;
         }
         
         .demo-account {
-            background: white;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 10px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 248, 220, 0.8));
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.1);
+            transition: all 0.3s ease;
+            animation: demoAccountSlideIn 0.6s ease-out both;
+        }
+        
+        .demo-account:nth-child(2) { animation-delay: 1.2s; }
+        .demo-account:nth-child(3) { animation-delay: 1.3s; }
+        .demo-account:nth-child(4) { animation-delay: 1.4s; }
+        
+        @keyframes demoAccountSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .demo-account:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.2);
+            border-color: var(--primary-gold);
         }
         
         .demo-account:last-child {
@@ -267,72 +511,100 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             flex: 1;
         }
         
+        .demo-credentials {
+            font-family: 'Inter', monospace;
+            color: var(--text-dark);
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .demo-account small {
+            color: var(--text-light);
+            font-size: 0.8em;
+        }
+        
         .demo-account-type {
-            background: #e74c3c;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
+            padding: 6px 12px;
+            border-radius: 20px;
             font-size: 0.75em;
-            font-weight: bold;
+            font-weight: 600;
             text-transform: uppercase;
+            margin-right: 10px;
+            letter-spacing: 0.5px;
         }
         
         .demo-account-type.admin {
-            background: #e74c3c;
+            background: linear-gradient(135deg, var(--maroon), var(--dark-maroon));
+            color: white;
         }
         
         .demo-account-type.student {
-            background: #3498db;
-        }
-        
-        .demo-credentials {
-            font-family: 'Courier New', monospace;
-            color: #2c3e50;
-            font-size: 0.85em;
+            background: linear-gradient(135deg, var(--primary-gold), var(--goldenrod));
+            color: white;
         }
         
         .use-btn {
-            background: #17a2b8;
+            background: linear-gradient(135deg, var(--primary-gold), var(--goldenrod));
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
+            padding: 8px 16px;
+            border-radius: 20px;
             cursor: pointer;
             font-size: 0.8em;
+            font-weight: 600;
             transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
         }
         
         .use-btn:hover {
-            background: #138496;
-            transform: translateY(-1px);
+            background: linear-gradient(135deg, var(--goldenrod), var(--primary-gold));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
         }
         
         .footer-links {
             text-align: center;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            animation: footerSlideIn 0.6s ease-out 1.5s both;
+        }
+        
+        @keyframes footerSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .footer-links a {
-            color: #2196F3;
+            color: var(--maroon);
             text-decoration: none;
             font-size: 0.9em;
-            margin: 0 10px;
-            transition: color 0.3s ease;
+            font-weight: 500;
+            margin: 0 15px;
+            transition: all 0.3s ease;
+            padding: 8px 12px;
+            border-radius: 6px;
         }
         
         .footer-links a:hover {
-            color: #1976D2;
-            text-decoration: underline;
+            color: var(--primary-gold);
+            background: rgba(212, 175, 55, 0.1);
+            transform: translateY(-1px);
         }
         
         .loading-spinner {
             display: none;
             width: 20px;
             height: 20px;
-            border: 2px solid #ffffff;
-            border-top: 2px solid transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #ffffff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-right: 10px;
@@ -343,37 +615,138 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             100% { transform: rotate(360deg); }
         }
         
+        /* Floating particles animation */
+        .floating-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+        
+        .particle {
+            position: absolute;
+            background: var(--primary-gold);
+            border-radius: 50%;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+        }
+        
+        .particle:nth-child(1) {
+            left: 10%; width: 4px; height: 4px;
+            animation-delay: 0s;
+        }
+        
+        .particle:nth-child(2) {
+            left: 20%; width: 6px; height: 6px;
+            animation-delay: 2s;
+        }
+        
+        .particle:nth-child(3) {
+            left: 30%; width: 3px; height: 3px;
+            animation-delay: 4s;
+        }
+        
+        .particle:nth-child(4) {
+            left: 40%; width: 5px; height: 5px;
+            animation-delay: 6s;
+        }
+        
+        .particle:nth-child(5) {
+            left: 50%; width: 4px; height: 4px;
+            animation-delay: 8s;
+        }
+        
+        .particle:nth-child(6) {
+            left: 60%; width: 6px; height: 6px;
+            animation-delay: 10s;
+        }
+        
+        .particle:nth-child(7) {
+            left: 70%; width: 3px; height: 3px;
+            animation-delay: 12s;
+        }
+        
+        .particle:nth-child(8) {
+            left: 80%; width: 5px; height: 5px;
+            animation-delay: 14s;
+        }
+        
+        .particle:nth-child(9) {
+            left: 90%; width: 4px; height: 4px;
+            animation-delay: 16s;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.1;
+            }
+            90% {
+                opacity: 0.1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
         @media (max-width: 480px) {
             .login-container {
-                padding: 25px;
+                padding: 35px 25px;
                 margin: 10px;
+                border-radius: 20px;
             }
             
             .login-header h1 {
-                font-size: 1.5em;
+                font-size: 1.8em;
             }
             
             .demo-account {
                 flex-direction: column;
                 text-align: center;
+                gap: 15px;
             }
             
             .demo-account-info {
-                margin-bottom: 10px;
+                margin-bottom: 0;
+            }
+            
+            .footer-links a {
+                display: block;
+                margin: 5px 0;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Floating particles -->
+    <div class="floating-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
     <div class="login-container">
         <div class="login-header">
-            <h1>🎓 Login System</h1>
+            <h1>🎓 Academic Portal</h1>
             <p>Teacher Evaluation System</p>
         </div>
         
         <div class="institution-info">
             <h3>Philippine Technological Institute of Science Arts and Trade, Inc.</h3>
-            <p>GMA-BRANCH (2nd Semester 2024-2025)</p>
+            <p><strong>GMA Branch</strong> • 2nd Semester 2024-2025</p>
         </div>
         
         <?php if (!empty($error)): ?>
@@ -457,39 +830,69 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
 
     <script>
-        // Auto-fill login credentials
+        // Auto-fill login credentials with enhanced animation
         function fillLogin(username, password) {
-            document.getElementById('username').value = username;
-            document.getElementById('password').value = password;
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            
+            // Clear inputs first
+            usernameInput.value = '';
+            passwordInput.value = '';
+            
+            // Type animation effect
+            typeWriter(usernameInput, username, () => {
+                setTimeout(() => {
+                    typeWriter(passwordInput, password);
+                }, 300);
+            });
             
             // Add visual feedback
             const inputs = document.querySelectorAll('input');
             inputs.forEach(input => {
-                input.style.borderColor = '#4CAF50';
-                input.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
+                input.style.borderColor = 'var(--primary-gold)';
+                input.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.4)';
                 setTimeout(() => {
-                    input.style.borderColor = '#ddd';
+                    input.style.borderColor = 'rgba(212, 175, 55, 0.3)';
                     input.style.boxShadow = 'none';
-                }, 2000);
+                }, 3000);
             });
         }
         
-        // Form submission with loading state
+        // Typewriter effect
+        function typeWriter(element, text, callback) {
+            element.focus();
+            let i = 0;
+            const timer = setInterval(() => {
+                if (i < text.length) {
+                    element.value += text.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(timer);
+                    if (callback) callback();
+                }
+            }, 100);
+        }
+        
+        // Form submission with enhanced loading state
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             const btn = document.getElementById('loginBtn');
             const spinner = document.getElementById('loadingSpinner');
             const btnText = document.getElementById('btnText');
             
-            // Show loading state
+            // Show loading state with animation
             btn.disabled = true;
+            btn.style.transform = 'scale(0.98)';
             spinner.style.display = 'inline-block';
-            btnText.textContent = 'Signing in...';
+            btnText.textContent = 'Authenticating...';
+            
+            // Add pulse effect
+            btn.style.animation = 'pulse 1.5s infinite';
             
             // If there's an error, the page will reload and reset the button
             // For successful login, user will be redirected
         });
         
-        // Add Enter key support for better UX
+        // Enhanced Enter key support
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 const form = document.getElementById('loginForm');
@@ -499,29 +902,205 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         });
         
-        // Add some visual effects
+        // Enhanced page load animations
         document.addEventListener('DOMContentLoaded', function() {
-            const container = document.querySelector('.login-container');
-            container.style.opacity = '0';
-            container.style.transform = 'translateY(-30px)';
+            // Stagger input field animations
+            const formGroups = document.querySelectorAll('.form-group');
+            formGroups.forEach((group, index) => {
+                group.style.animationDelay = `${0.7 + index * 0.1}s`;
+            });
             
+            // Focus on username input with delay
             setTimeout(() => {
-                container.style.transition = 'all 0.6s ease';
-                container.style.opacity = '1';
-                container.style.transform = 'translateY(0)';
-            }, 100);
+                const usernameInput = document.getElementById('username');
+                usernameInput.focus();
+                
+                // Add gentle glow when focused
+                usernameInput.addEventListener('focus', function() {
+                    this.style.animation = 'inputGlow 2s ease-in-out infinite';
+                });
+                
+                usernameInput.addEventListener('blur', function() {
+                    this.style.animation = 'none';
+                });
+            }, 1000);
         });
         
-        // Focus on username input when page loads
-        window.addEventListener('load', function() {
-            document.getElementById('username').focus();
+        // Add input interaction effects
+        document.querySelectorAll('.form-group input').forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.value.length > 0) {
+                    this.style.borderColor = 'var(--primary-gold)';
+                    this.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.1)';
+                } else {
+                    this.style.borderColor = 'rgba(212, 175, 55, 0.3)';
+                    this.style.boxShadow = 'none';
+                }
+            });
+            
+            // Add subtle bounce on focus
+            input.addEventListener('focus', function() {
+                this.style.animation = 'inputBounce 0.6s ease-out';
+            });
+        });
+        
+        // Demo account hover effects
+        document.querySelectorAll('.demo-account').forEach(account => {
+            account.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px) scale(1.02)';
+                this.style.boxShadow = '0 12px 30px rgba(212, 175, 55, 0.25)';
+            });
+            
+            account.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+                this.style.boxShadow = '0 4px 15px rgba(212, 175, 55, 0.1)';
+            });
+        });
+        
+        // Enhanced button interactions
+        document.querySelectorAll('.use-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Ripple effect
+                const ripple = document.createElement('span');
+                ripple.style.position = 'absolute';
+                ripple.style.borderRadius = '50%';
+                ripple.style.background = 'rgba(255, 255, 255, 0.6)';
+                ripple.style.transform = 'scale(0)';
+                ripple.style.animation = 'ripple 0.6s linear';
+                ripple.style.left = '50%';
+                ripple.style.top = '50%';
+                ripple.style.width = '20px';
+                ripple.style.height = '20px';
+                ripple.style.marginLeft = '-10px';
+                ripple.style.marginTop = '-10px';
+                
+                this.style.position = 'relative';
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+        
+        // Parallax effect for background particles
+        document.addEventListener('mousemove', function(e) {
+            const particles = document.querySelectorAll('.particle');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            particles.forEach((particle, index) => {
+                const speed = (index + 1) * 0.5;
+                const xPos = x * speed * 10;
+                const yPos = y * speed * 10;
+                
+                particle.style.transform += ` translate(${xPos}px, ${yPos}px)`;
+            });
+        });
+        
+        // Add success animation for successful fills
+        function showSuccessAnimation() {
+            const container = document.querySelector('.login-container');
+            container.style.animation = 'successPulse 0.8s ease-out';
+            
+            setTimeout(() => {
+                container.style.animation = '';
+            }, 800);
+        }
+        
+        // Custom CSS animations via JavaScript
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.02); }
+                100% { transform: scale(1); }
+            }
+            
+            @keyframes inputGlow {
+                0%, 100% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.3); }
+                50% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.5); }
+            }
+            
+            @keyframes inputBounce {
+                0% { transform: translateY(0); }
+                30% { transform: translateY(-2px); }
+                100% { transform: translateY(0); }
+            }
+            
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+            
+            @keyframes successPulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); border-color: var(--primary-gold); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Enhanced credential filling with success animation
+        window.fillLogin = function(username, password) {
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            
+            // Clear inputs first
+            usernameInput.value = '';
+            passwordInput.value = '';
+            
+            // Type animation effect
+            typeWriter(usernameInput, username, () => {
+                setTimeout(() => {
+                    typeWriter(passwordInput, password, () => {
+                        showSuccessAnimation();
+                    });
+                }, 300);
+            });
+            
+            // Add visual feedback
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.style.borderColor = 'var(--primary-gold)';
+                input.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.4)';
+                setTimeout(() => {
+                    input.style.borderColor = 'rgba(212, 175, 55, 0.3)';
+                    input.style.boxShadow = 'none';
+                }, 3000);
+            });
+        };
+        
+        // Page visibility animation
+        let observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        });
+        
+        // Observe elements for scroll animations (if needed for mobile)
+        document.querySelectorAll('.demo-account').forEach(account => {
+            observer.observe(account);
+        });
+        
+        // Add smooth scroll behavior for any internal links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
         });
     </script>
 </body>
 </html>
-
-
-<div class="institution-badge">
-                <img src="logo.png" 50px alt=""> Philippine Technological Institute of Science Arts and Trade, Inc.<br>
-                <strong>GMA Branch</strong> • 2nd Semester 2024-2025
-            </div>
