@@ -216,6 +216,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         .login-header h1 {
             font-family: 'Playfair Display', serif;
+            font-size: 2.2em;
             font-weight: 700;
             color: var(--dark-maroon);
             margin-bottom: 15px;
@@ -776,7 +777,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <!-- Add your logo image here - update the src path as needed -->
             <img src="logo.png" alt="School Logo" class="logo">
             <div>
-                <h1>Academic Portal</h1>
+                <h1>🎓 Academic Portal</h1>
                 <p>Teacher Evaluation System</p>
             </div>
         </div>
@@ -797,7 +798,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <form method="POST" action="" id="loginForm">
             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <div class="form-group">
-                <label for="username">Username</label>
+                <label for="username">👤 Username</label>
                 <input type="text" 
                        id="username" 
                        name="username" 
@@ -808,7 +809,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password">🔒 Password</label>
                 <input type="password" 
                        id="password" 
                        name="password" 
@@ -819,14 +820,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             <button type="submit" class="login-btn" id="loginBtn">
                 <span class="loading-spinner" id="loadingSpinner"></span>
-                <span id="btnText">Sign In</span>
+                <span id="btnText">🚀 Sign In</span>
             </button>
         </form>
-
-        <!-- Full-page overlay for rotating logo loading animation -->
-        <div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(255, 255, 255, 0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
-            <img src="logo.png" alt="Loading Logo" id="rotatingLogo" style="width: 120px; height: 120px; animation: rotateLogo 5s linear infinite;">
-        </div>
         
         <div class="demo-accounts">
             <h4>🧪 Demo Accounts</h4>
@@ -978,6 +974,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     this.style.animation = 'none';
                 });
             }, 1000);
+            
+            // Add input completion detection for bounce animation
+            const inputs = document.querySelectorAll('#username, #password');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value.length > 0) {
+                        this.classList.add('bounce');
+                        
+                        // Remove the class after animation completes
+                        setTimeout(() => {
+                            this.classList.remove('bounce');
+                        }, 500);
+                    }
+                });
+            });
+        });
         
         // Add input interaction effects
         document.querySelectorAll('.form-group input').forEach(input => {
@@ -1095,22 +1107,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         `;
         document.head.appendChild(style);
-
-                        // Add input completion detection for bounce animation
-            const inputs = document.querySelectorAll('#username, #password');
-            inputs.forEach(input => {
-                input.addEventListener('blur', function() {
-                    if (this.value.length > 0) {
-                        this.classList.add('bounce');
-                        
-                        // Remove the class after animation completes
-                        setTimeout(() => {
-                            this.classList.remove('bounce');
-                        }, 500);
-                    }
-                });
-            });
-        });
         
         // Enhanced credential filling with success animation
         window.fillLogin = function(username, password) {
@@ -1182,39 +1178,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             });
         });
-        </script>
-
-    <script>
-        // CSS keyframes for rotating logo animation
-        const style = document.createElement('style');
-        style.type = 'text/css';
-        style.innerHTML = `
-            @keyframes rotateLogo {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Handle form submission to show rotating logo for 5 seconds before submitting
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevent immediate form submission
-
-            // Show the loading overlay with rotating logo
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.style.display = 'flex';
-
-            // Disable form inputs and button to prevent interaction
-            const formElements = this.elements;
-            for (let i = 0; i < formElements.length; i++) {
-                formElements[i].disabled = true;
-            }
-
-            // After 5 seconds, submit the form programmatically
-            setTimeout(() => {
-                this.submit();
-            }, 5000);
-        });
-        </script>
+    </script>
 </body>
 </html>
