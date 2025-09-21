@@ -617,17 +617,68 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                         <select id="section" name="section" required>
                             <option value="">Select Section</option>
                             <!-- SHS Sections -->
-                            <option value="Grade 11-A" <?php echo ($current_section === 'Grade 11-A') ? 'selected' : ''; ?>>Grade 11-A</option>
-                            <option value="Grade 11-B" <?php echo ($current_section === 'Grade 11-B') ? 'selected' : ''; ?>>Grade 11-B</option>
-                            <option value="Grade 12-A" <?php echo ($current_section === 'Grade 12-A') ? 'selected' : ''; ?>>Grade 12-A</option>
-                            <option value="Grade 12-B" <?php echo ($current_section === 'Grade 12-B') ? 'selected' : ''; ?>>Grade 12-B</option>
+                            <option value="ABM-1M1" <?php echo ($current_section === 'ABM-1M1') ? 'selected' : ''; ?>>ABM-1M1</option>
+                            <option value="ABM-1M2" <?php echo ($current_section === 'ABM-1M2') ? 'selected' : ''; ?>>ABM-1M2</option>
+                            <option value="ABM-1N1" <?php echo ($current_section === 'ABM-1N1') ? 'selected' : ''; ?>>ABM-1N1</option>
+                            <option value="ABM-3M1" <?php echo ($current_section === 'ABM-3M1') ? 'selected' : ''; ?>>ABM-3M1</option>
+                            <option value="ABM-3M2" <?php echo ($current_section === 'ABM-3M2') ? 'selected' : ''; ?>>ABM-3M2</option>
+                            <option value="ABM-3N1" <?php echo ($current_section === 'ABM-3N1') ? 'selected' : ''; ?>>ABM-3N1</option>
+                            <option value="ABM-SUNDAY CLASS" <?php echo ($current_section === 'ABM-SUNDAY CLASS') ? 'selected' : ''; ?>>ABM-SUNDAY CLASS</option>
+                            <option value="HUMSS-1M1" <?php echo ($current_section === 'HUMSS-1M1') ? 'selected' : ''; ?>>HUMSS-1M1/option>
+                            <option value="HUMSS-1M2" <?php echo ($current_section === 'HUMSS-1M2') ? 'selected' : ''; ?>>HUMSS-1M2</option>
+                            <option value="HUMSS-1M3" <?php echo ($current_section === 'HUMSS-1M3') ? 'selected' : ''; ?>>HUMSS-1M3</option>
+                            <option value="HUMSS-1M4" <?php echo ($current_section === 'HUMSS-1M4') ? 'selected' : ''; ?>>HUMSS-1M4</option>
+                            <option value="HUMSS-1M5" <?php echo ($current_section === 'HUMSS-1M5') ? 'selected' : ''; ?>>HUMSS-1M5</option>
+                            <option value="HUMSS-1N1" <?php echo ($current_section === 'HUMSS-1N1') ? 'selected' : ''; ?>>HUMSS-1N1</option>
+                            <option value="HUMSS-1N2" <?php echo ($current_section === 'HUMSS-1N2') ? 'selected' : ''; ?>>HUMSS-1N2</option>
+                            <option value="HUMSS-1N3" <?php echo ($current_section === 'HUMSS-1N3') ? 'selected' : ''; ?>>HUMSS-1N3</option>
+                            <option value="HUMSS-3M1" <?php echo ($current_section === 'HUMSS-3M1') ? 'selected' : ''; ?>>HUMSS-3M1</option>
+                            <option value="HUMSS-3M2" <?php echo ($current_section === 'HUMSS-3M2') ? 'selected' : ''; ?>>HUMSS-3M2</option>
+                            <option value="HUMSS-3M3" <?php echo ($current_section === 'HUMSS-3M3') ? 'selected' : ''; ?>>HUMSS-3M3</option>
+                            <option value="HUMSS-3M4" <?php echo ($current_section === 'HUMSS-3M4') ? 'selected' : ''; ?>>HUMSS-3M4</option>
+                            <option value="HUMSS-3N1" <?php echo ($current_section === 'HUMSS-3N1') ? 'selected' : ''; ?>>HUMSS-3N1</option>
+                            <option value="HUMSS-3N2" <?php echo ($current_section === 'HUMSS-3N2') ? 'selected' : ''; ?>>HUMSS-3N2</option>
+                            <option value="HUMSS-3N3" <?php echo ($current_section === 'HUMSS-3N3') ? 'selected' : ''; ?>>HUMSS-3N3</option>
+                            <option value="HUMSS-3N4" <?php echo ($current_section === 'HUMSS-3N4') ? 'selected' : ''; ?>>HUMSS-3N4</option>
+                            <option value="HUMSS-SUNDAY CLASS" <?php echo ($current_section === 'HUMSS-SUNDAY CLASS') ? 'selected' : ''; ?>>HUMSS-SUNDAY CLASS</option>
+                            <option value="HE-1M1" <?php echo ($current_section === 'HE-1M1') ? 'selected' : ''; ?>>HE-1M1</option>
+                            <option value="HE-1M2" <?php echo ($current_section === 'HE-1M2') ? 'selected' : ''; ?>>HE-1M2</option>
+                            <option value="HE-1M3" <?php echo ($current_section === 'HE-1M3') ? 'selected' : ''; ?>>HE-1M3</option>
+                            <option value="HE-1M4" <?php echo ($current_section === 'HE-1M4') ? 'selected' : ''; ?>>HE-1M4</option>
+                            <option value="HE-1N1" <?php echo ($current_section === 'HE-1N1') ? 'selected' : ''; ?>>HE-1N1</option>
+                            <option value="HE-1N2" <?php echo ($current_section === 'HE-1N2') ? 'selected' : ''; ?>>HE-1N2</option>
+                            <option value="HE-3M1" <?php echo ($current_section === 'HE-3M1') ? 'selected' : ''; ?>>HE-3M1</option>
+                            <option value="HE-3M2" <?php echo ($current_section === 'HE-3M2') ? 'selected' : ''; ?>>HE-3M2</option>
+                            <option value="HE-3M3" <?php echo ($current_section === 'HE-3M3') ? 'selected' : ''; ?>>HE-3M3</option>
+                            <option value="HE-3M4" <?php echo ($current_section === 'HE-3M4') ? 'selected' : ''; ?>>HE-3M4</option>
+                            <option value="HE-3N1" <?php echo ($current_section === 'HE-3N1') ? 'selected' : ''; ?>>HE-3N1</option>
+                            <option value="HE-3N2" <?php echo ($current_section === 'HE-3N2') ? 'selected' : ''; ?>>HE-3N2</option>
+                            <option value="HE-3N3" <?php echo ($current_section === 'HE-3N3') ? 'selected' : ''; ?>>HE-3N3</option>
+                            <option value="HE-3N4" <?php echo ($current_section === 'HE-3N4') ? 'selected' : ''; ?>>HE-3N4</option>
+                            <option value="HE-SUNDAY CLASS" <?php echo ($current_section === 'HE-SUNDAY CLASS') ? 'selected' : ''; ?>>HE-SUNDAY CLASS</option>
+                            <option value="ICT-1M1" <?php echo ($current_section === 'ICT-1M1') ? 'selected' : ''; ?>>ICT-1M1</option>
+                            <option value="ICT-1M2" <?php echo ($current_section === 'ICT-1M2') ? 'selected' : ''; ?>>ICT-1M2</option>
+                            <option value="ICT-1N1" <?php echo ($current_section === 'ICT-1N1') ? 'selected' : ''; ?>>ICT-1N1</option>
+                            <option value="ICT-1N2" <?php echo ($current_section === 'ICT-1N2') ? 'selected' : ''; ?>>ICT-1N2</option>
+                            <option value="ICT-3M1" <?php echo ($current_section === 'ICT-3M1') ? 'selected' : ''; ?>>ICT-3M1</option>
+                            <option value="ICT-3M2" <?php echo ($current_section === 'ICT-3M2') ? 'selected' : ''; ?>>ICT-3M2</option>
+                            <option value="ICT-3N1" <?php echo ($current_section === 'ICT-3N1') ? 'selected' : ''; ?>>ICT-3N1</option>
+                            <option value="ICT-3N2" <?php echo ($current_section === 'ICT-3N2') ? 'selected' : ''; ?>>ICT-3N2</option>
+                            <option value="ICT-SUNDAY CLASS" <?php echo ($current_section === 'ICT-SUNDAY CLASS') ? 'selected' : ''; ?>>ICT-SUNDAY CLASS</option>
                             <!-- College Sections -->
-                            <option value="BSIT-1A" <?php echo ($current_section === 'BSIT-1A') ? 'selected' : ''; ?>>BSIT-1A</option>
-                            <option value="BSIT-2A" <?php echo ($current_section === 'BSIT-2A') ? 'selected' : ''; ?>>BSIT-2A</option>
-                            <option value="BSCS-1A" <?php echo ($current_section === 'BSCS-1A') ? 'selected' : ''; ?>>BSCS-1A</option>
-                            <option value="BSCS-2A" <?php echo ($current_section === 'BSCS-2A') ? 'selected' : ''; ?>>BSCS-2A</option>
-                            <option value="BSBA-1A" <?php echo ($current_section === 'BSBA-1A') ? 'selected' : ''; ?>>BSBA-1A</option>
-                            <option value="BSBA-2A" <?php echo ($current_section === 'BSBA-2A') ? 'selected' : ''; ?>>BSBA-2A</option>
+                            <option value="BSCS-1M1" <?php echo ($current_section === 'BSCS-1M1') ? 'selected' : ''; ?>>BSCS-1M1</option>
+                            <option value="BSCS-2N1" <?php echo ($current_section === 'BSCS-2N1') ? 'selected' : ''; ?>>BSCS-2N1</option>
+                            <option value="BSCS-3M1" <?php echo ($current_section === 'BSCS-3M1') ? 'selected' : ''; ?>>BSCS-3M1</option>
+                            <option value="BSCS-4N1" <?php echo ($current_section === 'BSCS-4N1') ? 'selected' : ''; ?>>BSCS-4N1</option>
+                            <option value="BSOA-1M1" <?php echo ($current_section === 'BSOA-1M1') ? 'selected' : ''; ?>>BSOA-1M1</option>
+                            <option value="BSOA-2N1" <?php echo ($current_section === 'BSOA-2N1') ? 'selected' : ''; ?>>BSOA-2N1</option>
+                            <option value="BSOA-3M1" <?php echo ($current_section === 'BSOA-3M1') ? 'selected' : ''; ?>>BSOA-3M1</option>
+                            <option value="BSOA-4N1" <?php echo ($current_section === 'BSOA-4N1') ? 'selected' : ''; ?>>BSOA-4N1</option>
+                            <option value="EDUC-1M1" <?php echo ($current_section === 'EDUC-1M1') ? 'selected' : ''; ?>>EDUC-1M1</option>
+                            <option value="EDUC-2N1" <?php echo ($current_section === 'EDUC-2N1') ? 'selected' : ''; ?>>EDUC-2N1</option>
+                            <option value="EDUC-3M1" <?php echo ($current_section === 'EDUC-3M1') ? 'selected' : ''; ?>>EDUC-3M1</option>
+                            <option value="EDUC-4M1" <?php echo ($current_section === 'EDUC-4M1') ? 'selected' : ''; ?>>EDUC-4M1</option>
+                            <option value="EDUC-4N1" <?php echo ($current_section === 'EDUC-4N1') ? 'selected' : ''; ?>>EDUC-4N1</option>
                         </select>
                     </div>
                     
