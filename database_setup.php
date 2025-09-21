@@ -242,12 +242,18 @@ try {
         ['ABM-3M2', 'Accountancy Business Management Grade 12 Morning Section 2', 'SHS', 'Grade 12'],
         ['ABM-3N1', 'Accountancy Business Management Grade 12 Night Section 1', 'SHS', 'Grade 12'],
         
-        // Sunday Classes SHS
-        ['ABM-SUNDAY CLASS', 'Accountancy Business Management Sunday Class', 'SHS', 'Mixed'],
-        ['HUMSS-SUNDAY CLASS', 'Humanities and Social Sciences Sunday Class', 'SHS', 'Mixed'],
-        ['HE-SUNDAY CLASS', 'Home Economics Sunday Class', 'SHS', 'Mixed'],
-        ['ICT-SUNDAY CLASS', 'Information and Communication Technology Sunday Class', 'SHS', 'Mixed']
-    ];
+        // Grade 11 Sunday Classes
+        ['HE-11SC', 'Home Economics Grade 11 Sunday Class', 'SHS', 'Grade 11'],
+        ['ICT-11SC', 'Information and Communication Technology Grade 11 Sunday Class', 'SHS', 'Grade 11'],
+        ['HUMSS-11SC', 'Humanities and Social Sciences Grade 11 Sunday Class', 'SHS', 'Grade 11'],
+        ['ABM-11SC', 'Accountancy Business Management Grade 11 Sunday Class', 'SHS', 'Grade 11'],
+    
+        // Grade 12 Sunday Classes
+        ['HE-12SC', 'Home Economics Grade 12 Sunday Class', 'SHS', 'Grade 12'],
+        ['ICT-12SC', 'Information and Communication Technology Grade 12 Sunday Class', 'SHS', 'Grade 12'],
+        ['HUMSS-12SC', 'Humanities and Social Sciences Grade 12 Sunday Class', 'SHS', 'Grade 12'],
+        ['ABM-12SC', 'Accountancy Business Management Grade 12 Sunday Class', 'SHS', 'Grade 12']
+        ];
     
     $sections_created = 0;
     foreach ($sections as $section) {
@@ -471,97 +477,343 @@ try {
     ];
     
     $teachers_created = 0;
-    foreach (array_merge($college_teachers, $shs_teachers) as $teacher) {
-        $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND subject = ?");
-        $check_teacher->execute([$teacher[0], $teacher[1]]);
-        
-        if ($check_teacher->fetchColumn() == 0) {
-            $insert_teacher = $pdo->prepare("INSERT INTO teachers (name, subject, program, department) VALUES (?, ?, ?, ?)");
-            $insert_teacher->execute($teacher);
-            $teachers_created++;
-        }
+foreach ($all_teachers as $teacher) {
+    $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND department = ?");
+    $check_teacher->execute([$teacher[0], $teacher[1]]);
+    
+    if ($check_teacher->fetchColumn() == 0) {
+        $insert_teacher = $pdo->prepare("INSERT INTO teachers (name, subject, department) VALUES (?, ?, ?)");
+        $insert_teacher->execute([$teacher[0], 'General', $teacher[1]]);
+        $teachers_created++;
     }
+}
+$setup_messages[] = "✅ {$teachers_created} additional teachers created/verified";
     $setup_messages[] = "✅ {$teachers_created} teachers created/verified";
     
-    // COLLEGE SECTION TEACHER ASSIGNMENTS
-    
-    // BSCS-1M1 Teachers
-    $bscs1m1_teachers = [
+   // COLLEGE SECTION ASSIGNMENTS
+
+// BSCS Sections
+$college_assignments = [
+    // BSCS-1M1
+    'BSCS-1M1' => [
         ['MR. VELE', 'Computer Programming'],
         ['MR. RODRIGUEZ', 'Database Systems'],
         ['MR. JIMENEZ', 'Web Development'],
+        ['MR. JIMENEZ', 'Programming Logic'],
         ['MS. RENDORA', 'Mathematics'],
         ['MR. LACERNA', 'Programming Fundamentals'],
+        ['MS. RENDORA', 'Statistics'],
         ['MR. ATIENZA', 'Business Management']
-    ];
+    ],
     
-    $section_teachers_created = 0;
-    $section_id = $pdo->query("SELECT id FROM sections WHERE section_code = 'BSCS-1M1'")->fetchColumn();
+    // BSCS-2N1
+    'BSCS-2N1' => [
+        ['MR. RODRIGUEZ', 'Advanced Programming'],
+        ['MR. ICABANDE', 'System Analysis'],
+        ['MR. RENDORA', 'Technical Writing'],
+        ['MR. V. GORDON', 'Networking']
+    ],
     
-    foreach ($bscs1m1_teachers as $teacher) {
-        $teacher_id = $pdo->prepare("SELECT id FROM teachers WHERE name = ? AND subject = ?");
-        $teacher_id->execute([$teacher[0], $teacher[1]]);
-        $teacher_id = $teacher_id->fetchColumn();
-        
-        if ($teacher_id) {
-            $check_assignment = $pdo->prepare("SELECT COUNT(*) FROM section_teachers WHERE section_id = ? AND teacher_id = ?");
-            $check_assignment->execute([$section_id, $teacher_id]);
-            
-            if ($check_assignment->fetchColumn() == 0) {
-                $insert_assignment = $pdo->prepare("INSERT INTO section_teachers (section_id, teacher_id, subject) VALUES (?, ?, ?)");
-                $insert_assignment->execute([$section_id, $teacher_id, $teacher[1]]);
-                $section_teachers_created++;
-            }
-        }
-    }
-    $setup_messages[] = "✅ {$section_teachers_created} teacher assignments created for BSCS-1M1";
+    'ICT-3M2' => [
+        ['MS. LIBRES', 'Programming'],
+        ['MR. LACERNA', 'Web Development'],
+        ['MR. ICABANDE', 'Database Systems'],
+        ['MR. ICABANDE', 'System Analysis'],
+        ['MR. UMALI', 'Physical Education'],
+        ['MR. V. GORDON', 'Networking']
+    ],
     
-    // SHS SECTION TEACHER ASSIGNMENTS
+    'ICT-3N1' => [
+        ['MS. LIBRES', 'Programming'],
+        ['MR. LACERNA', 'Web Development'],
+        ['MR. ICABANDE', 'Database Systems'],
+        ['MR. ICABANDE', 'System Analysis'],
+        ['MR. UMALI', 'Physical Education'],
+        ['MR. V. GORDON', 'Networking']
+    ],
     
-    // ABM1M1 Teachers (Based on SHS_GRADE11_TEACHERS.docx)
-    $abm1m1_teachers = [
-        ['MS. TINGSON', 'Business Management'],
-        ['MS. RIVERA', 'Business Mathematics'],
-        ['MR. SANTOS', 'General Science'],
-        ['MS. ANGELES', 'Filipino'],
-        ['MR. ALCEDO', 'Physical Education'],
-        ['MS. TESORO', 'Values Education'],
-        ['MR. UMALI', 'Social Studies'],
-        ['MS. LAGUADOR', 'Mathematics'],
+    'ICT-3N2' => [
+        ['MS. LIBRES', 'Programming'],
+        ['MR. LACERNA', 'Web Development'],
+        ['MR. ICABANDE', 'Database Systems'],
+        ['MR. ICABANDE', 'System Analysis'],
+        ['MR. UMALI', 'Physical Education'],
+        ['MR. V. GORDON', 'Networking']
+    ],
+    
+    // HUMSS Grade 12
+    'HUMSS-3M1' => [
+        ['MS. CARMONA', 'Creative Nonfiction'],
+        ['MR. LACERNA', 'Disciplines and Ideas'],
+        ['MS. LIBRES', 'Statistics'],
+        ['MR. PATIAM', 'Research'],
+        ['MS. RENDORA', 'English'],
+        ['MR. GARCIA', 'Philippine Politics'],
+        ['MR. BATILES', 'Community Engagement']
+    ],
+    
+    'HUMSS-3M2' => [
+        ['MS. CARMONA', 'Creative Nonfiction'],
+        ['MR. LACERNA', 'Disciplines and Ideas'],
+        ['MS. LIBRES', 'Statistics'],
+        ['MR. PATIAM', 'Research'],
+        ['MS. RENDORA', 'English'],
+        ['MR. GARCIA', 'Philippine Politics'],
+        ['MR. BATILES', 'Community Engagement']
+    ],
+    
+    'HUMSS-3M3' => [
+        ['MS. CARMONA', 'Creative Nonfiction'],
+        ['MR. LACERNA', 'Disciplines and Ideas'],
+        ['MS. LIBRES', 'Statistics'],
+        ['MR. PATIAM', 'Research'],
+        ['MS. RENDORA', 'English'],
+        ['MR. GARCIA', 'Philippine Politics'],
+        ['MR. BATILES', 'Community Engagement']
+    ],
+    
+    'HUMSS-3M4' => [
+        ['MS. CARMONA', 'Creative Nonfiction'],
+        ['MR. LACERNA', 'Disciplines and Ideas'],
+        ['MS. LIBRES', 'Statistics'],
+        ['MR. PATIAM', 'Research'],
+        ['MS. RENDORA', 'English'],
+        ['MR. GARCIA', 'Philippine Politics'],
+        ['MR. BATILES', 'Community Engagement']
+    ],
+    
+    'HUMSS-3N1' => [
+        ['MS. CARMONA', 'Creative Nonfiction'],
+        ['MR. LACERNA', 'Disciplines and Ideas'],
+        ['MS. LIBRES', 'Statistics'],
+        ['MR. PATIAM', 'Research'],
+        ['MS. RENDORA', 'English'],
+        ['MR. GARCIA', 'Philippine Politics']
+    ],
+    
+    'HUMSS-3N2' => [
+        ['MS. CARMONA', 'Creative Nonfiction'],
+        ['MR. LACERNA', 'Disciplines and Ideas'],
+        ['MS. LIBRES', 'Statistics'],
+        ['MR. PATIAM', 'Research'],
+        ['MR. UMALI', 'Physical Education'],
+        ['MR. GARCIA', 'Philippine Politics']
+    ],
+    
+    'HUMSS-3N3' => [
+        ['MS. CARMONA', 'Creative Nonfiction'],
+        ['MR. LACERNA', 'Disciplines and Ideas'],
+        ['MS. LIBRES', 'Statistics'],
+        ['MR. PATIAM', 'Research'],
+        ['MS. RENDORA', 'English'],
+        ['MR. GARCIA', 'Philippine Politics']
+    ],
+    
+    'HUMSS-3N4' => [
+        ['MS. CARMONA', 'Creative Nonfiction'],
+        ['MR. LACERNA', 'Disciplines and Ideas'],
+        ['MS. LIBRES', 'Statistics'],
+        ['MR. PATIAM', 'Research'],
+        ['MR. UMALI', 'Physical Education'],
+        ['MR. GARCIA', 'Philippine Politics']
+    ],
+    
+    // ABM Grade 12
+    'ABM-3M1' => [
+        ['MS. CARMONA', 'Business Ethics'],
+        ['MR. BATILES', 'Business Finance'],
+        ['MS. RIVERA', 'Applied Economics'],
+        ['MR. PATIAM', 'Research'],
+        ['MR. UMALI', 'Physical Education'],
         ['MR. CALCEÑA', 'Business Law'],
-        ['MS. GAJIRAN', 'Computer Applications']
-    ];
+        ['MR. CALCEÑA', 'Organization Management']
+    ],
     
-    $section_teachers_created = 0;
-    $section_id = $pdo->query("SELECT id FROM sections WHERE section_code = 'ABM1M1'")->fetchColumn();
+    'ABM-3M2' => [
+        ['MS. CARMONA', 'Business Ethics'],
+        ['MR. BATILES', 'Business Finance'],
+        ['MS. LIBRES', 'Applied Economics'],
+        ['MR. PATIAM', 'Research'],
+        ['MS. RENDORA', 'English'],
+        ['MR. CALCEÑA', 'Business Law'],
+        ['MR. CALCEÑA', 'Organization Management']
+    ],
     
-    foreach ($abm1m1_teachers as $teacher) {
-        $teacher_id = $pdo->prepare("SELECT id FROM teachers WHERE name = ? AND subject = ?");
-        $teacher_id->execute([$teacher[0], $teacher[1]]);
+    'ABM-3N1' => [
+        ['MS. CARMONA', 'Business Ethics'],
+        ['MR. BATILES', 'Business Finance'],
+        ['MS. LIBRES', 'Applied Economics'],
+        ['MR. PATIAM', 'Research'],
+        ['MR. UMALI', 'Physical Education'],
+        ['MR. CALCEÑA', 'Business Law']
+    ]
+];
+
+// UPDATED SHS SUNDAY CLASS ASSIGNMENTS - Based on SHS_SC_TEACHERS.docx
+$shs_sunday_assignments = [
+    // Grade 11 Sunday Classes
+    'HE-11SC' => [
+        ['MR. LACERNA', 'Home Economics Fundamentals'],
+        ['MR. RODRIGUEZ', 'Mathematics'],
+        ['MR. VALENZUELA', 'Science'],
+        ['MR. MATILA', 'English'],
+        ['MR. UMALI', 'Physical Education'],
+        ['MS. GENTEROY', 'Values Education']
+    ],
+    
+    'ICT-11SC' => [
+        ['MR. LACERNA', 'Programming Fundamentals'],
+        ['MR. RODRIGUEZ', 'Computer Systems'],
+        ['MR. VALENZUELA', 'Web Development'],
+        ['MR. MATILA', 'Technical Writing'],
+        ['MR. JIMENEZ', 'Database Management'],
+        ['MR. JIMENEZ', 'System Analysis']
+    ],
+    
+    'HUMSS-11SC' => [
+        ['MR. ICABANDE', 'Creative Writing'],
+        ['MR. PATIAM', 'Research Methods'],
+        ['MS. VELE', 'English Literature'],
+        ['MS. VELE', 'Filipino Literature'],
+        ['MR. MATILA', 'Social Studies']
+    ],
+    
+    'ABM-11SC' => [
+        ['MR. ICABANDE', 'Business Mathematics'],
+        ['MR. PATIAM', 'Applied Economics'],
+        ['MS. VELE', 'Business English'],
+        ['MS. VELE', 'Business Communication'],
+        ['MR. VALENZUELA', 'Statistics'],
+        ['MR. RODRIGUEZ', 'Computer Applications']
+    ],
+    
+    // Grade 12 Sunday Classes
+    'HE-12SC' => [
+        ['MR. VELE', 'Advanced Home Economics'],
+        ['MR. ICABANDE', 'Food Technology'],
+        ['MR. PATIAM', 'Entrepreneurship'],
+        ['MS. GENTEROY', 'Research Project']
+    ],
+    
+    'ICT-12SC' => [
+        ['MR. VELE', 'Advanced Programming'],
+        ['MR. ICABANDE', 'System Development'],
+        ['MR. PATIAM', 'Capstone Project'],
+        ['MR. JIMENEZ', 'Network Administration'],
+        ['MR. JIMENEZ', 'Database Administration']
+    ],
+    
+    'HUMSS-12SC' => [
+        ['MR. LACERNA', 'Thesis Writing'],
+        ['MR. UMALI', 'Community Engagement'],
+        ['MR. PATIAM', 'Research Defense'],
+        ['MR. ICABANDE', 'Creative Nonfiction'],
+        ['MR. VELE', 'Contemporary Issues']
+    ],
+    
+    'ABM-12SC' => [
+        ['MR. LACERNA', 'Business Plan Development'],
+        ['MR. UMALI', 'Financial Management'],
+        ['MR. PATIAM', 'Business Research'],
+        ['MS. IGHARAS', 'Accounting Systems'],
+        ['MS. IGHARAS', 'Business Ethics']
+    ]
+];
+
+// Function to assign teachers to sections
+function assignTeachersToSection($pdo, $section_code, $teachers, &$total_assignments) {
+    // Get section ID
+    $section_id = $pdo->prepare("SELECT id FROM sections WHERE section_code = ?");
+    $section_id->execute([$section_code]);
+    $section_id = $section_id->fetchColumn();
+    
+    if (!$section_id) {
+        return "Section {$section_code} not found";
+    }
+    
+    $assignments_created = 0;
+    foreach ($teachers as $teacher_info) {
+        $teacher_name = $teacher_info[0];
+        $subject = $teacher_info[1];
+        
+        // Get teacher ID
+        $teacher_id = $pdo->prepare("SELECT id FROM teachers WHERE name = ? LIMIT 1");
+        $teacher_id->execute([$teacher_name]);
         $teacher_id = $teacher_id->fetchColumn();
         
         if ($teacher_id) {
-            $check_assignment = $pdo->prepare("SELECT COUNT(*) FROM section_teachers WHERE section_id = ? AND teacher_id = ?");
-            $check_assignment->execute([$section_id, $teacher_id]);
+            // Check if assignment already exists
+            $check_assignment = $pdo->prepare("SELECT COUNT(*) FROM section_teachers WHERE section_id = ? AND teacher_id = ? AND subject = ?");
+            $check_assignment->execute([$section_id, $teacher_id, $subject]);
             
             if ($check_assignment->fetchColumn() == 0) {
                 $insert_assignment = $pdo->prepare("INSERT INTO section_teachers (section_id, teacher_id, subject) VALUES (?, ?, ?)");
-                $insert_assignment->execute([$section_id, $teacher_id, $teacher[1]]);
-                $section_teachers_created++;
+                $insert_assignment->execute([$section_id, $teacher_id, $subject]);
+                $assignments_created++;
+                $total_assignments++;
             }
         }
     }
-    $setup_messages[] = "✅ {$section_teachers_created} teacher assignments created for ABM1M1";
     
-    $setup_messages[] = "🎉 Database setup completed successfully!";
-    
-} catch (PDOException $e) {
-    $errors[] = "❌ Database Error: " . $e->getMessage();
-} catch (Exception $e) {
-    $errors[] = "❌ General Error: " . $e->getMessage();
+    return $assignments_created;
 }
 
-// Display results
+// Execute all assignments
+$total_section_assignments = 0;
+
+// Assign College sections
+foreach ($college_assignments as $section_code => $teachers) {
+    $result = assignTeachersToSection($pdo, $section_code, $teachers, $total_section_assignments);
+    if (is_numeric($result)) {
+        $setup_messages[] = "✅ {$result} teacher assignments created for {$section_code}";
+    } else {
+        $errors[] = "❌ Error assigning teachers to {$section_code}: {$result}";
+    }
+}
+
+// Assign College Sunday classes
+foreach ($college_sunday_assignments as $section_code => $teachers) {
+    $result = assignTeachersToSection($pdo, $section_code, $teachers, $total_section_assignments);
+    if (is_numeric($result)) {
+        $setup_messages[] = "✅ {$result} teacher assignments created for {$section_code}";
+    } else {
+        $errors[] = "❌ Error assigning teachers to {$section_code}: {$result}";
+    }
+}
+
+// Assign SHS Grade 11 sections
+foreach ($shs_grade11_assignments as $section_code => $teachers) {
+    $result = assignTeachersToSection($pdo, $section_code, $teachers, $total_section_assignments);
+    if (is_numeric($result)) {
+        $setup_messages[] = "✅ {$result} teacher assignments created for {$section_code}";
+    } else {
+        $errors[] = "❌ Error assigning teachers to {$section_code}: {$result}";
+    }
+}
+
+// Assign SHS Grade 12 sections
+foreach ($shs_grade12_assignments as $section_code => $teachers) {
+    $result = assignTeachersToSection($pdo, $section_code, $teachers, $total_section_assignments);
+    if (is_numeric($result)) {
+        $setup_messages[] = "✅ {$result} teacher assignments created for {$section_code}";
+    } else {
+        $errors[] = "❌ Error assigning teachers to {$section_code}: {$result}";
+    }
+}
+
+// Assign Updated SHS Sunday classes
+foreach ($shs_sunday_assignments as $section_code => $teachers) {
+    $result = assignTeachersToSection($pdo, $section_code, $teachers, $total_section_assignments);
+    if (is_numeric($result)) {
+        $setup_messages[] = "✅ {$result} teacher assignments created for {$section_code}";
+    } else {
+        $errors[] = "❌ Error assigning teachers to {$section_code}: {$result}";
+    }
+}
+
+$setup_messages[] = "🎉 Total section-teacher assignments created: {$total_section_assignments}";
+$setup_messages[] = "✅ All college and SHS section assignments completed successfully!";
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -636,6 +888,7 @@ try {
     </div>
 </body>
 </html>
+
 
 
 
