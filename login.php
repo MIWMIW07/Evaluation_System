@@ -168,6 +168,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
         
+        /* Removed the top border line by commenting out this section */
+        /*
         .login-container::before {
             content: '';
             position: absolute;
@@ -179,6 +181,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 25px 25px 0 0;
             animation: shimmer 3s ease-in-out infinite;
         }
+        */
         
         @keyframes shimmer {
             0%, 100% { opacity: 1; }
@@ -189,6 +192,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             text-align: center;
             margin-bottom: 40px;
             animation: headerFadeIn 1s ease-out 0.3s both;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
         }
         
         @keyframes headerFadeIn {
@@ -199,6 +206,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             to {
                 opacity: 1;
                 transform: translateY(0);
+            }
+        }
+        
+        .login-header img.logo {
+            height: 60px;
+            width: auto;
+            animation: logoBounce 1s ease-out 0.5s both;
+        }
+        
+        @keyframes logoBounce {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) translateY(-20px);
+            }
+            50% {
+                transform: scale(1.1) translateY(5px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
             }
         }
         
@@ -336,6 +363,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         .form-group input:focus::placeholder {
             opacity: 0.6;
+        }
+        
+        /* Bounce animation for completed inputs */
+        .form-group input.bounce {
+            animation: inputBounce 0.5s ease;
+        }
+        
+        @keyframes inputBounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
         }
         
         .login-btn {
@@ -703,6 +747,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 border-radius: 20px;
             }
             
+            .login-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
             .login-header h1 {
                 font-size: 1.8em;
             }
@@ -740,8 +789,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <div class="login-container">
         <div class="login-header">
-            <h1>🎓 Academic Portal</h1>
-            <p>Teacher Evaluation System</p>
+            <!-- Add your logo image here - update the src path as needed -->
+            <img src="logo.png" alt="School Logo" class="logo">
+            <div>
+                <h1>🎓 Academic Portal</h1>
+                <p>Teacher Evaluation System</p>
+            </div>
         </div>
         
         <div class="institution-info">
@@ -842,7 +895,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Type animation effect
             typeWriter(usernameInput, username, () => {
                 setTimeout(() => {
-                    typeWriter(passwordInput, password);
+                    typeWriter(passwordInput, password, () => {
+                        // Add bounce animation after both fields are filled
+                        setTimeout(() => {
+                            usernameInput.classList.add('bounce');
+                            passwordInput.classList.add('bounce');
+                            
+                            // Remove the class after animation completes
+                            setTimeout(() => {
+                                usernameInput.classList.remove('bounce');
+                                passwordInput.classList.remove('bounce');
+                            }, 500);
+                        }, 300);
+                    });
                 }, 300);
             });
             
@@ -924,6 +989,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     this.style.animation = 'none';
                 });
             }, 1000);
+            
+            // Add input completion detection for bounce animation
+            const inputs = document.querySelectorAll('#username, #password');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value.length > 0) {
+                        this.classList.add('bounce');
+                        
+                        // Remove the class after animation completes
+                        setTimeout(() => {
+                            this.classList.remove('bounce');
+                        }, 500);
+                    }
+                });
+            });
         });
         
         // Add input interaction effects
@@ -1057,6 +1137,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 setTimeout(() => {
                     typeWriter(passwordInput, password, () => {
                         showSuccessAnimation();
+                        
+                        // Add bounce animation after both fields are filled
+                        setTimeout(() => {
+                            usernameInput.classList.add('bounce');
+                            passwordInput.classList.add('bounce');
+                            
+                            // Remove the class after animation completes
+                            setTimeout(() => {
+                                usernameInput.classList.remove('bounce');
+                                passwordInput.classList.remove('bounce');
+                            }, 500);
+                        }, 300);
                     });
                 }, 300);
             });
