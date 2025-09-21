@@ -813,7 +813,7 @@ foreach ($shs_sunday_assignments as $section_code => $teachers) {
 
 $setup_messages[] = "🎉 Total section-teacher assignments created: {$total_section_assignments}";
 $setup_messages[] = "✅ All college and SHS section assignments completed successfully!";
-
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -888,6 +888,7 @@ $setup_messages[] = "✅ All college and SHS section assignments completed succe
     </div>
 </body>
 </html>
+
 
 
 
