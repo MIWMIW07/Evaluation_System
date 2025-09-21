@@ -203,8 +203,8 @@ try {
         ['BSCS-2SC', 'BS Computer Science 2nd Year Sunday Class', 'COLLEGE', '2nd Year'],
         ['BSOA-1SC', 'BS Office Administration 1st Year Sunday Class', 'COLLEGE', '1st Year'],
         ['BSOA-2SC', 'BS Office Administration 2nd Year Sunday Class', 'COLLEGE', '2nd Year'],
-        ['BTVTED-1SC', 'Bachelor of Technical Vocational Teacher Education 1st Year Sunday Class', 'COLLEGE', '1st Year'],
-        ['BTVTED-2SC', 'Bachelor of Technical Vocational Teacher Education 2nd Year Sunday Class', 'COLLEGE', '2nd Year'],
+        ['EDUC-1SC', 'Bachelor of Technical Vocational Teacher Education 1st Year Sunday Class', 'COLLEGE', '1st Year'],
+        ['EDUC-2SC', 'Bachelor of Technical Vocational Teacher Education 2nd Year Sunday Class', 'COLLEGE', '2nd Year'],
         
         // SHS Grade 11 Sections
         ['ABM1M1', 'Accountancy Business Management Grade 11 Morning Section 1', 'SHS', 'Grade 11'],
@@ -633,4 +633,5 @@ try {
     </div>
 </body>
 </html>
+
 
