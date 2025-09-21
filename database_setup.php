@@ -515,38 +515,6 @@ try {
         }
     }
     $setup_messages[] = "✅ {$section_teachers_created} teacher assignments created for BSCS-1M1";
-
-    // BSCS-2N1 Teachers
-    $bscs2n1_teachers = [
-        ['MR. VELE', 'Computer Programming'],
-        ['MR. RODRIGUEZ', 'Database Systems'],
-        ['MR. JIMENEZ', 'Web Development'],
-        ['MS. RENDORA', 'Mathematics'],
-        ['MR. ICABANDE', 'Programming Fundamentals'],
-        ['MR. PATIAM', 'Business Management']
-        ['MR. GORDON', 'Programming']
-    ];
-    
-    $section_teachers_created = 0;
-    $section_id = $pdo->query("SELECT id FROM sections WHERE section_code = 'BSCS-2N1'")->fetchColumn();
-    
-    foreach ($bscs2n1_teachers as $teacher) {
-        $teacher_id = $pdo->prepare("SELECT id FROM teachers WHERE name = ? AND subject = ?");
-        $teacher_id->execute([$teacher[0], $teacher[1]]);
-        $teacher_id = $teacher_id->fetchColumn();
-        
-        if ($teacher_id) {
-            $check_assignment = $pdo->prepare("SELECT COUNT(*) FROM section_teachers WHERE section_id = ? AND teacher_id = ?");
-            $check_assignment->execute([$section_id, $teacher_id]);
-            
-            if ($check_assignment->fetchColumn() == 0) {
-                $insert_assignment = $pdo->prepare("INSERT INTO section_teachers (section_id, teacher_id, subject) VALUES (?, ?, ?)");
-                $insert_assignment->execute([$section_id, $teacher_id, $teacher[1]]);
-                $section_teachers_created++;
-            }
-        }
-    }
-    $setup_messages[] = "✅ {$section_teachers_created} teacher assignments created for BSCS-2N1";
     
     // SHS SECTION TEACHER ASSIGNMENTS
     
@@ -668,6 +636,7 @@ try {
     </div>
 </body>
 </html>
+
 
 
 
