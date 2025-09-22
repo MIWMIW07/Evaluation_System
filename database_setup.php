@@ -1,16 +1,14 @@
 <?php
-// database_setup.php - Database initialization and table creation
+// database_setup.php - FINAL CORRECTED VERSION
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Security check - Only allow access during setup phase
 session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     http_response_code(403);
     die('Access Denied: Admin access required for database setup.');
 }
 
-// Include database connection with correct path
 require_once 'includes/db_connection.php';
 
 $setup_messages = [];
@@ -19,149 +17,46 @@ $errors = [];
 try {
     $pdo = getDatabaseConnection();
     $setup_messages[] = "✅ Database connection successful!";
-    
-    // Create users table
-    $create_users_table = "CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        user_type VARCHAR(20) NOT NULL DEFAULT 'student',
-        full_name VARCHAR(100) NOT NULL,
-        student_id VARCHAR(20),
-        program VARCHAR(50),
-        section VARCHAR(50),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_login TIMESTAMP NULL, student_table_id INTEGER REFERENCES students(id)
-        )";
-    $pdo->exec($create_users_table);
-    $setup_messages[] = "✅ Users table created/verified";
-    
-    // Create evaluations table
-    $create_evaluations_table = "CREATE TABLE IF NOT EXISTS evaluations (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id),
-        student_id VARCHAR(20) NOT NULL,
-        student_name VARCHAR(100) NOT NULL,
-        section VARCHAR(50) NOT NULL,
-        program VARCHAR(50) NOT NULL,
-        teacher_id INTEGER REFERENCES teachers(id),
-        subject VARCHAR(100) NOT NULL,
-        q1_1 INTEGER NOT NULL CHECK (q1_1 >= 1 AND q1_1 <= 5),
-        q1_2 INTEGER NOT NULL CHECK (q1_2 >= 1 AND q1_2 <= 5),
-        q1_3 INTEGER NOT NULL CHECK (q1_3 >= 1 AND q1_3 <= 5),
-        q1_4 INTEGER NOT NULL CHECK (q1_4 >= 1 AND q1_4 <= 5),
-        q1_5 INTEGER NOT NULL CHECK (q1_5 >= 1 AND q1_5 <= 5),
-        q1_6 INTEGER NOT NULL CHECK (q1_6 >= 1 AND q1_6 <= 5),
-        q2_1 INTEGER NOT NULL CHECK (q2_1 >= 1 AND q2_1 <= 5),
-        q2_2 INTEGER NOT NULL CHECK (q2_2 >= 1 AND q2_2 <= 5),
-        q2_3 INTEGER NOT NULL CHECK (q2_3 >= 1 AND q2_3 <= 5),
-        q2_4 INTEGER NOT NULL CHECK (q2_4 >= 1 AND q2_4 <= 5),
-        q3_1 INTEGER NOT NULL CHECK (q3_1 >= 1 AND q3_1 <= 5),
-        q3_2 INTEGER NOT NULL CHECK (q3_2 >= 1 AND q3_2 <= 5),
-        q3_3 INTEGER NOT NULL CHECK (q3_3 >= 1 AND q3_3 <= 5),
-        q3_4 INTEGER NOT NULL CHECK (q3_4 >= 1 AND q3_4 <= 5),
-        q4_1 INTEGER NOT NULL CHECK (q4_1 >= 1 AND q4_1 <= 5),
-        q4_2 INTEGER NOT NULL CHECK (q4_2 >= 1 AND q4_2 <= 5),
-        q4_3 INTEGER NOT NULL CHECK (q4_3 >= 1 AND q4_3 <= 5),
-        q4_4 INTEGER NOT NULL CHECK (q4_4 >= 1 AND q4_4 <= 5),
-        q4_5 INTEGER NOT NULL CHECK (q4_5 >= 1 AND q4_5 <= 5),
-        q4_6 INTEGER NOT NULL CHECK (q4_6 >= 1 AND q4_6 <= 5),
-        comments TEXT,
-        evaluation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, teacher_id)
-    )";
-    $pdo->exec($create_evaluations_table);
-    $setup_messages[] = "✅ Evaluations table created/verified";
 
-    // ===============================================
-    // NEW & UPDATED TABLES
-    // ===============================================
-    
-    // 1. CREATE SECTIONS TABLE
-    $create_sections_table = "CREATE TABLE IF NOT EXISTS sections (
-        id SERIAL PRIMARY KEY,
-        section_code VARCHAR(20) UNIQUE NOT NULL,
-        section_name VARCHAR(100) NOT NULL,
-        program VARCHAR(50) NOT NULL,
-        year_level VARCHAR(20),
-        is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )";
+    // --- 1. TABLE CREATION (CORRECT ORDER) ---
+
+    $create_sections_table = "CREATE TABLE IF NOT EXISTS sections (id SERIAL PRIMARY KEY, section_code VARCHAR(20) UNIQUE NOT NULL, section_name VARCHAR(100) NOT NULL, program VARCHAR(50) NOT NULL, year_level VARCHAR(20), is_active BOOLEAN DEFAULT true, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
     $pdo->exec($create_sections_table);
     $setup_messages[] = "✅ Sections table created/verified";
 
-    // Create students table first as users table will reference it
-    $create_students_table = "CREATE TABLE IF NOT EXISTS students (
-        id SERIAL PRIMARY KEY,
-        student_id VARCHAR(30) UNIQUE,
-        last_name VARCHAR(50) NOT NULL,
-        first_name VARCHAR(50) NOT NULL,
-        middle_name VARCHAR(50),
-        full_name VARCHAR(150) NOT NULL,
-        section_id INTEGER,
-        is_active BOOLEAN DEFAULT true,
-        enrolled_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )";
+    // Create students table first because the users table references it
+    $create_students_table = "CREATE TABLE IF NOT EXISTS students (id SERIAL PRIMARY KEY, student_id VARCHAR(30) UNIQUE, last_name VARCHAR(50) NOT NULL, first_name VARCHAR(50) NOT NULL, middle_name VARCHAR(50), full_name VARCHAR(150) NOT NULL, section_id INTEGER REFERENCES sections(id), is_active BOOLEAN DEFAULT true, enrolled_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
     $pdo->exec($create_students_table);
     $setup_messages[] = "✅ Students table created/verified";
 
-   $create_teachers_table = "CREATE TABLE IF NOT EXISTS teachers (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        department VARCHAR(50) NOT NULL,
-        is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(name, department) -- Make the combination of name and department unique
-    )";
+    $create_users_table = "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username VARCHAR(50) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL, user_type VARCHAR(20) NOT NULL DEFAULT 'student', full_name VARCHAR(100) NOT NULL, student_id VARCHAR(20), program VARCHAR(50), section VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, last_login TIMESTAMP NULL, student_table_id INTEGER REFERENCES students(id))";
+    $pdo->exec($create_users_table);
+    $setup_messages[] = "✅ Users table created/verified";
+
+    $create_teachers_table = "CREATE TABLE IF NOT EXISTS teachers (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, department VARCHAR(50) NOT NULL, is_active BOOLEAN DEFAULT true, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(name, department))";
     $pdo->exec($create_teachers_table);
-    $setup_messages[] = "✅ Teachers table created/verified with correct unique rule.";
+    $setup_messages[] = "✅ Teachers table created/verified.";
 
-    
-    // 4. CREATE SECTION_TEACHERS TABLE
-    $create_section_teachers_table = "CREATE TABLE IF NOT EXISTS section_teachers (
-        id SERIAL PRIMARY KEY,
-        section_id INTEGER REFERENCES sections(id),
-        teacher_id INTEGER REFERENCES teachers(id),
-        is_active BOOLEAN DEFAULT true,
-        assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(section_id, teacher_id)
-    )";
+    $create_section_teachers_table = "CREATE TABLE IF NOT EXISTS section_teachers (id SERIAL PRIMARY KEY, section_id INTEGER REFERENCES sections(id), teacher_id INTEGER REFERENCES teachers(id), is_active BOOLEAN DEFAULT true, assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(section_id, teacher_id))";
     $pdo->exec($create_section_teachers_table);
-    $setup_messages[] = "✅ Section Teachers table created/verified";
+    $setup_messages[] = "✅ Section_Teachers table created/verified.";
+
+    $create_evaluations_table = "CREATE TABLE IF NOT EXISTS evaluations (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), student_id VARCHAR(20) NOT NULL, student_name VARCHAR(100) NOT NULL, section VARCHAR(50) NOT NULL, program VARCHAR(50) NOT NULL, teacher_id INTEGER REFERENCES teachers(id), subject VARCHAR(100) NOT NULL, q1_1 INTEGER NOT NULL, q1_2 INTEGER NOT NULL, q1_3 INTEGER NOT NULL, q1_4 INTEGER NOT NULL, q1_5 INTEGER NOT NULL, q1_6 INTEGER NOT NULL, q2_1 INTEGER NOT NULL, q2_2 INTEGER NOT NULL, q2_3 INTEGER NOT NULL, q2_4 INTEGER NOT NULL, q3_1 INTEGER NOT NULL, q3_2 INTEGER NOT NULL, q3_3 INTEGER NOT NULL, q3_4 INTEGER NOT NULL, q4_1 INTEGER NOT NULL, q4_2 INTEGER NOT NULL, q4_3 INTEGER NOT NULL, q4_4 INTEGER NOT NULL, q4_5 INTEGER NOT NULL, q4_6 INTEGER NOT NULL, comments TEXT, evaluation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, teacher_id, subject))";
+    $pdo->exec($create_evaluations_table);
+    $setup_messages[] = "✅ Evaluations table created/verified";
     
-    // 5. UPDATE EXISTING USERS TABLE
-    try {
-        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS student_table_id INTEGER REFERENCES students(id)");
-        $setup_messages[] = "✅ Users table updated with student_table_id column";
-    } catch (Exception $e) {
-        $setup_messages[] = "ℹ️ Users table already has student_table_id column";
+    // --- 2. DATA INSERTION ---
+
+    // ADMIN USER
+    $check_admin = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+    $check_admin->execute(['admin']);
+    if ($check_admin->fetchColumn() == 0) {
+        $admin_password = password_hash('admin123', PASSWORD_DEFAULT);
+        $pdo->prepare("INSERT INTO users (username, password, user_type, full_name) VALUES (?, ?, ?, ?)")->execute(['admin', $admin_password, 'admin', 'System Administrator']);
+        $setup_messages[] = "✅ Admin user created (username: admin, password: admin123)";
     }
 
-     // Insert admin user
-    $check_admin = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
-    $check_admin->execute(['admin']);
-    if ($check_admin->fetchColumn() == 0) {
-        $admin_password = password_hash('admin123', PASSWORD_DEFAULT);
-        $insert_admin = $pdo->prepare("INSERT INTO users (username, password, user_type, full_name) VALUES (?, ?, ?, ?)");
-        $insert_admin->execute(['admin', $admin_password, 'admin', 'System Administrator']);
-        $setup_messages[] = "✅ Admin user created (username: admin, password: admin123)";
-    }
-    
-    // Insert sample admin user
-    $check_admin = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
-    $check_admin->execute(['admin']);
-    if ($check_admin->fetchColumn() == 0) {
-        $admin_password = password_hash('admin123', PASSWORD_DEFAULT);
-        $insert_admin = $pdo->prepare("INSERT INTO users (username, password, user_type, full_name) VALUES (?, ?, ?, ?)");
-        $insert_admin->execute(['admin', $admin_password, 'admin', 'System Administrator']);
-        $setup_messages[] = "✅ Admin user created (username: admin, password: admin123)";
-    } else {
-        $setup_messages[] = "ℹ️ Admin user already exists";
-    }
-    
-    // ===============================================
-    // INSERT SECTIONS DATA
-    // ===============================================
+    // SECTIONS DATA
     $sections = [
         ['BSCS-1M1', 'BS Computer Science 1st Year Morning Section 1', 'COLLEGE', '1st Year'], ['BSCS-2N1', 'BS Computer Science 2nd Year Night Section 1', 'COLLEGE', '2nd Year'], ['BSCS-3M1', 'BS Computer Science 3rd Year Morning Section 1', 'COLLEGE', '3rd Year'], ['BSCS-4N1', 'BS Computer Science 4th Year Night Section 1', 'COLLEGE', '4th Year'], ['BSOA-1M1', 'BS Office Administration 1st Year Morning Section 1', 'COLLEGE', '1st Year'], ['BSOA-2N1', 'BS Office Administration 2nd Year Night Section 1', 'COLLEGE', '2nd Year'], ['BSOA-3M1', 'BS Office Administration 3rd Year Morning Section 1', 'COLLEGE', '3rd Year'], ['BSOA-4N1', 'BS Office Administration 4th Year Night Section 1', 'COLLEGE', '4th Year'], ['EDUC-1M1', 'Bachelor of Elementary Education 1st Year Morning Section 1', 'COLLEGE', '1st Year'], ['EDUC-2N1', 'Bachelor of Elementary Education 2nd Year Night Section 1', 'COLLEGE', '2nd Year'], ['EDUC-3M1', 'Bachelor of Elementary Education 3rd Year Morning Section 1', 'COLLEGE', '3rd Year'], ['EDUC-4M1', 'Bachelor of Elementary Education 4th Year Morning Section 1', 'COLLEGE', '4th Year'], ['EDUC-4N1', 'Bachelor of Elementary Education 4th Year Night Section 1', 'COLLEGE', '4th Year'], ['BSCS-1SC', 'BS Computer Science 1st Year Sunday Class', 'COLLEGE', '1st Year'], ['BSCS-2SC', 'BS Computer Science 2nd Year Sunday Class', 'COLLEGE', '2nd Year'], ['BSOA-1SC', 'BS Office Administration 1st Year Sunday Class', 'COLLEGE', '1st Year'], ['BSOA-2SC', 'BS Office Administration 2nd Year Sunday Class', 'COLLEGE', '2nd Year'], ['EDUC-1SC', 'Bachelor of Technical Vocational Teacher Education 1st Year Sunday Class', 'COLLEGE', '1st Year'], ['EDUC-2SC', 'Bachelor of Technical Vocational Teacher Education 2nd Year Sunday Class', 'COLLEGE', '2nd Year'],
         ['ABM-1M1', 'Accountancy Business Management Grade 11 Morning Section 1', 'SHS', 'Grade 11'], ['ABM-1M2', 'Accountancy Business Management Grade 11 Morning Section 2', 'SHS', 'Grade 11'], ['ABM-1N1', 'Accountancy Business Management Grade 11 Night Section 1', 'SHS', 'Grade 11'], ['HUMSS-1M1', 'Humanities and Social Sciences Grade 11 Morning Section 1', 'SHS', 'Grade 11'], ['HUMSS-1M2', 'Humanities and Social Sciences Grade 11 Morning Section 2', 'SHS', 'Grade 11'], ['HUMSS-1M3', 'Humanities and Social Sciences Grade 11 Morning Section 3', 'SHS', 'Grade 11'], ['HUMSS-1M4', 'Humanities and Social Sciences Grade 11 Morning Section 4', 'SHS', 'Grade 11'], ['HUMSS-1M5', 'Humanities and Social Sciences Grade 11 Morning Section 5', 'SHS', 'Grade 11'], ['HUMSS-1N1', 'Humanities and Social Sciences Grade 11 Night Section 1', 'SHS', 'Grade 11'], ['HUMSS-1N2', 'Humanities and Social Sciences Grade 11 Night Section 2', 'SHS', 'Grade 11'], ['HUMSS-1N3', 'Humanities and Social Sciences Grade 11 Night Section 3', 'SHS', 'Grade 11'], ['HE-1M1', 'Home Economics Grade 11 Morning Section 1', 'SHS', 'Grade 11'], ['HE-1M2', 'Home Economics Grade 11 Morning Section 2', 'SHS', 'Grade 11'], ['HE-1M3', 'Home Economics Grade 11 Morning Section 3', 'SHS', 'Grade 11'], ['HE-1M4', 'Home Economics Grade 11 Morning Section 4', 'SHS', 'Grade 11'], ['HE-1N1', 'Home Economics Grade 11 Night Section 1', 'SHS', 'Grade 11'], ['HE-1N2', 'Home Economics Grade 11 Night Section 2', 'SHS', 'Grade 11'], ['ICT-1M1', 'Information and Communication Technology Grade 11 Morning Section 1', 'SHS', 'Grade 11'], ['ICT-1M2', 'Information and Communication Technology Grade 11 Morning Section 2', 'SHS', 'Grade 11'], ['ICT-1N1', 'Information and Communication Technology Grade 11 Night Section 1', 'SHS', 'Grade 11'], ['ICT-1N2', 'Information and Communication Technology Grade 11 Night Section 2', 'SHS', 'Grade 11'],
@@ -174,18 +69,15 @@ try {
         $check_section = $pdo->prepare("SELECT COUNT(*) FROM sections WHERE section_code = ?");
         $check_section->execute([$section[0]]);
         if ($check_section->fetchColumn() == 0) {
-            $insert_section = $pdo->prepare("INSERT INTO sections (section_code, section_name, program, year_level) VALUES (?, ?, ?, ?)");
-            $insert_section->execute($section);
+            $pdo->prepare("INSERT INTO sections (section_code, section_name, program, year_level) VALUES (?, ?, ?, ?)")->execute($section);
             $sections_created++;
         }
     }
     $setup_messages[] = "✅ {$sections_created} new sections created/verified";
 
-    // ===============================================
-    // INSERT ALL STUDENTS DATA (NEWLY ADDED)
-    // ===============================================
-    
+    // --- 3. STUDENT DATA INSERTION ---
     $all_students_by_section = [
+        'BSCS-1M1' => [['ABAÑO','SHAWN ROVIC','PARREÑO'],['ANDRES','ALLYSA','LIBRANDO'],['CARDIENTE','SHIENA','AMANTE'],['CERNA','SHAYRA','OMILIG'],['CORTES','MARRY JOY','LUVIDECES'],['DALUZ','MA. KATE JASMIN','PORTACIO'],['ESTOCADO','LEOVY JOY','CARBONELLO'],['GARCERA','ANGELA',''],['JACINTO','MA. CLARISSA','BAUTISTA'],['LABAGALA','TRISHA MAE','CADILE'],['MUSCA','ROSALINDA',''],['RAFANAN','ROSELYN','LANORIA'],['SAYNO','JANILLE','BASINANG'],['ZARSUELO','JENNICA ROSE','BAMBIBO'],['ABIGUELA','RAYBAN','NAVEA'],['ADONIS','JARED','DICHUPA'],['AMABAO','EZEKIEL JEAN',''],['BULADO','JOHN PAUL','VALEROSO'],['CADILE','BENCH JOSH','MENDOZA'],['CUEVAS','CYRUS','MARTINEZ'],['DIOQUINO','FRANCIS','RECTO'],['FALCON','KARL ANTHONY','VERSOZA'],['KEMPIS','BRIAN JOSH','ACIDO'],['LACUARIN','CYRUS','MARMETO'],['LLEGANIA','LANCE ALLANDY','MONTILLA'],['LOREDO','CLARENCE','CASTUCIANO'],['LORICA','JOSEPH','PAMIN'],['MEDROSO','VICENTE','VENCIO'],['NOVICIO','ACESON','LAWA'],['QUIRANTE','IZEUS JAKE','E'],['ROA','MICHAEL','RAMALLOSA'],['SAMILLANO','EDRIAN','PESTAÑO'],['VALLEJO','JOHN KENNETH ADRIAN','EMBESTRO'],['VERDOQUILLO','LEMUEL','HITALIA'],['VILLANUEVA','ROWIE','PADEL']],
         'BSCS-1M1' => [['ABAÑO','SHAWN ROVIC','PARREÑO'],['ANDRES','ALLYSA','LIBRANDO'],['CARDIENTE','SHIENA','AMANTE'],['CERNA','SHAYRA','OMILIG'],['CORTES','MARRY JOY','LUVIDECES'],['DALUZ','MA. KATE JASMIN','PORTACIO'],['ESTOCADO','LEOVY JOY','CARBONELLO'],['GARCERA','ANGELA',''],['JACINTO','MA. CLARISSA','BAUTISTA'],['LABAGALA','TRISHA MAE','CADILE'],['MUSCA','ROSALINDA',''],['RAFANAN','ROSELYN','LANORIA'],['SAYNO','JANILLE','BASINANG'],['ZARSUELO','JENNICA ROSE','BAMBIBO'],['ABIGUELA','RAYBAN','NAVEA'],['ADONIS','JARED','DICHUPA'],['AMABAO','EZEKIEL JEAN',''],['BULADO','JOHN PAUL','VALEROSO'],['CADILE','BENCH JOSH','MENDOZA'],['CUEVAS','CYRUS','MARTINEZ'],['DIOQUINO','FRANCIS','RECTO'],['FALCON','KARL ANTHONY','VERSOZA'],['KEMPIS','BRIAN JOSH','ACIDO'],['LACUARIN','CYRUS','MARMETO'],['LLEGANIA','LANCE ALLANDY','MONTILLA'],['LOREDO','CLARENCE','CASTUCIANO'],['LORICA','JOSEPH','PAMIN'],['MEDROSO','VICENTE','VENCIO'],['NOVICIO','ACESON','LAWA'],['QUIRANTE','IZEUS JAKE','E'],['ROA','MICHAEL','RAMALLOSA'],['SAMILLANO','EDRIAN','PESTAÑO'],['VALLEJO','JOHN KENNETH ADRIAN','EMBESTRO'],['VERDOQUILLO','LEMUEL','HITALIA'],['VILLANUEVA','ROWIE','PADEL']],
         'BSOA-1M1' => [['ABRAGAN','CHERRY','SARMIENTO'],['ADRAO','SHIELA MAY','RIBAYA'],['ALMANZA','RASHEL','ALBITO'],['ARRIOLA','CHRISTEL GENESIS','DELOS REYES'],['CAINTIC','JAMAICA MAE','VALERIO'],['CANELA','RAZEL MAICCA','G'],['CELIS','IZZY','TADEO'],['DACLES','KHATE','AGRAVANTE'],['DACUYA','IVY','BACULINAO'],['DARDAGAN','JOHANNA','GUINAL'],['DEGAYO','PRINCESS','BACALSO'],['DELA CRUZ','JANEYA CASSANDRA','SOBREMONTE'],['DOMECILLO','JULY-ANN','RAMIREZ'],['DOMONDON','ABIGAIL','TUTAAN'],['EVANGELISTA','KEYCEE','MIRANDILLA'],['FORTALEZA','ABEGAIL','COLICO'],['FRIAS','JENNY VHABE',''],['FUENTES','LEONORA ANNA','HISONA'],['GABORNE','PRECIOUS JOSEPHINE','ABANDO'],['GARCIA','KRISTINE JOY','ECHON'],['JAGOLINA','TANYA','FAJARDO'],['LARIOQUE','MICHELLE JOY','SOLAYAO'],['LUCHANA','GABBY ANN','GARCERA'],['MACALINO','MICHELLE','IRINCO'],['MASUNGSONG','ROSE ANN','CAMINO'],['MOJICA','MICHAELA VENICE GAIL','BUSTAMANTE'],['PULLEDA','WINA',''],['RAFOLS','DIANNA ROME','POLLANTE'],['REMOTO','MARY DIVINE GRACE','BALGOS'],['RENDON','ELAIJAH MAE','LAURINA'],['SAMSON','ANGELINE','HERNANDEZ'],['SUMORIA','ALMIRA','CELIS'],['TAMBUNGAN','WENLIAN-MISIA','DAEF'],['TESADO','ARLENE',''],['VANZUELA','RHIANNA MAE','OSARES'],['ALBEZA','ROMEO','ESCUADRO'],['BADO','GILBERT','ALCANTARA'],['DELA PAZ','JUDEL','DEL SOCORRO'],['DURANTE','MARK LORENZ','HERNANDEZ'],['ESGUERRA','JENMORE','BACALSO'],['FAMILIAR','MARC JERIC','RODRIGUEZ'],['HISONA','CHRISTIAN',''],['MERO','NOLIE',''],['PACIS','JERALD','SIERRA'],['PAVIA','JASTIN','NIEPAS'],['PEREZ','REGGIE','ALIMANIA'],['RODRIGUEZ','ROILAND','GRUTAS'],['VICTORIA','MARJOHN','N/I']],
         'EDUC-1M1' => [['AMARANTO','JOANA MARIE','BIQUILLO'],['ANTIPOLO','CANDIES DALE',''],['ARSOLON','REBECCA AIRA','CIRUELA'],['ASANZA','CLARIZ','LAUROSA'],['ASUCENAS','APPLE MAE','JUNSY'],['BAUNTO','SAIMAH','PANGADAPEN'],['BOMBASE','ANGEL','VILLARENO'],['DAYANDAYAN','RODELYN',''],['DELOS SANTOS','NORLY','JAGOLINA'],['FERNANDES','FIRILYN','TABOTABO'],['GABAYNO','BERNADETTED','GADO'],['GABRIEL','AYESHA NICOLE','ESLAO'],['GARILAO','CRISJAELLE','SALVADOR'],['GRAFIL','JOSIE','DINGAL'],['LABASBAS','MAYCIE','PASCUAL'],['LICMUAN','KAYE EUNICE','NARAG'],['LINGHAP','REGIELYN','ADAMOS'],['LOBERISCO','MYRA',''],['MARTICIO','ANNA MARIE','CAMACHO'],['MATCHINA','SHAINE','SUELO'],['OMEDES','MIRAFE','SOMALO'],['PAGAL','PELJOY','SERON'],['RABE','CHRISTINE GRACE','TAGRIPIS'],['RAMOS','CLARISS','LAXA'],['REFAMA','JASMINE','MANALILI'],['RODRIGUEZ','WINNIECHA','DAVID'],['TANDAS','ANGELICA NICOLE','CATHEDRAL'],['TESADO','MILENA','BOHOLANO'],['ABBANG','JOHN ERIC PAUL','LINGAO LINGAO'],['ALBAO','MARK LESTER','ALEJO'],['ARGOTA','RYAN','BALINGASA'],['BALUCAS','JHANMER','GENEROSO'],['CUYOS','MHIKE ANDREI','DUMA'],['DABLO','JOMEL','ALEGADO'],['GANDEZA','STEVEN','MORENO'],['GUZMAN','MARK LUIS','RAMOS'],['JACER','ANTONIO','CAYOBIT'],['LIABRES','GEMMAR','O'],['PLOPINIO','GIAN KENNETH','CLACIO'],['ROTONI','CHRISTIAN','USERO'],['SALAC','ANGELO','CLACIO'],['SAMONTE','CRIZ GHABRIEL','DAPIOSEM'],['TORREON','DENVER','TAGCIP'],['VELASCO','KURT JON LOUIE','OFENDA']],
@@ -247,39 +139,9 @@ try {
         'ICT-3N1' => [['ASPE','LAURO DANIEL','D.'],['Caro','Eirhon Khim','S.'],['CASTILLO','ARBY','B.'],['Doming','Ian Cedric','M.'],['Gamba','John Peter','B.'],['GARING','DANIELLE LORENZ','G.'],['JAYNOS','STEPHEN JOHN','O.'],['Lasanas','John Romel','A.'],['Pantanosa','Jeynard','T.'],['PECUNDO','JOHN MAURICE','.'],['Pimentel','Erick','T.'],['REYES','SEAN EMERSON','M.'],['SIBOLINO','CHRISTIAN','A.'],['SUMILANG','JOHN JOSHUA','S.'],['Torejas','Gabriel Angelo','Q.'],['VERGARA','WINLOVE GOERGE','L.'],['BAUTISTA','ALTHEA','M.'],['CANO','JEZRA','Y.'],['CATIMBANG','PATRICIA ISABEL','E.'],['Convis','Micaella','N.'],['FLORENDO','RYSAH MAE','Y.'],['Macdon','Julie Anne','B.'],['VILLASIS','ALEXANDRA NICOLE','P.']],
         'ICT-3N2' => [['Alina','Voldemort Yuri','N.'],['Amaro','Cyruz','T.'],['Arsenia','Arvie','E.'],['Cellona','Jason','.'],['Cruz','Renz Jamer','D.'],['DADOR','MIGUELITO','.'],['MEDINA','MHICO EMMANUEL','.'],['PABU-AYA','JHON BERT','R.'],['PANINGBATAN','FARHAN','S.'],['Paralejas','John David','M.'],['Tadena Jr.','Jonathan','G.'],['Bacolod','Rhegine','M.'],['Borale','Krizmarie Jed','A.'],['Buado','Julia Margaret','P.'],['Maghirang','Reyanne','A.'],['PARAGILE','SOFIA','E.'],['Pascua','Deserie','B.'],['ROCABERTE','SHAILA','A.'],['TROPA','ANNABELLE','H.']],
         'ICT-12SC' => [['ALDEA','JOHN REYRENZ','M.'],['Asucenas','Emmanuel','J.'],['DAVID','LAWRENCE','C.'],['MAHUSAY','JEFF MARLOU','T.'],['MISSION','FREDRICK','D.'],['PASANA','AIDAN JAMES','C.'],['TRINIDAD','JEFFERSON','D.'],['ABORDO','PAMELA','D.'],['BALINA','BEAH','R.'],['HALON','JHAZMINE KLARIZ','H.'],['NIOSCO','STRAWBERRY PEARL','B.'],['PAUNIL','MARJORIE','D.'],['RELLAMA','KATHERINE','T.']]
+ 
+
     ];
-
-     $setup_messages[] = "⏳ Creating student login accounts...";
-    $students_stmt = $pdo->query("SELECT id, full_name, first_name, last_name FROM students");
-    $all_students = $students_stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    $student_users_created = 0;
-    $default_password_hashed = password_hash('pass123', PASSWORD_DEFAULT);
-
-    foreach ($all_students as $student) {
-        // Create a simple username, e.g., "delaCruzJ"
-        $fname_initial = substr($student['first_name'], 0, 1);
-        $username = strtolower(str_replace(' ', '', $student['last_name']) . $fname_initial);
-
-        // Check if username already exists to avoid errors on re-run
-        $check_user = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
-        $check_user->execute([$username]);
-
-        if ($check_user->fetchColumn() == 0) {
-            $insert_user = $pdo->prepare(
-                "INSERT INTO users (username, password, user_type, full_name, student_table_id) VALUES (?, ?, 'student', ?, ?)"
-            );
-            $insert_user->execute([
-                $username,
-                $default_password_hashed,
-                $student['full_name'],
-                $student['id']
-            ]);
-            $student_users_created++;
-        }
-    }
-    $setup_messages[] = "✅ Created {$student_users_created} new student login accounts. The password for all students is 'pass123'.";
-
 
     $total_students_created = 0;
     foreach ($all_students_by_section as $section_code => $students) {
@@ -288,13 +150,10 @@ try {
         $section_id = $section_stmt->fetchColumn();
 
         if ($section_id) {
-            $students_created_in_section = 0;
             foreach ($students as $student_data) {
                 $last_name = $student_data[0];
                 $first_name = $student_data[1];
                 $middle_name = $student_data[2] ?? '';
-                $middle_name = (in_array($middle_name, ['N/I', '-', 'n/a'])) ? '' : $middle_name;
-                
                 $full_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
                 
                 $check_student = $pdo->prepare("SELECT COUNT(*) FROM students WHERE full_name = ? AND section_id = ?");
@@ -303,25 +162,41 @@ try {
                 if ($check_student->fetchColumn() == 0) {
                     $insert_student = $pdo->prepare("INSERT INTO students (last_name, first_name, middle_name, full_name, section_id) VALUES (?, ?, ?, ?, ?)");
                     $insert_student->execute([$last_name, $first_name, $middle_name, $full_name, $section_id]);
-                    $students_created_in_section++;
                     $total_students_created++;
                 }
             }
-            if ($students_created_in_section > 0) {
-                $setup_messages[] = "✅ {$students_created_in_section} students created for section {$section_code}";
-            }
         } else {
-            $errors[] = "❌ Section code '{$section_code}' not found in the database. Students for this section were not added.";
+            $errors[] = "❌ Section code '{$section_code}' not found. Students for this section were not added.";
         }
     }
-    $setup_messages[] = "🎉 Total new students created: {$total_students_created}";
+    $setup_messages[] = "✅ Inserted/verified {$total_students_created} students into the 'students' table.";
 
+    // --- 4. STUDENT ACCOUNT CREATION (CORRECT ORDER) ---
+    $setup_messages[] = "⏳ Creating student login accounts...";
+    $students_stmt = $pdo->query("SELECT id, full_name, first_name, last_name FROM students");
+    $all_students = $students_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $student_users_created = 0;
+    $default_password_hashed = password_hash('pass123', PASSWORD_DEFAULT);
 
-    // ===============================================
-    // INSERT TEACHERS DATA
-    // ===============================================
-   $college_teachers = [['MR. VELE', 'COLLEGE'], ['MR. RODRIGUEZ', 'COLLEGE'] /* ... more college teachers */];
-    $shs_teachers = [['MR. VELE', 'SHS'], ['MR. RODRIGUEZ', 'SHS'], ['MS. TINGSON', 'SHS'] /* ... more shs teachers */];
+    foreach ($all_students as $student) {
+        $fname_initial = substr($student['first_name'], 0, 1);
+        $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $student['last_name']) . $fname_initial);
+
+        $check_user = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+        $check_user->execute([$username]);
+
+        if ($check_user->fetchColumn() == 0) {
+            $insert_user = $pdo->prepare("INSERT INTO users (username, password, user_type, full_name, student_table_id) VALUES (?, ?, 'student', ?, ?)");
+            $insert_user->execute([$username, $default_password_hashed, $student['full_name'], $student['id']]);
+            $student_users_created++;
+        }
+    }
+    $setup_messages[] = "✅ Created {$student_users_created} new student login accounts. The password for all students is 'pass123'.";
+
+    // --- 5. TEACHER DATA AND ASSIGNMENTS ---
+    $college_teachers = [['MR. VELE', 'COLLEGE'], ['MR. RODRIGUEZ', 'COLLEGE'], ['MR. JIMENEZ', 'COLLEGE']];
+    $shs_teachers = [['MR. VELE', 'SHS'], ['MS. TINGSON', 'SHS']];
     
     $all_teachers_with_departments = array_merge($college_teachers, $shs_teachers);
     $teachers_created = 0;
@@ -329,22 +204,16 @@ try {
     foreach ($all_teachers_with_departments as $teacher_data) {
         $name = $teacher_data[0];
         $department = $teacher_data[1];
-
-        // Check if the specific name + department combination exists
         $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND department = ?");
         $check_teacher->execute([$name, $department]);
         
         if ($check_teacher->fetchColumn() == 0) {
-            $insert_teacher = $pdo->prepare("INSERT INTO teachers (name, department) VALUES (?, ?)");
-            $insert_teacher->execute([$name, $department]);
+            $pdo->prepare("INSERT INTO teachers (name, department) VALUES (?, ?)")->execute([$name, $department]);
             $teachers_created++;
         }
     }
     $setup_messages[] = "✅ Created/verified {$teachers_created} teacher entries across departments.";
-
-    // ===============================================
-    // SECTION TEACHER ASSIGNMENTS
-    // ===============================================
+    
     $all_assignments = [
         'BSCS-1M1' => ['MR. VELE', 'MR. RODRIGUEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. LACERNA', 'MR. ATIENZA'],
         'BSCS-2N1' => ['MR. RODRIGUEZ', 'MR. ICABANDE', 'MS. RENDORA', 'MR. V. GORDON'],
@@ -358,19 +227,24 @@ try {
         'ICT-11SC' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. JIMENEZ'],
         'HE-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MS. GENTEROY'],
         'ICT-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MR. JIMENEZ']
+
     ];
 
     function assignTeachersToSection($pdo, $section_code, $teacher_names, &$total_assignments) {
-        $section_stmt = $pdo->prepare("SELECT id FROM sections WHERE section_code = ?");
+        $section_stmt = $pdo->prepare("SELECT id, program FROM sections WHERE section_code = ?");
         $section_stmt->execute([$section_code]);
-        $section_id = $section_stmt->fetchColumn();
+        $section_info = $section_stmt->fetch(PDO::FETCH_ASSOC);
         
-        if (!$section_id) { return "Section {$section_code} not found"; }
+        if (!$section_info) {
+            global $errors; $errors[] = "Section {$section_code} not found"; return;
+        }
         
-        $assignments_created = 0;
+        $section_id = $section_info['id'];
+        $department = $section_info['program'];
+        
         foreach ($teacher_names as $teacher_name) {
-            $teacher_stmt = $pdo->prepare("SELECT id FROM teachers WHERE name = ?");
-            $teacher_stmt->execute([$teacher_name]);
+            $teacher_stmt = $pdo->prepare("SELECT id FROM teachers WHERE name = ? AND department = ?");
+            $teacher_stmt->execute([$teacher_name, $department]);
             $teacher_id = $teacher_stmt->fetchColumn();
             
             if ($teacher_id) {
@@ -378,46 +252,35 @@ try {
                 $check_assignment->execute([$section_id, $teacher_id]);
                 
                 if ($check_assignment->fetchColumn() == 0) {
-                    $insert_assignment = $pdo->prepare("INSERT INTO section_teachers (section_id, teacher_id) VALUES (?, ?)");
-                    $insert_assignment->execute([$section_id, $teacher_id]);
-                    $assignments_created++;
+                    $pdo->prepare("INSERT INTO section_teachers (section_id, teacher_id) VALUES (?, ?)")->execute([$section_id, $teacher_id]);
                     $total_assignments++;
                 }
+            } else {
+                global $errors;
+                $errors[] = "⚠️ Teacher '{$teacher_name}' not found for department '{$department}'. Assignment to '{$section_code}' skipped.";
             }
         }
-        return $assignments_created;
     }
 
     $total_section_assignments = 0;
     foreach ($all_assignments as $section_code => $teachers) {
-        $result = assignTeachersToSection($pdo, $section_code, $teachers, $total_section_assignments);
-        if (is_numeric($result) && $result > 0) {
-            $setup_messages[] = "✅ {$result} teacher assignments created for {$section_code}";
-        } elseif (!is_numeric($result)) {
-            $errors[] = "❌ Error assigning teachers to {$section_code}: {$result}";
-        }
+        assignTeachersToSection($pdo, $section_code, $teachers, $total_section_assignments);
     }
-    if($total_section_assignments > 0) {
-        $setup_messages[] = "🎉 Total section-teacher assignments created: {$total_section_assignments}";
-    }
+    $setup_messages[] = "✅ Processed teacher assignments. Total new assignments: {$total_section_assignments}.";
 
 } catch (PDOException $e) {
     $errors[] = "❌ Database Error: " . $e->getMessage();
-} catch (Exception $e) {
-    $errors[] = "❌ General Error: " . $e->getMessage();
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Setup - Faculty Evaluation System</title>
+    <title>Database Setup Results</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; }
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
         .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         h1 { text-align: center; }
-        .message { padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 4px solid; }
+        .message { padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 5px solid; }
         .success { background-color: #dff0d8; border-color: #3c763d; color: #3c763d; }
         .error { background-color: #f2dede; border-color: #a94442; color: #a94442; }
         .info { background-color: #d9edf7; border-color: #31708f; color: #31708f; }
@@ -436,13 +299,7 @@ try {
                 <div class="message success"><?php echo htmlspecialchars($message); ?></div>
             <?php endforeach; ?>
         <?php endif; ?>
-        <div class="message info">
-            <strong>Note:</strong> This setup script should only be run once. For security, you should restrict access to this file after setup is complete.
-        </div>
-        <p><a href="index.php">Return to Login</a></p>
+         <p><a href="index.php">Return to Login</a></p>
     </div>
 </body>
 </html>
-
-
-
