@@ -71,13 +71,11 @@ $unique_students = 0;
 
 try {
     // ==================================================================
-    // FIXED SQL QUERY
-    // This query now correctly uses t.department and e.subject
+    // FIXED SQL QUERY - Subject has been totally removed from this query
     // ==================================================================
     $summary_sql = "SELECT 
                         t.name as teacher_name,
                         t.department,
-                        e.subject,
                         COUNT(e.id) as evaluation_count,
                         COALESCE(AVG((e.q1_1 + e.q1_2 + e.q1_3 + e.q1_4 + e.q1_5 + e.q1_6 +
                                 e.q2_1 + e.q2_2 + e.q2_3 + e.q2_4 +
@@ -85,8 +83,8 @@ try {
                                 e.q4_1 + e.q4_2 + e.q4_3 + e.q4_4 + e.q4_5 + e.q4_6) / 20.0), 0) as average_rating
                     FROM teachers t
                     LEFT JOIN evaluations e ON t.id = e.teacher_id
-                    GROUP BY t.id, t.name, t.department, e.subject
-                    ORDER BY t.name, average_rating DESC";
+                    GROUP BY t.id, t.name, t.department
+                    ORDER BY average_rating DESC";
     $summary_result = query($summary_sql);
 
     if (!$summary_result) {
@@ -504,7 +502,6 @@ try {
                         <th>#</th>
                         <th>Teacher Name</th>
                         <th>Department</th>
-                        <th>Specific Subject</th>
                         <th>Evaluations</th>
                         <th>Average Rating</th>
                         <th>Performance Level</th>
@@ -517,9 +514,6 @@ try {
                         if (count($results) > 0) {
                             $rank = 1;
                             foreach($results as $row) {
-                                // Skip rows where there are no evaluations
-                                if ($row['evaluation_count'] == 0) continue;
-
                                 $avg_rating = floatval($row['average_rating']);
                                 $rating_class = '';
                                 $performance_level = '';
@@ -548,7 +542,6 @@ try {
                                         <td><strong>$rank</strong></td>
                                         <td><strong>" . htmlspecialchars($row['teacher_name']) . "</strong></td>
                                         <td>" . htmlspecialchars($row['department']) . "</td>
-                                        <td>" . htmlspecialchars($row['subject']) . "</td>
                                         <td><span style='background: #FFF8DC; padding: 3px 8px; border-radius: 10px; color: #800000; font-weight: bold;'>{$row['evaluation_count']}</span></td>
                                         <td><span class='rating $rating_class'>" . number_format($avg_rating, 2) . "</span></td>
                                         <td><strong>$performance_level</strong></td>
@@ -556,7 +549,7 @@ try {
                                 $rank++;
                             }
                         } else {
-                            echo "<tr><td colspan='7' class='no-data'>
+                            echo "<tr><td colspan='6' class='no-data'>
                                     <div>
                                         <h3>📋 No evaluations found</h3>
                                         <p>No teacher evaluations have been submitted yet.</p>
@@ -566,7 +559,7 @@ try {
                                   </td></tr>";
                         }
                     } else {
-                        echo "<tr><td colspan='7' class='no-data'>
+                        echo "<tr><td colspan='6' class='no-data'>
                                 <div>
                                     <h3>📋 No evaluations found</h3>
                                     <p>No teacher evaluations have been submitted yet.</p>
