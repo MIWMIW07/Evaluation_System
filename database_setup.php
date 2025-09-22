@@ -342,13 +342,6 @@ try {
     }
     $setup_messages[] = "✅ Created/verified {$teachers_created} teacher entries across departments.";
 
-
-} catch (PDOException $e) {
-    $errors[] = "❌ Database Error: " . $e->getMessage();
-} catch (Exception $e) {
-    $errors[] = "❌ General Error: " . $e->getMessage();
-}
-
     // ===============================================
     // SECTION TEACHER ASSIGNMENTS
     // ===============================================
@@ -449,4 +442,5 @@ try {
     </div>
 </body>
 </html>
+
 
