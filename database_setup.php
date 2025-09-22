@@ -348,6 +348,7 @@ try {
     $all_assignments = [
         'BSCS-1M1' => ['MR. VELE', 'MR. RODRIGUEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. LACERNA', 'MR. ATIENZA'],
         'BSCS-2N1' => ['MR. RODRIGUEZ', 'MR. ICABANDE', 'MS. RENDORA', 'MR. V. GORDON'],
+        'EDUC-4M1' => ['MRS. TESORO', 'MR. ELLO'],
         'ICT-3M2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
         'ICT-3N1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
         'ICT-3N2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
@@ -442,5 +443,6 @@ try {
     </div>
 </body>
 </html>
+
 
 
