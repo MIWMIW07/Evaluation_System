@@ -30,7 +30,7 @@ if ($teacher_id <= 0) {
 
 try {
     // Get teacher information
-    $teacher_stmt = query("SELECT id, name, subject, program FROM teachers WHERE id = ?", [$teacher_id]);
+    $teacher_stmt = query("SELECT id, name, program FROM teachers WHERE id = ?", [$teacher_id]);
     $teacher_info = fetch_assoc($teacher_stmt);
 
     if (!$teacher_info) {
@@ -102,7 +102,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
         $comments = "Positive: $positive\nNegative: $negative";
 
         // Insert evaluation using PostgreSQL syntax
-        $insert_sql = "INSERT INTO evaluations (user_id, student_id, student_name, section, program, teacher_id, subject, 
+        $insert_sql = "INSERT INTO evaluations (user_id, student_id, student_name, section, program, teacher_id, 
                       q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
                       q2_1, q2_2, q2_3, q2_4,
                       q3_1, q3_2, q3_3, q3_4,
@@ -112,7 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
 
         $params = [
             $_SESSION['user_id'], $_SESSION['student_id'], $_SESSION['full_name'],
-            $_SESSION['section'], $_SESSION['program'], $teacher_id, $teacher_info['subject'],
+            $_SESSION['section'], $_SESSION['program'], $teacher_id, $teacher_info,
             $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
             $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
             $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
@@ -681,7 +681,6 @@ if ($is_view_mode && $existing_evaluation) {
 
             <div style="background: linear-gradient(135deg, #fff9e6 0%, #f9eeca 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #DAA520;">
                 <h3 style="color: #800000; margin-bottom: 10px;">👨‍🏫 Evaluating: <?php echo htmlspecialchars($teacher_info['name']); ?></h3>
-                <p style="margin: 5px 0;"><strong>Subject:</strong> <?php echo htmlspecialchars($teacher_info['subject']); ?></p>
                 <p style="margin: 5px 0;"><strong>Program:</strong> <?php echo htmlspecialchars($teacher_info['program']); ?></p>
                 <p style="margin: 5px 0;"><strong>Student:</strong> <?php echo htmlspecialchars($_SESSION['full_name']); ?> (<?php echo htmlspecialchars($_SESSION['student_id']); ?>)</p>
             </div>
@@ -705,10 +704,6 @@ if ($is_view_mode && $existing_evaluation) {
                     <div class="info-item">
                         <label>Teacher Name:</label>
                         <span><?php echo htmlspecialchars($teacher_info['name']); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Subject:</label>
-                        <span><?php echo htmlspecialchars($teacher_info['subject']); ?></span>
                     </div>
                     <div class="info-item">
                         <label>Program:</label>
