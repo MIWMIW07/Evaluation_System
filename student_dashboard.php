@@ -66,11 +66,13 @@ try {
 // Get teachers for student's section using the new structure
 if (!empty($current_section)) {
     try {
+        // ==================================================================
+        // FIXED SQL QUERY - Removed all references to subject
+        // ==================================================================
         $teachers_stmt = query("
             SELECT DISTINCT
                 t.id, 
                 t.name, 
-                COALESCE(st.subject, t.subject) as subject,
                 t.department
             FROM teachers t
             JOIN section_teachers st ON t.id = st.teacher_id
@@ -85,10 +87,11 @@ if (!empty($current_section)) {
         
         if (empty($teachers_result)) {
             // Fallback: try to get teachers by program if no section-specific teachers found
+            // FIXED FALLBACK QUERY
             $teachers_stmt = query("
-                SELECT id, name, subject, department 
+                SELECT id, name, department 
                 FROM teachers 
-                WHERE program = ? AND is_active = true 
+                WHERE department = ? AND is_active = true 
                 ORDER BY name", 
                 [$current_program]
             );
@@ -616,7 +619,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                         <label for="section">Section *</label>
                         <select id="section" name="section" required>
                             <option value="">Select Section</option>
-                            <!-- SHS Sections -->
                             <option value="ABM-1M1" <?php echo ($current_section === 'ABM-1M1') ? 'selected' : ''; ?>>ABM-1M1</option>
                             <option value="ABM-1M2" <?php echo ($current_section === 'ABM-1M2') ? 'selected' : ''; ?>>ABM-1M2</option>
                             <option value="ABM-1N1" <?php echo ($current_section === 'ABM-1N1') ? 'selected' : ''; ?>>ABM-1N1</option>
@@ -665,7 +667,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                             <option value="ICT-3N1" <?php echo ($current_section === 'ICT-3N1') ? 'selected' : ''; ?>>ICT-3N1</option>
                             <option value="ICT-3N2" <?php echo ($current_section === 'ICT-3N2') ? 'selected' : ''; ?>>ICT-3N2</option>
                             <option value="ICT-SUNDAY CLASS" <?php echo ($current_section === 'ICT-SUNDAY CLASS') ? 'selected' : ''; ?>>ICT-SUNDAY CLASS</option>
-                            <!-- College Sections -->
                             <option value="BSCS-1M1" <?php echo ($current_section === 'BSCS-1M1') ? 'selected' : ''; ?>>BSCS-1M1</option>
                             <option value="BSCS-2N1" <?php echo ($current_section === 'BSCS-2N1') ? 'selected' : ''; ?>>BSCS-2N1</option>
                             <option value="BSCS-3M1" <?php echo ($current_section === 'BSCS-3M1') ? 'selected' : ''; ?>>BSCS-3M1</option>
@@ -732,8 +733,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                             <?php $is_evaluated = in_array($teacher['id'], $evaluated_teachers); ?>
                             <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
                                 <h4><?php echo htmlspecialchars($teacher['name']); ?></h4>
-                                <p><strong>Subject:</strong> <?php echo htmlspecialchars($teacher['subject']); ?></p>
-                                <p><strong>Program:</strong> <?php echo htmlspecialchars($current_program); ?></p>
+                                <p><strong>Department:</strong> <?php echo htmlspecialchars($teacher['department']); ?></p>
                                 
                                 <div class="evaluation-status">
                                     <?php if ($is_evaluated): ?>
@@ -756,7 +756,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 <?php else: ?>
                     <div class="empty-state">
                         <h3>📭 No Teachers Found</h3>
-                        <p>No teachers are available for your selected program.</p>
+                        <p>No teachers are assigned to your selected section.</p>
                         <p>Please contact your administrator if this seems incorrect.</p>
                     </div>
                 <?php endif; ?>
@@ -764,7 +764,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         <?php else: ?>
             <div class="no-program-message">
                 <h3>🔧 Setup Required</h3>
-                <p>Your program and section information is not set. Please contact administrator.</p>
+                <p>Please select your program and section above to see your teachers.</p>
             </div>
         <?php endif; ?>
         
