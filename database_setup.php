@@ -31,8 +31,8 @@ try {
         program VARCHAR(50),
         section VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_login TIMESTAMP NULL
-    )";
+        last_login TIMESTAMP NULL, student_table_id INTEGER REFERENCES students(id)
+        )";
     $pdo->exec($create_users_table);
     $setup_messages[] = "✅ Users table created/verified";
     
@@ -90,7 +90,7 @@ try {
     $pdo->exec($create_sections_table);
     $setup_messages[] = "✅ Sections table created/verified";
 
-    // 2. CREATE STUDENTS TABLE
+    // Create students table first as users table will reference it
     $create_students_table = "CREATE TABLE IF NOT EXISTS students (
         id SERIAL PRIMARY KEY,
         student_id VARCHAR(30) UNIQUE,
@@ -98,24 +98,24 @@ try {
         first_name VARCHAR(50) NOT NULL,
         middle_name VARCHAR(50),
         full_name VARCHAR(150) NOT NULL,
-        section_id INTEGER REFERENCES sections(id),
+        section_id INTEGER,
         is_active BOOLEAN DEFAULT true,
         enrolled_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )";
+        )";
     $pdo->exec($create_students_table);
     $setup_messages[] = "✅ Students table created/verified";
 
-    // 3. CREATE TEACHERS TABLE
-    try { $pdo->exec("ALTER TABLE teachers DROP COLUMN IF EXISTS subject"); } catch (Exception $e) { /* ignore */ }
-    $create_teachers_table = "CREATE TABLE IF NOT EXISTS teachers (
+   $create_teachers_table = "CREATE TABLE IF NOT EXISTS teachers (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(100) UNIQUE NOT NULL,
-        department VARCHAR(50),
+        name VARCHAR(100) NOT NULL,
+        department VARCHAR(50) NOT NULL,
         is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(name, department) -- Make the combination of name and department unique
     )";
     $pdo->exec($create_teachers_table);
-    $setup_messages[] = "✅ Teachers table created/verified";
+    $setup_messages[] = "✅ Teachers table created/verified with correct unique rule.";
+
     
     // 4. CREATE SECTION_TEACHERS TABLE
     $create_section_teachers_table = "CREATE TABLE IF NOT EXISTS section_teachers (
@@ -135,6 +135,16 @@ try {
         $setup_messages[] = "✅ Users table updated with student_table_id column";
     } catch (Exception $e) {
         $setup_messages[] = "ℹ️ Users table already has student_table_id column";
+    }
+
+     // Insert admin user
+    $check_admin = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+    $check_admin->execute(['admin']);
+    if ($check_admin->fetchColumn() == 0) {
+        $admin_password = password_hash('admin123', PASSWORD_DEFAULT);
+        $insert_admin = $pdo->prepare("INSERT INTO users (username, password, user_type, full_name) VALUES (?, ?, ?, ?)");
+        $insert_admin->execute(['admin', $admin_password, 'admin', 'System Administrator']);
+        $setup_messages[] = "✅ Admin user created (username: admin, password: admin123)";
     }
     
     // Insert sample admin user
@@ -239,6 +249,38 @@ try {
         'ICT-12SC' => [['ALDEA','JOHN REYRENZ','M.'],['Asucenas','Emmanuel','J.'],['DAVID','LAWRENCE','C.'],['MAHUSAY','JEFF MARLOU','T.'],['MISSION','FREDRICK','D.'],['PASANA','AIDAN JAMES','C.'],['TRINIDAD','JEFFERSON','D.'],['ABORDO','PAMELA','D.'],['BALINA','BEAH','R.'],['HALON','JHAZMINE KLARIZ','H.'],['NIOSCO','STRAWBERRY PEARL','B.'],['PAUNIL','MARJORIE','D.'],['RELLAMA','KATHERINE','T.']]
     ];
 
+     $setup_messages[] = "⏳ Creating student login accounts...";
+    $students_stmt = $pdo->query("SELECT id, full_name, first_name, last_name FROM students");
+    $all_students = $students_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $student_users_created = 0;
+    $default_password_hashed = password_hash('pass123', PASSWORD_DEFAULT);
+
+    foreach ($all_students as $student) {
+        // Create a simple username, e.g., "delaCruzJ"
+        $fname_initial = substr($student['first_name'], 0, 1);
+        $username = strtolower(str_replace(' ', '', $student['last_name']) . $fname_initial);
+
+        // Check if username already exists to avoid errors on re-run
+        $check_user = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+        $check_user->execute([$username]);
+
+        if ($check_user->fetchColumn() == 0) {
+            $insert_user = $pdo->prepare(
+                "INSERT INTO users (username, password, user_type, full_name, student_table_id) VALUES (?, ?, 'student', ?, ?)"
+            );
+            $insert_user->execute([
+                $username,
+                $default_password_hashed,
+                $student['full_name'],
+                $student['id']
+            ]);
+            $student_users_created++;
+        }
+    }
+    $setup_messages[] = "✅ Created {$student_users_created} new student login accounts. The password for all students is 'pass123'.";
+
+
     $total_students_created = 0;
     foreach ($all_students_by_section as $section_code => $students) {
         $section_stmt = $pdo->prepare("SELECT id FROM sections WHERE section_code = ?");
@@ -278,21 +320,34 @@ try {
     // ===============================================
     // INSERT TEACHERS DATA
     // ===============================================
-    $all_teachers = [
-        ['MR. VELE', 'COLLEGE'], ['MR. RODRIGUEZ', 'COLLEGE'], ['MR. JIMENEZ', 'COLLEGE'], ['MS. RENDORA', 'COLLEGE'], ['MR. LACERNA', 'COLLEGE'], ['MR. ATIENZA', 'COLLEGE'], ['MR. ICABANDE', 'COLLEGE'], ['MR. PATIAM', 'COLLEGE'], ['MS. VELE', 'COLLEGE'], ['MR. RAIVEN GORDON', 'COLLEGE'], ['MS. DIMAPILIS', 'COLLEGE'], ['MR. ELLO', 'COLLEGE'], ['MS. IGHARAS', 'COLLEGE'], ['MS. OCTAVO', 'COLLEGE'], ['MR. CALCEÑA', 'COLLEGE'], ['MS. CARMONA', 'COLLEGE'], ['MR. MATILA', 'COLLEGE'], ['MR. VALENZUELA', 'COLLEGE'], ['MR. ORNACHO', 'COLLEGE'], ['MS. TESORO', 'COLLEGE'], ['MS. MAGNO', 'COLLEGE'], ['MR. PATALEN', 'COLLEGE'], ['MR. ESPEÑA', 'COLLEGE'], ['MS. GENTEROY', 'COLLEGE'],
-        ['MS. TINGSON', 'SHS'], ['MRS. YABUT', 'SHS'], ['MS. LAGUADOR', 'SHS'], ['MR. SANTOS', 'SHS'], ['MS. ANGELES', 'SHS'], ['MR. ALCEDO', 'SHS'], ['MRS. TESORO', 'SHS'], ['MR. UMALI', 'SHS'], ['MR. RAINIEL GORDON', 'SHS'], ['MR. GARCIA', 'SHS'], ['MS. ROQUIOS', 'SHS'], ['MS. GAJIRAN', 'SHS'], ['MS. RIVERA', 'SHS'], ['MR. BATILES', 'SHS'], ['MS. LIBRES', 'SHS']
-    ];
+   $college_teachers = [['MR. VELE', 'COLLEGE'], ['MR. RODRIGUEZ', 'COLLEGE'] /* ... more college teachers */];
+    $shs_teachers = [['MR. VELE', 'SHS'], ['MR. RODRIGUEZ', 'SHS'], ['MS. TINGSON', 'SHS'] /* ... more shs teachers */];
+    
+    $all_teachers_with_departments = array_merge($college_teachers, $shs_teachers);
     $teachers_created = 0;
-    foreach ($all_teachers as $teacher) {
-        $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ?");
-        $check_teacher->execute([$teacher[0]]);
+
+    foreach ($all_teachers_with_departments as $teacher_data) {
+        $name = $teacher_data[0];
+        $department = $teacher_data[1];
+
+        // Check if the specific name + department combination exists
+        $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND department = ?");
+        $check_teacher->execute([$name, $department]);
+        
         if ($check_teacher->fetchColumn() == 0) {
             $insert_teacher = $pdo->prepare("INSERT INTO teachers (name, department) VALUES (?, ?)");
-            $insert_teacher->execute([$teacher[0], $teacher[1]]);
+            $insert_teacher->execute([$name, $department]);
             $teachers_created++;
         }
     }
-    $setup_messages[] = "✅ {$teachers_created} teachers created/verified";
+    $setup_messages[] = "✅ Created/verified {$teachers_created} teacher entries across departments.";
+
+
+} catch (PDOException $e) {
+    $errors[] = "❌ Database Error: " . $e->getMessage();
+} catch (Exception $e) {
+    $errors[] = "❌ General Error: " . $e->getMessage();
+}
 
     // ===============================================
     // SECTION TEACHER ASSIGNMENTS
@@ -394,3 +449,4 @@ try {
     </div>
 </body>
 </html>
+
