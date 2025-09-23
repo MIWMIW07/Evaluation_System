@@ -123,7 +123,6 @@ try {
         section VARCHAR(50) NOT NULL,
         program VARCHAR(50) NOT NULL,
         teacher_id INTEGER" . ($is_postgres ? " REFERENCES teachers(id)" : "") . ",
-        subject VARCHAR(100) NOT NULL,
         q1_1 INTEGER NOT NULL,
         q1_2 INTEGER NOT NULL,
         q1_3 INTEGER NOT NULL,
@@ -586,5 +585,6 @@ $setup_messages[] = "✅ Processed teacher assignments. Total new assignments: {
     </div>
 </body>
 </html>
+
 
 
