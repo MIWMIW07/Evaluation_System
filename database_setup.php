@@ -237,47 +237,136 @@ try {
     $setup_messages[] = "✅ Inserted/verified {$total_students_created} students into the 'students' table.";
 
     // --- 4. STUDENT ACCOUNT CREATION (CORRECT ORDER) ---
-    $setup_messages[] = "⏳ Creating student login accounts...";
-    $students_stmt = $pdo->query("SELECT id, full_name, first_name, last_name FROM students");
-    $all_students = $students_stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    $student_users_created = 0;
-    $default_password_hashed = password_hash('pass123', PASSWORD_DEFAULT);
+$setup_messages[] = "⏳ Creating student login accounts...";
+$students_stmt = $pdo->query("SELECT id, full_name, first_name, last_name FROM students");
+$all_students = $students_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    foreach ($all_students as $student) {
-        $fname_initial = substr($student['first_name'], 0, 1);
-        $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $student['last_name']) . $fname_initial);
+$student_users_created = 0;
+$default_password_hashed = password_hash('pass123', PASSWORD_DEFAULT);
 
-        $check_user = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
-        $check_user->execute([$username]);
+foreach ($all_students as $student) {
+    // Use full first name instead of just initial to avoid duplicates
+    $clean_lastname = preg_replace('/[^a-zA-Z0-9]/', '', $student['last_name']);
+    $clean_firstname = preg_replace('/[^a-zA-Z0-9]/', '', $student['first_name']);
+    $username = strtoupper($clean_lastname . $clean_firstname);
 
-        if ($check_user->fetchColumn() == 0) {
-            $insert_user = $pdo->prepare("INSERT INTO users (username, password, user_type, full_name, student_table_id) VALUES (?, ?, 'student', ?, ?)");
-            $insert_user->execute([$username, $default_password_hashed, $student['full_name'], $student['id']]);
-            $student_users_created++;
-        }
+    $check_user = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+    $check_user->execute([$username]);
+
+    if ($check_user->fetchColumn() == 0) {
+        $insert_user = $pdo->prepare("INSERT INTO users (username, password, user_type, full_name, student_table_id) VALUES (?, ?, 'student', ?, ?)");
+        $insert_user->execute([$username, $default_password_hashed, $student['full_name'], $student['id']]);
+        $student_users_created++;
     }
-    $setup_messages[] = "✅ Created {$student_users_created} new student login accounts. The password for all students is 'pass123'.";
+}
+$setup_messages[] = "✅ Created {$student_users_created} new student login accounts. The password for all students is 'pass123'.";
 
-    // --- 5. TEACHER DATA AND ASSIGNMENTS ---
-    $college_teachers = [['MR. VELE', 'COLLEGE'], ['MR. RODRIGUEZ', 'COLLEGE'], ['MR. JIMENEZ', 'COLLEGE'], ['MS. RENDORA', 'COLLEGE'], ['MR. LACERNA', 'COLLEGE'], ['MR. ATIENZA', 'COLLEGE'], ['MR. ICABANDE', 'COLLEGE'], ['MR. V. GORDON', 'COLLEGE'], ['MRS. TESORO', 'COLLEGE'], ['MR. ELLO', 'COLLEGE']];
-    $shs_teachers = [['MR. VELE', 'SHS'], ['MS. TINGSON', 'SHS'], ['MS. LIBRES', 'SHS'], ['MR. LACERNA', 'SHS'], ['MR. ICABANDE', 'SHS'], ['MR. UMALI', 'SHS'], ['MR. V. GORDON', 'SHS'], ['MS. CARMONA', 'SHS'], ['MR. PATIAM', 'SHS'], ['MS. RENDORA', 'SHS'], ['MR. GARCIA', 'SHS'], ['MR. BATILES', 'SHS'], ['MS. RIVERA', 'SHS'], ['MR. CALCEÑA', 'SHS'], ['MR. RODRIGUEZ', 'SHS'], ['MR. VALENZUELA', 'SHS'], ['MR. MATILA', 'SHS'], ['MR. JIMENEZ', 'SHS'], ['MS. GENTEROY', 'SHS']];
+    // --- 5. TEACHER DATA (RESET AND CORRECT STRUCTURE) ---
+// First, reset the teachers table to start fresh
+$pdo->exec("DELETE FROM section_teachers"); // Remove assignments first
+$pdo->exec("DELETE FROM teachers"); // Remove all teachers
+
+// Reset auto-increment based on database type
+if ($is_postgres) {
+    $pdo->exec("ALTER SEQUENCE teachers_id_seq RESTART WITH 1");
+} else {
+    $pdo->exec("ALTER TABLE teachers AUTO_INCREMENT = 1");
+}
+
+// Define teachers by department
+$college_teachers = [
+    'ATIENZA, MICHAEL G.',
+    'ELLO, GERALD',
+    'ESPEÑA, RENE EMMANUEL',
+    'OCTAVO, APRIL JOY',
+    'PATALEN, FRANCIS',
+    'DIMAPILIS, NERLIE'
+];
+
+$shs_teachers = [
+    'ALCEDO, LANCE',
+    'ANGELES, AIRA',
+    'BATILES, EDWIN',
+    'GAJIRAN, CLAIRE',
+    'GARCIA, ROWELL',
+    'GORDON, RAINIEL',
+    'LIBRES, AJ',
+    'LAGUADOR, RIKKA',
+    'RIVERA, GRACE',
+    'ROQUIOS, JERALINE',
+    'SANTOS, PRINCE LOUIE',
+    'TINGSON, ARJILEN',
+    'UMALI, JOSHUA',
+    'YABUT, EDITH'
+];
+
+$both_teachers = [
+    'CALCEÑA, MICHAEL ANGELO',
+    'CARMONA, JENNYVEY',
+    'GENTEROY, JENYCA',
+    'GORDON, RAIVEN',
+    'ICABANDE, EPHRAIM',
+    'IGHARAS, ROWENA A.',
+    'JIMENEZ, CARL JOSEPH',
+    'LACERNA, NORI',
+    'MAGNO, JOY',
+    'MATILA, MAR JAY',
+    'ORNACHO, DOMINIC',
+    'PATIAM, FRANCIS',
+    'RENDORA, HASEL',
+    'RODRIGUEZ, JUDELITO',
+    'TESORO, MARITES',
+    'VALENZUELA, AZRIEL',
+    'VELE, ALLAN',
+    'VELE, SHEIN'
+];
+
+$teachers_created = 0;
+
+// Insert COLLEGE teachers
+foreach ($college_teachers as $teacher_name) {
+    $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND department = ?");
+    $check_teacher->execute([$teacher_name, 'COLLEGE']);
     
-    $all_teachers_with_departments = array_merge($college_teachers, $shs_teachers);
-    $teachers_created = 0;
-
-    foreach ($all_teachers_with_departments as $teacher_data) {
-        $name = $teacher_data[0];
-        $department = $teacher_data[1];
-        $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND department = ?");
-        $check_teacher->execute([$name, $department]);
-        
-        if ($check_teacher->fetchColumn() == 0) {
-            $pdo->prepare("INSERT INTO teachers (name, department) VALUES (?, ?)")->execute([$name, $department]);
-            $teachers_created++;
-        }
+    if ($check_teacher->fetchColumn() == 0) {
+        $pdo->prepare("INSERT INTO teachers (name, department) VALUES (?, ?)")->execute([$teacher_name, 'COLLEGE']);
+        $teachers_created++;
     }
-    $setup_messages[] = "✅ Created/verified {$teachers_created} teacher entries across departments.";
+}
+
+// Insert SHS teachers
+foreach ($shs_teachers as $teacher_name) {
+    $check_teacher = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND department = ?");
+    $check_teacher->execute([$teacher_name, 'SHS']);
+    
+    if ($check_teacher->fetchColumn() == 0) {
+        $pdo->prepare("INSERT INTO teachers (name, department) VALUES (?, ?)")->execute([$teacher_name, 'SHS']);
+        $teachers_created++;
+    }
+}
+
+// Insert BOTH teachers (create two entries - one for each department)
+foreach ($both_teachers as $teacher_name) {
+    // Insert for COLLEGE
+    $check_college = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND department = ?");
+    $check_college->execute([$teacher_name, 'COLLEGE']);
+    
+    if ($check_college->fetchColumn() == 0) {
+        $pdo->prepare("INSERT INTO teachers (name, department) VALUES (?, ?)")->execute([$teacher_name, 'COLLEGE']);
+        $teachers_created++;
+    }
+    
+    // Insert for SHS
+    $check_shs = $pdo->prepare("SELECT COUNT(*) FROM teachers WHERE name = ? AND department = ?");
+    $check_shs->execute([$teacher_name, 'SHS']);
+    
+    if ($check_shs->fetchColumn() == 0) {
+        $pdo->prepare("INSERT INTO teachers (name, department) VALUES (?, ?)")->execute([$teacher_name, 'SHS']);
+        $teachers_created++;
+    }
+}
+
+$setup_messages[] = "✅ Created/verified {$teachers_created} teacher entries (COLLEGE: " . count($college_teachers) . ", SHS: " . count($shs_teachers) . ", BOTH: " . (count($both_teachers) * 2) . ")";
     
     $all_assignments = [
         'BSCS-1M1' => ['MR. VELE', 'MR. RODRIGUEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. LACERNA', 'MR. ATIENZA'],
@@ -496,3 +585,4 @@ try {
     </div>
 </body>
 </html>
+
