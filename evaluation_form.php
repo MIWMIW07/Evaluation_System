@@ -112,7 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
 
         $params = [
             $_SESSION['user_id'], $_SESSION['student_id'], $_SESSION['full_name'],
-            $_SESSION['section'], $_SESSION['program'], $teacher_id, $teacher_info,
+            $_SESSION['section'], $_SESSION['program'], $teacher_id,
             $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
             $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
             $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
