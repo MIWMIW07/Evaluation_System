@@ -1,41 +1,54 @@
 <?php
 // student_dashboard.php - Student Dashboard
 session_start();
+
 require_once 'includes/security.php';
+
 // Check if user is logged in and is a student
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
-    header('Location: login.php');
-    exit;
+    header('Location: login.php');
+    exit;
 }
+
 // Include database connection
 require_once 'includes/db_connection.php';
+
 $success = '';
 $error = '';
+
 // Handle program/section update
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
-    if (!validate_csrf_token($_POST['csrf_token'])) {
-        die('CSRF token validation failed');
-    }
-    try {
-        $program = trim($_POST['program']);
-        $section = trim($_POST['section']);
-        if (empty($program) || empty($section)) {
-            throw new Exception("Program and section are required.");
-        }
-        // Update user information
-        query("UPDATE users SET program = ?, section = ? WHERE id = ?", 
-              [$program, $section, $_SESSION['user_id']]);
-        // Update session variables
-        $_SESSION['program'] = $program;
-        $_SESSION['section'] = $section;
-        $success = "✅ Your program and section have been updated successfully!";
-    } catch (Exception $e) {
-        $error = "❌ " . $e->getMessage();
-    }
+    if (!validate_csrf_token($_POST['csrf_token'])) {
+        die('CSRF token validation failed');
+    }
+    
+    try {
+        $program = trim($_POST['program']);
+        $section = trim($_POST['section']);
+        
+        if (empty($program) || empty($section)) {
+            throw new Exception("Program and section are required.");
+        }
+        
+        // Update user information
+        query("UPDATE users SET program = ?, section = ? WHERE id = ?", 
+              [$program, $section, $_SESSION['user_id']]);
+        
+        // Update session variables
+        $_SESSION['program'] = $program;
+        $_SESSION['section'] = $section;
+        
+        $success = "✅ Your program and section have been updated successfully!";
+        
+    } catch (Exception $e) {
+        $error = "❌ " . $e->getMessage();
+    }
 }
+
 // Get student's current program and section
 $current_section = $_SESSION['section'] ?? '';
 $current_program = $_SESSION['program'] ?? '';
+
 // ==================================================================
 // NEW CODE #1: Fetch all sections and group them by program for the dynamic dropdown
 // ==================================================================
@@ -53,18 +66,21 @@ try {
     $sections_by_program = [];
 }
 // ==================================================================
+
 // Get teachers based on student's program
 $teachers_result = [];
 $evaluated_teachers = [];
+
 // Get evaluated teachers for this student
 try {
-    $evaluated_stmt = query("SELECT teacher_id FROM evaluations WHERE user_id = ?", 
-                           [$_SESSION['user_id']]);
-    $evaluated_teachers_result = fetch_all($evaluated_stmt);
-    $evaluated_teachers = array_column($evaluated_teachers_result, 'teacher_id');
+    $evaluated_stmt = query("SELECT teacher_id FROM evaluations WHERE user_id = ?", 
+                            [$_SESSION['user_id']]);
+    $evaluated_teachers_result = fetch_all($evaluated_stmt);
+    $evaluated_teachers = array_column($evaluated_teachers_result, 'teacher_id');
 } catch (Exception $e) {
-    $error = "Could not load evaluation data: " . $e->getMessage();
+    $error = "Could not load evaluation data: " . $e->getMessage();
 }
+
 // Get teachers for student's section using the new structure
 if (!empty($current_section)) {
     try {
@@ -108,6 +124,7 @@ if (!empty($current_section)) {
 } else {
     $teachers_result = [];
 }
+
 // Get evaluation statistics
 $total_teachers = count($teachers_result);
 $completed_evaluations = count($evaluated_teachers);
