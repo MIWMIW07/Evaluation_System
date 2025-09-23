@@ -368,54 +368,55 @@ foreach ($both_teachers as $teacher_name) {
 
 $setup_messages[] = "✅ Created/verified {$teachers_created} teacher entries (COLLEGE: " . count($college_teachers) . ", SHS: " . count($shs_teachers) . ", BOTH: " . (count($both_teachers) * 2) . ")";
     
-    $all_assignments = [
-        'BSCS-1M1' => ['MR. VELE', 'MR. RODRIGUEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. LACERNA', 'MR. ATIENZA'],
-        'BSCS-2N1' => ['MR. RODRIGUEZ', 'MR. ICABANDE', 'MS. RENDORA', 'MR. V. GORDON'],
-        'EDUC-4M1' => ['MRS. TESORO', 'MR. ELLO'],
-        'ICT-3M1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
-        'HUMSS-3M1' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
-        'HE-3M1' => ['MS. CARMONA', 'MR. BATILES', 'MS. RIVERA', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA'],
-        'HE-1M1' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. UMALI', 'MS. GENTEROY'],
-        'ICT-1M1' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. JIMENEZ']
-    ];
+    // --- 6. TEACHER ASSIGNMENTS (CORRECTED NAMES) ---
+$all_assignments = [
+    'BSCS-1M1' => ['VELE, ALLAN', 'RODRIGUEZ, JUDELITO', 'JIMENEZ, CARL JOSEPH', 'RENDORA, HASEL', 'LACERNA, NORI', 'ATIENZA, MICHAEL G.'],
+    'BSCS-2N1' => ['RODRIGUEZ, JUDELITO', 'ICABANDE, EPHRAIM', 'RENDORA, HASEL', 'GORDON, RAIVEN'],
+    'EDUC-4M1' => ['TESORO, MARITES', 'ELLO, GERALD'],
+    'ICT-3M1' => ['LIBRES, AJ', 'LACERNA, NORI', 'ICABANDE, EPHRAIM', 'UMALI, JOSHUA', 'GORDON, RAIVEN'],
+    'HUMSS-3M1' => ['CARMONA, JENNYVEY', 'LACERNA, NORI', 'LIBRES, AJ', 'PATIAM, FRANCIS', 'RENDORA, HASEL', 'GARCIA, ROWELL', 'BATILES, EDWIN'],
+    'HE-3M1' => ['CARMONA, JENNYVEY', 'BATILES, EDWIN', 'RIVERA, GRACE', 'PATIAM, FRANCIS', 'UMALI, JOSHUA', 'CALCEÑA, MICHAEL ANGELO'],
+    'HE-1M1' => ['LACERNA, NORI', 'RODRIGUEZ, JUDELITO', 'VALENZUELA, AZRIEL', 'MATILA, MAR JAY', 'UMALI, JOSHUA', 'GENTEROY, JENYCA'],
+    'ICT-1M1' => ['LACERNA, NORI', 'RODRIGUEZ, JUDELITO', 'VALENZUELA, AZRIEL', 'MATILA, MAR JAY', 'JIMENEZ, CARL JOSEPH']
+];
 
-    function assignTeachersToSection($pdo, $section_code, $teacher_names, &$total_assignments) {
-        $section_stmt = $pdo->prepare("SELECT id, program FROM sections WHERE section_code = ?");
-        $section_stmt->execute([$section_code]);
-        $section_info = $section_stmt->fetch(PDO::FETCH_ASSOC);
+function assignTeachersToSection($pdo, $section_code, $teacher_names, &$total_assignments) {
+    $section_stmt = $pdo->prepare("SELECT id, program FROM sections WHERE section_code = ?");
+    $section_stmt->execute([$section_code]);
+    $section_info = $section_stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$section_info) {
+        global $errors; $errors[] = "Section {$section_code} not found"; return;
+    }
+    
+    $section_id = $section_info['id'];
+    $department = $section_info['program'];
+    
+    foreach ($teacher_names as $teacher_name) {
+        $teacher_stmt = $pdo->prepare("SELECT id FROM teachers WHERE name = ? AND department = ?");
+        $teacher_stmt->execute([$teacher_name, $department]);
+        $teacher_id = $teacher_stmt->fetchColumn();
         
-        if (!$section_info) {
-            global $errors; $errors[] = "Section {$section_code} not found"; return;
-        }
-        
-        $section_id = $section_info['id'];
-        $department = $section_info['program'];
-        
-        foreach ($teacher_names as $teacher_name) {
-            $teacher_stmt = $pdo->prepare("SELECT id FROM teachers WHERE name = ? AND department = ?");
-            $teacher_stmt->execute([$teacher_name, $department]);
-            $teacher_id = $teacher_stmt->fetchColumn();
+        if ($teacher_id) {
+            $check_assignment = $pdo->prepare("SELECT COUNT(*) FROM section_teachers WHERE section_id = ? AND teacher_id = ?");
+            $check_assignment->execute([$section_id, $teacher_id]);
             
-            if ($teacher_id) {
-                $check_assignment = $pdo->prepare("SELECT COUNT(*) FROM section_teachers WHERE section_id = ? AND teacher_id = ?");
-                $check_assignment->execute([$section_id, $teacher_id]);
-                
-                if ($check_assignment->fetchColumn() == 0) {
-                    $pdo->prepare("INSERT INTO section_teachers (section_id, teacher_id) VALUES (?, ?)")->execute([$section_id, $teacher_id]);
-                    $total_assignments++;
-                }
-            } else {
-                global $errors;
-                $errors[] = "⚠️ Teacher '{$teacher_name}' not found for department '{$department}'. Assignment to '{$section_code}' skipped.";
+            if ($check_assignment->fetchColumn() == 0) {
+                $pdo->prepare("INSERT INTO section_teachers (section_id, teacher_id) VALUES (?, ?)")->execute([$section_id, $teacher_id]);
+                $total_assignments++;
             }
+        } else {
+            global $errors;
+            $errors[] = "⚠️ Teacher '{$teacher_name}' not found for department '{$department}'. Assignment to '{$section_code}' skipped.";
         }
     }
+}
 
-    $total_section_assignments = 0;
-    foreach ($all_assignments as $section_code => $teachers) {
-        assignTeachersToSection($pdo, $section_code, $teachers, $total_section_assignments);
-    }
-    $setup_messages[] = "✅ Processed teacher assignments. Total new assignments: {$total_section_assignments}.";
+$total_section_assignments = 0;
+foreach ($all_assignments as $section_code => $teachers) {
+    assignTeachersToSection($pdo, $section_code, $teachers, $total_section_assignments);
+}
+$setup_messages[] = "✅ Processed teacher assignments. Total new assignments: {$total_section_assignments}.";
 
 } catch (PDOException $e) {
     $errors[] = "❌ Database Error: " . $e->getMessage();
@@ -585,4 +586,5 @@ $setup_messages[] = "✅ Created/verified {$teachers_created} teacher entries (C
     </div>
 </body>
 </html>
+
 
