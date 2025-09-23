@@ -1,15 +1,39 @@
 <?php
-// database_setup.php - FINAL CORRECTED VERSION
+// database_setup.php - FIXED VERSION FOR RAILWAY DEPLOYMENT
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
-    http_response_code(403);
-    die('Access Denied: Admin access required for database setup.');
+// Database connection function
+function getDatabaseConnection() {
+    // Check if we're on Railway (environment variables will be set)
+    if (isset($_ENV['DATABASE_URL']) || isset($_SERVER['DATABASE_URL'])) {
+        $database_url = $_ENV['DATABASE_URL'] ?? $_SERVER['DATABASE_URL'];
+        $db_parts = parse_url($database_url);
+        
+        $host = $db_parts['host'];
+        $port = $db_parts['port'] ?? 5432;
+        $dbname = ltrim($db_parts['path'], '/');
+        $username = $db_parts['user'];
+        $password = $db_parts['pass'];
+        
+        $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+    } else {
+        // Local development fallback
+        $dsn = "mysql:host=localhost;dbname=evaluation_system;charset=utf8mb4";
+        $username = "root";
+        $password = "";
+    }
+    
+    try {
+        $pdo = new PDO($dsn, $username, $password, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
+        return $pdo;
+    } catch (PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
+    }
 }
-
-require_once 'includes/db_connection.php';
 
 $setup_messages = [];
 $errors = [];
@@ -17,31 +41,113 @@ $errors = [];
 try {
     $pdo = getDatabaseConnection();
     $setup_messages[] = "✅ Database connection successful!";
+    
+    // Detect database type
+    $is_postgres = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql';
+    $auto_increment = $is_postgres ? 'SERIAL PRIMARY KEY' : 'INT AUTO_INCREMENT PRIMARY KEY';
+    $text_type = $is_postgres ? 'TEXT' : 'TEXT';
+    $timestamp_default = $is_postgres ? 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' : 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
 
     // --- 1. TABLE CREATION (CORRECT ORDER) ---
 
-    $create_sections_table = "CREATE TABLE IF NOT EXISTS sections (id SERIAL PRIMARY KEY, section_code VARCHAR(20) UNIQUE NOT NULL, section_name VARCHAR(100) NOT NULL, program VARCHAR(50) NOT NULL, year_level VARCHAR(20), is_active BOOLEAN DEFAULT true, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
+    $create_sections_table = "CREATE TABLE IF NOT EXISTS sections (
+        id $auto_increment,
+        section_code VARCHAR(20) UNIQUE NOT NULL,
+        section_name VARCHAR(100) NOT NULL,
+        program VARCHAR(50) NOT NULL,
+        year_level VARCHAR(20),
+        is_active BOOLEAN DEFAULT true,
+        created_at $timestamp_default
+    )";
     $pdo->exec($create_sections_table);
     $setup_messages[] = "✅ Sections table created/verified";
 
     // Create students table first because the users table references it
-    $create_students_table = "CREATE TABLE IF NOT EXISTS students (id SERIAL PRIMARY KEY, student_id VARCHAR(30) UNIQUE, last_name VARCHAR(50) NOT NULL, first_name VARCHAR(50) NOT NULL, middle_name VARCHAR(50), full_name VARCHAR(150) NOT NULL, section_id INTEGER REFERENCES sections(id), is_active BOOLEAN DEFAULT true, enrolled_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
+    $create_students_table = "CREATE TABLE IF NOT EXISTS students (
+        id $auto_increment,
+        student_id VARCHAR(30) UNIQUE,
+        last_name VARCHAR(50) NOT NULL,
+        first_name VARCHAR(50) NOT NULL,
+        middle_name VARCHAR(50),
+        full_name VARCHAR(150) NOT NULL,
+        section_id INTEGER" . ($is_postgres ? " REFERENCES sections(id)" : "") . ",
+        is_active BOOLEAN DEFAULT true,
+        enrolled_date $timestamp_default
+    )";
     $pdo->exec($create_students_table);
     $setup_messages[] = "✅ Students table created/verified";
 
-    $create_users_table = "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username VARCHAR(50) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL, user_type VARCHAR(20) NOT NULL DEFAULT 'student', full_name VARCHAR(100) NOT NULL, student_id VARCHAR(20), program VARCHAR(50), section VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, last_login TIMESTAMP NULL, student_table_id INTEGER REFERENCES students(id))";
+    $create_users_table = "CREATE TABLE IF NOT EXISTS users (
+        id $auto_increment,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        user_type VARCHAR(20) NOT NULL DEFAULT 'student',
+        full_name VARCHAR(100) NOT NULL,
+        student_id VARCHAR(20),
+        program VARCHAR(50),
+        section VARCHAR(50),
+        created_at $timestamp_default,
+        last_login TIMESTAMP NULL,
+        student_table_id INTEGER" . ($is_postgres ? " REFERENCES students(id)" : "") . "
+    )";
     $pdo->exec($create_users_table);
     $setup_messages[] = "✅ Users table created/verified";
 
-    $create_teachers_table = "CREATE TABLE IF NOT EXISTS teachers (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, department VARCHAR(50) NOT NULL, is_active BOOLEAN DEFAULT true, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(name, department))";
+    $create_teachers_table = "CREATE TABLE IF NOT EXISTS teachers (
+        id $auto_increment,
+        name VARCHAR(100) NOT NULL,
+        department VARCHAR(50) NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        created_at $timestamp_default,
+        UNIQUE(name, department)
+    )";
     $pdo->exec($create_teachers_table);
     $setup_messages[] = "✅ Teachers table created/verified.";
 
-    $create_section_teachers_table = "CREATE TABLE IF NOT EXISTS section_teachers (id SERIAL PRIMARY KEY, section_id INTEGER REFERENCES sections(id), teacher_id INTEGER REFERENCES teachers(id), is_active BOOLEAN DEFAULT true, assigned_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(section_id, teacher_id))";
+    $create_section_teachers_table = "CREATE TABLE IF NOT EXISTS section_teachers (
+        id $auto_increment,
+        section_id INTEGER" . ($is_postgres ? " REFERENCES sections(id)" : "") . ",
+        teacher_id INTEGER" . ($is_postgres ? " REFERENCES teachers(id)" : "") . ",
+        is_active BOOLEAN DEFAULT true,
+        assigned_date $timestamp_default,
+        UNIQUE(section_id, teacher_id)
+    )";
     $pdo->exec($create_section_teachers_table);
     $setup_messages[] = "✅ Section_Teachers table created/verified.";
 
-    $create_evaluations_table = "CREATE TABLE IF NOT EXISTS evaluations (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), student_id VARCHAR(20) NOT NULL, student_name VARCHAR(100) NOT NULL, section VARCHAR(50) NOT NULL, program VARCHAR(50) NOT NULL, teacher_id INTEGER REFERENCES teachers(id), subject VARCHAR(100) NOT NULL, q1_1 INTEGER NOT NULL, q1_2 INTEGER NOT NULL, q1_3 INTEGER NOT NULL, q1_4 INTEGER NOT NULL, q1_5 INTEGER NOT NULL, q1_6 INTEGER NOT NULL, q2_1 INTEGER NOT NULL, q2_2 INTEGER NOT NULL, q2_3 INTEGER NOT NULL, q2_4 INTEGER NOT NULL, q3_1 INTEGER NOT NULL, q3_2 INTEGER NOT NULL, q3_3 INTEGER NOT NULL, q3_4 INTEGER NOT NULL, q4_1 INTEGER NOT NULL, q4_2 INTEGER NOT NULL, q4_3 INTEGER NOT NULL, q4_4 INTEGER NOT NULL, q4_5 INTEGER NOT NULL, q4_6 INTEGER NOT NULL, comments TEXT, evaluation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, teacher_id, subject))";
+    $create_evaluations_table = "CREATE TABLE IF NOT EXISTS evaluations (
+        id $auto_increment,
+        user_id INTEGER" . ($is_postgres ? " REFERENCES users(id)" : "") . ",
+        student_id VARCHAR(20) NOT NULL,
+        student_name VARCHAR(100) NOT NULL,
+        section VARCHAR(50) NOT NULL,
+        program VARCHAR(50) NOT NULL,
+        teacher_id INTEGER" . ($is_postgres ? " REFERENCES teachers(id)" : "") . ",
+        subject VARCHAR(100) NOT NULL,
+        q1_1 INTEGER NOT NULL,
+        q1_2 INTEGER NOT NULL,
+        q1_3 INTEGER NOT NULL,
+        q1_4 INTEGER NOT NULL,
+        q1_5 INTEGER NOT NULL,
+        q1_6 INTEGER NOT NULL,
+        q2_1 INTEGER NOT NULL,
+        q2_2 INTEGER NOT NULL,
+        q2_3 INTEGER NOT NULL,
+        q2_4 INTEGER NOT NULL,
+        q3_1 INTEGER NOT NULL,
+        q3_2 INTEGER NOT NULL,
+        q3_3 INTEGER NOT NULL,
+        q3_4 INTEGER NOT NULL,
+        q4_1 INTEGER NOT NULL,
+        q4_2 INTEGER NOT NULL,
+        q4_3 INTEGER NOT NULL,
+        q4_4 INTEGER NOT NULL,
+        q4_5 INTEGER NOT NULL,
+        q4_6 INTEGER NOT NULL,
+        comments $text_type,
+        evaluation_date $timestamp_default,
+        UNIQUE(user_id, teacher_id, subject)
+    )";
     $pdo->exec($create_evaluations_table);
     $setup_messages[] = "✅ Evaluations table created/verified";
     
@@ -95,51 +201,11 @@ try {
         'ABM-1N1' => [['BACHICHA','NOVIEM VER','R.'],['BIOJON','JHON HAROLD','C.'],['DELOS REYES','JOEL','R.'],['JAEN','JASON','T.'],['LIZADA','BENCH JOSHUA','S.'],['MADRIDANO','JOHN DAVE','M.'],['MARTINEZ','ALEXIS','G.'],['MATIENZO','DAVE','.'],['PUNONGBAYAN','ARJEL','M.'],['RODRIGUEZ','XHALEEWELL','C.'],['SANQUILLOS','JAO LAWRENCE','E.'],['ANDOR','CATHERINE','L.'],['BENAVIDEZ','HANNAH','P.'],['BERANGBERANG','JHUSMINKIETH','P.'],['BORDONA','JINKY','V.'],['BRIONES','ALLYS JUANE','A.'],['DEL PILAR','CHRISTINE SHANE','F.'],['DEMETRIO','NEIRIZ JANNAIZA','N.'],['DOMING','IRISH MAE','M.'],['FARAON','ANGELICA','L.'],['FLORES','SAMANTA','E.'],['GATCHALIAN','DANICA MAE','M.'],['GUEVARRA','ALYSSA','D.'],['JARIOL','RICHELYN','M.'],['PALMES','RHEN MAE','N.'],['ROBLES','MERCEL','A.'],['TAÑON','MERLIE JOY','A.'],['TARRIELA','CHRISTINE','G.'],['VENCIO','VALERIE ANNE','L.'],['YONSON','MARY CLAIRE','A.'],['BORDIOS','CARLA MAE','B.'],['MANALO','JEAN NICOLE','B.'],['ABORQUE','RHYZEL MAE','C.'],['CAÑETE','MARIANNEL','H.'],['Corona','Ahrian Joyce','O.'],['Dematera','Kristelle','P.'],['Glifonea','Jade Ann','B.'],['GUANSING','ANDREA NICHOLE','S.'],['HERRERA','JHANNA','R.'],['Olayta','Lovely Mae','D.'],['PEDERE','ASHANTA NICOLE','P.'],['QUINIANO','GWYNETH SHANE','C.'],['ROMANO','JISELLE','B.'],['Valencia','Hanna Lheighven','-.']],
         'ABM-11SC' => [['DOYOLA','CHRISTOPER','V.'],['MARILAO','SHIELLO','G.'],['MENDIOLA','JUDY ANN','P.'],['ADUCA','MYRA','A.'],['Bautista','Mary Denz','-.'],['CELLS','MIRUMEL','L.'],['MANABAT','RACHEL ANN','H.']],
         'HUMSS-1M1' => [['BAYBAY','MIKE JARED','M.'],['CANLAS','JOHN AXEL','U.'],['DOLLOPAC','JHASTIN DAVID','D.'],['GARCIA','JEROME','S.'],['MARIN','ANGELO JAMES','S.'],['OLIQUINO','ERL COBI','A.'],['RAYNANCIA','JAY LAURENCE','N.'],['ALEJO','LHIANNE','C.'],['ALOSA','RECCA','M.'],['ASTORGA','NICOLE','A.'],['BALQUIN','ANGEL','A.'],['CABATUANDO','ALEIRA CHLOE','B.'],['DELA CRUZ','ASHLEY YVONNE','C.'],['HIPOLITO','YUNELLA','R.'],['MANUNGAS','VENIZE KRISHA','P.'],['MORATALLA','MAJAH ZHAINEDYLLE','E.'],['PAGADOR','JANEUELLE','B.'],['PEÑAFLOR','ISABEL','M.'],['REVIRO','RANA LEA','T.'],['ROBANTES','CHANEL ALLURE','C.'],['SOLLEGUE','KELLY CAZANDRA','P.'],['SUNAJO','ANGELYN','P.'],['YUBOC','SHANEEN KHRYSS','L.']],
-        'HUMSS-1M2' => [['ABELLADA','JOHN CYRILL','R.'],['DE VERA','MARIONE JAMES','D.'],['LUGAS','VINCE ANGELO','B.'],['MESQUERIOLA','ZAIRO GENE','M.'],['PAZ','CHRISTIAN DAVE','D.'],['RAYMUNDO','MARS ALEN','B.'],['TAMBASACAN','LORENZO JR.','B.'],['VICENCIO','DOMINIC CHAD','F.'],['VILLAMASO','MARVIN','B.'],['ARNILLO','MA. LALAINE','R.'],['BAUTISTA','HANNAH SHANE','P.'],['BUMBOHAY','SZYRN MHY','E.'],['CARISMA','CHESKA MAE','L.'],['CUBOL','CRYSIE JHOY','O.'],['DELA CRUZ','RHEA JANE','B.'],['DELA CRUZ','RHEANNA NICHOLE','S.'],['MINGASCA','WELLA JANE','D.'],['ORTIGA','MARIFEL','G.'],['PALMA','JIMAYCA','B.'],['RESURRECCION','MICHELLE ANNE','L.'],['ROLDAN','ANGIELYN','O.'],['URING','RHIAN MAE','S.'],['VIBARES','JELLY','P.']],
-        'HUMSS-1M3' => [['ABENDAÑO','SHAWN LELOUCH','O.'],['ARENDAIN','CASSEI KARL','M.'],['AUDITOR','MAZZARU','D.'],['BARRIENTOS','BARON VORGH','N.'],['DONGHIT','JEROME','V.'],['HUBILLA','JUAN CARLO','N.'],['INDANGAN','ARVY KYIEL','F.'],['MAAÑO JR.','OSCAR','M.'],['MUÑOZ','MARK ANDREI','D.'],['NAVARRO','CHRISTIAN','D.'],['RAMIREZ','VINCE MICHAEL','A.'],['SEÑORA','D-JAY','B.'],['SORIANO','KENNETH','P.'],['ASUNCION','NASHEENA','D.'],['CAMAMA','QUEEN ALLYANA','C.'],['CASTILLO','CHARMAINE','T.'],['DADOR','CHITTARA','M.'],['EMPANIA','TRISHA YVONNE','B.'],['GAMARCHA','EUREKA LOUIZE','C.'],['HENTICA','PAULLHEA','B.'],['LICMUAN','FAITH ANNE','G.'],['MAHUSAY','DENISE ALEXA','S.'],['MARCO','JULIA MARIE','O.'],['MARTINEZ','JANNAH ANNIELLE','E.'],['NONES','JAYDEN','G.'],['PALAÑA','ANNA NICOLE','.'],['PUEBLO','AYESHA','F.'],['RAPIZA','FERELYN','G.'],['SANTOS','HELEN ZHANE','D.'],['Mendoza','Shane','V.'],['Pacia','Lyka','C.'],['RIVERA','SHAINE LORAINE','L.'],['PAÑARES','JUSTINE','B.'],['SATURNO','JOHN DENVER','C.'],['Agnes','Angel Ann','B.'],['CHAVEZ','NIÑA KIM','M.'],['DEMILLO','EDRYL JOYCE','R.'],['Lipeten','Beatriz Shane','P.']],
-        'HUMSS-1M4' => [['BASA','ALDWIND','A.'],['BORJA','CARL JUSTIN','C.'],['CELDA','ANTHONY','M.'],['LOZADA','NATHANIELLE','B.'],['PAPA','MIKE AIRON','M.'],['RADA','GIAN CARL','R.'],['RIVERA','CHARLIE RONNEL','E.'],['ADONIS','CHARISSE','V.'],['BALDIVIA','MA. CRIZEL','M.'],['BUCIO','DIANE ROSE','A.'],['CACAO','LYRENE JOY','M.'],['CORONEL','JHEWEL ANN','C.'],['DE GUZMAN','HAZEL ANN','J.'],['DE SAGUN','JAMAICA','S.'],['FERNANDO','ANTOINETTE','D.'],['GLEPONIO','MARHEN JOYCE','.'],['JEPONGOL','RUBY ANN','B.'],['MICOSA','TRIZZA ANN','A.'],['ORONGAN','JESSA MAE','G.'],['PAHAYAHAY','PRINCESS ANN','C.'],['SABBEN','CRYSTAL JADE','R.'],['SANDAGAN','JOYREL ANN','D.'],['SUMADSAD','WILMA','C.'],['TAGO','JEMALYN','E.'],['TURALDE','ANN FRANCIS','P.'],['VASQUEZ','CARYLE','D.']],
-        'HUMSS-1M5' => [['ALVIZ','KIM DANIEL','L.'],['BAUTISTA','CHRISTLEE','A.'],['EUSEBIO','ANTHONY','E.'],['LOSARIA','KIAN','T.'],['MAALIAO','MIKE JAMES','V.'],['MALLO','BRYAN JHERIEL','I.'],['MARCELINO','CLARK','E.'],['PALACIOS','FRENZ JOHN PAUL','.'],['QUILLANO','LHEYNARD','N.'],['REMPILLO','REYMON','P.'],['SOLOMON','JESTER CARL','P.'],['ALAGDON','KAINA MAE','D.'],['GADIANE','JERIEVIN','T.'],['GOC-ONG','KRIZA JADE','R.'],['JANEO','HAILEY MARGARETH','L.'],['LU-AB','PEARL ROSE','A.'],['MANOJO','CHARES','B.'],['MANSING','LOUISE JYNNE','I.'],['PARTOSA','JANICE','M.'],['PARTOSA','VEA','M.'],['PINEDA','XYLZ ATHENA','P.'],['QUIBOL','RYNTCH CHEY','R.'],['RAYOSO','ARA','L.'],['RONGAVILLA','AKISHA JHAINE','L.'],['TAMBIAO','CODETTE','V.'],['TAÑO','PRINCESS EUNICE','A.'],['TRINIDAD','CHERRY MAE','H.'],['TUBALINAL','TRIXIE MARIE','.'],['VILLARMA','DANIEL NAOIMI','B.'],['BATOMALAKI','SAM LAWRENCE','P.'],['BAUTISTA','VHIELLE ZYRENE','P.']],
-        'HUMSS-1N1' => [['ADORA','RHAE JOSEL','M.'],['ARAOJO','DARELL','B.'],['ATIENZA JR.','JESSIE','A.'],['BUENACOSA','REY JHON','E.'],['CORDERO','MARK RENDEL','T.'],['MACABENTA','LKJAM','P.'],['MALABANAN','NICK','M.'],['ROYO','RETZON RETZ','R.'],['SAGARAL','VANN ALLEN','.'],['SIMBORIO II','DIONISIO II','P.'],['ACERO','PRINCESS HENLY','B.'],['ALERE','ANDREA NICOLE','L.'],['ARMAS','HANA JENEEVE','E.'],['ASPREC','PRINCESS ANN','N.'],['CACAO','PRINCESS MAE','V.'],['CALAGO','IZEL','P.'],['COLARINA','PRINCESS MARIE','B.'],['CONCEPCION','ROSS LYN','T.'],['CORNELIO','NOELYN','B.'],['DOLOGUIN','JANE','A.'],['ELENTO','JULIANA PAULA','B.'],['GORION','EUNILYN','S.'],['MARJALINO','JHONA MHICA','N.'],['MONDOY','TRECIA MAE','.'],['PABLO','KRYSHIA MAE','A.'],['RAMOS','ALTHEA','D.'],['RIVERA','THEA VENICE','M.'],['UMALI','ANDREA','O.']],
-        'HUMSS-1N2' => [['ASUNCION','MC','I.'],['LUCIANO','TRISTAN','P.'],['LUPAZ','IVAN','P.'],['NOCOS','CARL JAMES','D.'],['PABALAN','PRINCE NIÑO','T.'],['SOLO','GLANZ YUAN','J.'],['ALIPARO','LINDSEY YOHAN','.'],['AQUINO','PRINCESS EMARY','M.'],['ARAGAY','ROCHELLE ANNE','C.'],['BALIDOY','ANGELICA','P.'],['BINARAO','ANDREA ANNE','A.'],['BORJA','LEAH MAE','A.'],['CORDERO','MARCELINA','D.'],['DE LUNA','MA. IZYL EUNICE','D.'],['DE LUNA','JIRAH','A.'],['DELA CRUZ','PRINCESS','P.'],['EGOS','SHANAIA','L.'],['FLORES','EDEN ROSE','V.'],['FRANCIS','ALEXIS JEN','J.'],['GALLEGO','JANELLA VIEL','G.'],['NARCISO','DONITA','.'],['ORDOÑEZ','DAPHNE LAURICE','H.'],['PADIT','BERNADETH','.'],['PIA','HANNA MICA','E.'],['TECSON','LEESHANE','V.']],
-        'HUMSS-1N3' => [['AGNER','DENVER','R.'],['ARABEJO','CHARLES','D.'],['COLIMA','EMMANUEL BIEN','B.'],['DELA CRUZ','JOHN CEDRICK','A.'],['FELICIANO','ANGELO','.'],['GLORIA','JAN RICK','L.'],['LOPEZ','JAKE FRANCIS','L.'],['MAPALAD','JOHN RUIZ','S.'],['MARQUEZ','CLARK','A.'],['PORTERIA','JAMIEL','.'],['RECTO','THERON RENZ','C.'],['SOLAON III','ARNULFO','.'],['ZUÑIGA','ADRIAN MICKO','C.'],['BERNESE','JULIE','Y.'],['DELA CRUZ','SABRINA','K.'],['DOBLAS','CHRISTINE','V.'],['EDLES','JEANEL','O.'],['MATIBAG','JANNAHROSE','A.'],['MENDOZA','KRISHA LYNNE','L.'],['PRENDON','RONELYN','C.'],['REVELLAME','LYKA','M.'],['SERNA','CATHRINA ALEXIS','C.'],['TORILLO','DANESSE','L.'],['TORRES','PATRICIA NICOLE','C.'],['VILLASIN','MA. CHARTINA DHENIZZE','E.'],['YANSON','MARIAN','M.']],
-        'HUMSS-11SC' => [['PAJARON','LOYD CEDRICK','.'],['SAMPEROY','ESTEVENSON','.'],['VALENCIA','JOHN VINCENT','P.'],['ALTAREJOS','ALEANNA JANE','J.'],['CANGAYAO','PRINCESS AVRIL','A.'],['ESPADILLA','HERNELINE','R.'],['GUNDRAN','MARY GRACE','R.'],['PAGNE','JEAN ROHANA','F.'],['ROBLES','RANIELA','S.'],['SANCHEZ','JHANICA','C.'],['VINGNO','TRIXIE ANN','D.'],['YGBUHAY','ELSA REYNA','B.']],
         'HE-1M1' => [['BACLAO','JOHN DANIEL','A.'],['DIWATA','JOSHUA','C.'],['FRISCO','AUDREY','A.'],['GONZALES','AR-JAY','Q.'],['GRATUITO','DOMINIC','B.'],['HERMANOS','ARGYNE JAY','C.'],['LIBRES','MARIANO','T.'],['MONTOYA','IVAN JAMES','M.'],['SALUMBIDES','ALEXANDER JAMES','F.'],['SANZ','KIRBY','G.'],['TANDAYAG','ROLAND JUSTIN','M.'],['UMBAY','JOHN LORENZ','Q.'],['ACEBUECHE','JHENY MHAE','N.'],['AMATOSA','CHRISTINE MAY','F.'],['BETITA','MARIA CAMILLA','V.'],['CAREON','JEARLENE','V.'],['DELA ROSA','SOFIA CASSANDRA','M.'],['DERLA','AYESHA','D.'],['EDLOY','ANGEL ANN','A.'],['ESCOBER','RUTH ARIADNE','V.'],['ESPINA','ANGEL MAE','S.'],['EVANGELISTA','EDRALYN','T.'],['LEMON','KHAILYCATE YHUNICE','R.'],['MAGDAMIT','GENIEVIEVE','P.'],['MAMBA','ERA GRACE','I.'],['MINGUIN','MARIE ANGELA','D.'],['PESCANTE','ELIJAH','V.']],
-        'HE-1M2' => [['AESQUIVEL','NASH','P.'],['BALANGUE','JEFFRIL','B.'],['ESTRELLA','EUREKEN','P.'],['LAGO','MHIGZ HALCY','T.'],['MARES','DUSTIN LEE','R.'],['MARINDA','RYAN JADE','T.'],['MENORCA','SHERWIN WILLIAM','J.'],['REGALARIO','NEVAEH YUAN','P.'],['SANTIAGO','ACE LOUIE','J.'],['SANTIAGO','ANDREI','P.'],['SARONO','KURT NATHANIEL','S.'],['TUTOR','ANTHONY','M.'],['VASQUEZ','ALHEXIS','D.'],['VERDIDA','CLANCE KENDRED','B.'],['YOSORES','KIRBY','O.'],['BRIN','MARIAN','M.'],['FRANCISCO','PATRICIA MAE','E.'],['MANALO','LOUGEE','M.'],['MERCADO','ALYZA','M.'],['PAKINGGAN','HERDELYN','C.'],['SANGILAN','CATHERINE','C.'],['STA. CRUZ','CRIS QUINA','C.'],['TAMA','KYLA MAE','N.'],['TAÑOLA','EINJHEL IRVINE','M.'],['TOLENTINO','BEA MAY','M.'],['VALEZA','FRANCHEZCA YUAN','C.'],['YANONG','PAULA','B.']],
-        'HE-1M3' => [['CAMORAL','ARJAN JAY','R.'],['FANCUVILLA','YHAEL MARCUS','P.'],['FERRER','ARJAY','A.'],['LOPEZ','FRANK MANNY','G.'],['MALAPIT','GILBERT JR.','L.'],['MAMACLAY','ALDREW JEXIE','M.'],['PEÑARIDONDO','JAMES DYLAN','B.'],['PLACIDO','JIOVANNI FRANZ','D.'],['POBLARES','VIN RUSELLE','T.'],['RAYA','KHURT KUEIN','C.'],['RODELAS','JUSTINE CURL','D.'],['SABLAD','JOMEL','C.'],['SERASPE','ELIZAR JULES','C.'],['VEDAÑO','JAN NAZARENE','N.'],['YOSORES','KELLY','O.'],['ALEGOYOJO','ANGEL','S.'],['ARCUENO','DIANA MAE','L.'],['AROGANCIA','AYESSA MAE','C.'],['ATIENZA','ERIKAH','V.'],['BASIJAN','ROSE MARIE','C.'],['DE LUNA','CHARMVER ROCEL','.'],['IBARRA','JUDY','T.'],['MANZANO','MICHELLE ANGEL','B.'],['MELCHOR','LYCA MAE','V.'],['MEMIJE','GERBAUD MARITHE','C.'],['PALCE','MIJARA JADE','G.'],['SANGLAY','ANA NICOLE','N.'],['SECRETARIA','JULIEN MAE PATRICIA','A.'],['VICTORIA','JAZMIN HANNAH','M.'],['ZARAGA','DENIEZEL','B.']],
-        'HE-1M4' => [['ALINTOSON','ERHON','G.'],['ARANDIA','RONELO','N.'],['BELARDO','DANERICK','R.'],['EROY','JUSTINE DAVE','F.'],['ESPELETA','JEBSTINE','L.'],['GAYO','JOSHUA','A.'],['GUILLANO','NICK ANGELO','B.'],['HANDIG','TEEJAY','S.'],['LIBANG','JOHNRIC LENARD PONCE','D.'],['LOJA JR.','ROLANDO JR.','A.'],['MALAPAD','JAYDEN','B.'],['MANALASTAS','JOHN AUGUSTINE','S.'],['SAGUN','ROD DANRAY','G.'],['SIWALA JR.','JAYSON','A.'],['BANCE','MERYWIN JOY','A.'],['BARBOSA','GILLIANNE','L.'],['BRIONES','APPLE','P.'],['DESUCATAN','JHANINA','L.'],['ESPERA','JAZMINE SOFIAH','Z.'],['FALCOTILO','ANDREA','D.'],['INABANG','NOR-ALIAH','D.'],['JUANERIO','LYNNEL ANNE','V.'],['LAMESERIA','SHIENALE','B.'],['LOPEZ','HERNALYN','A.'],['MARTINEZ','JANELLA FAYE','V.'],['NAZ','GEXIRIE','C.'],['PAPA','LOVELY ANNE','M.'],['PATATAG','JESSEL MAE','V.'],['PETRASANTA','AALIYAH POULINE','L.'],['SAUR','CHRISTELLE','B.'],['TOLENTINO','RHIANE','R.'],['TUMAMAK','CHESKA','O.']],
-        'HE-1N1' => [['BAUTISTA','CKLEINE KEANNE','.'],['CASTOR','RICO','L.'],['DEL ROSARIO','JOHN MICHAEL','D.'],['MANZANO','JHON METHAN','C.'],['OCLARES','JUNEL','B.'],['OLITAN','MIKE LORENCE','N.'],['PURIFICACION','CEDRIC JARLS','D.'],['REYES','ARDHELL ROSS','C.'],['SALE','CHAMP JAREN','M.'],['SAMSON','LHARSE JYULRICH','C.'],['SEGUIN','JULES CYBER','R.'],['SEQUIA','KERBY','D.'],['STO. TOMAS','SHANE GABRIEL','V.'],['ALVAREZ','DANIELA ZAIRAH','.'],['BALITIAN','JAIRAH MAY','L.'],['BIGBIG','LUISA FE','A.'],['CAMIT','AUBREY','P.'],['CUSIPAG','MARIANNE JOY','B.'],['ECONG','AYESSA','D.'],['EGOS','GHINE ROSE','S.'],['GEGANTO','SHEKINA CHEIZEN','N.'],['LAGAN','ROCHELLE','D.'],['MALIKSI','JADE','C.'],['PEÑALOSA','JENNY','U.'],['POTENTE','AMBER NICOLE','S.'],['RIVERA','SOPHIA LUISA ISABEL','F.'],['SAMSON','ANGELYN','P.'],['SULIT','NICOLE SHANE','P.']],
-        'HE-1N2' => [['ACEDERA','LHYNEL','C.'],['ASTILLERO','JHON CARLO','G.'],['CABERTE','ER JOHN CLYDE','A.'],['CALANZA','MIKO BENEDICT','L.'],['DITAUNON','NIKKO','M.'],['HONOR','RALPH LESTER','L.'],['NICOLAS','JAY-C ANDREW','N.'],['OBIAS','CHRISTIAN JAY','M.'],['PAMPILO','JHERVEN CARL','B.'],['PANGANIBAN','MIKE LOUIS','S.'],['SALUNDAGUIT','EARL JUSTINE','.'],['TAHANLANGIT','JOHN MICHAEL','G.'],['ASTURIAS','SHARMAINE NICOLE','M.'],['AUSAN','KLEO','A.'],['DEGORO','MARY GRACE','C.'],['DELA CERNA','ZAIRA','V.'],['DIONSON','MERCY GRACE','M.'],['ICARO','CHERRY ANN','T.'],['JORDUELA','NICOLE','G.'],['MALOLOY-ON','RYIEEN','C.'],['MAQUIRANG','ASHLEY NICOLE','O.'],['MATUSINOS','MIELLE ARIANNE','V.'],['OBLEA','SYISHA ANN JENICA','C.'],['PANGILINAN','ANDREA','L.'],['SALE','CHEZKAH TRIZHA','M.'],['TOMULTO','JUSTINE KIM','L.'],['TORIO','ASHLEY NICOLE','A.']],
-        'HE-11SC' => [['GOMEZ','Raily','B.'],['GOMEZ','REANIELLE KIAN','B.'],['LEE','ALVIN','F.'],['VILLANUEVA','SEUGIO','A.'],['ANN','DANICA SOPHIA COMIA','.'],['BUENA','MICHELLE','I.'],['DEL ROSARIO','JASMINE','G.'],['DELOS ANGELES','APPLE','B.'],['MAHINAY','LOVELY','.']],
         'ICT-1M1' => [['AGUIRRE','GENESIS','B.'],['ARPILLEDA','JUSTIN JAY','P.'],['BULAC','GIAN CARLO','D.'],['CORAJE','REYMOND','C.'],['DEL ROSARIO','ROWJOHN LORENCE','M.'],['DELGADO','JOHN JOSHUA','P.'],['ESPIRITU','HERO','S.'],['GAUT','ELLIANDREI JADE','Y.'],['LAGAHIT','MARK JOHNNEL','M.'],['LAS MARIAS','IANJIE','P.'],['MAMARIL','JERSON','C.'],['MARTINEZ','JAEDAN AHNIELL','E.'],['SOLIS','MARK ANTHONY','S.'],['ZURITA','GABRIEL','A.'],['CORDOVA','SHIELA MAE','A.'],['ERGUIZA','KATRINA','A.'],['GUARIN','KIMBERLYN','O.'],['LEPALAM','ANGEL KIM','J.'],['MILLANO','MARIAN','V.'],['ONDANGAN','HANNAH ALLEYAH','U.'],['PITOS','NIÑA CHARISH','M.'],['RIBERAL','ALILIA CAMILLE','F.'],['SOLIS','DIANNE KATE','A.']],
-        'ICT-1M2' => [['ADRIANO','DHREW MAXI','S.'],['AGBAY','M-JAY','L.'],['AGBAYANI','STEVE FRANCIS','B.'],['ALCARAZ','IAN','F.'],['ANDAYA','AERIEL JOHN','C.'],['DELA CRUZ','YOJ MITCHELL','A.'],['GEMARINO','RAINE','M.'],['LOREN','JHON LLOYD','D.'],['MAMANGUN','EMMANUEL','D.'],['MANAOG','RHALF RODEL','D.'],['MEDALLA','NEIL CHRISTIAN','A.'],['PONCE','CHRISTIAN','B.'],['REYES','CHRIS ARJAY','V.'],['RODRIGUEZ','THEORENZ MATTHEW','G.'],['ROMAY','LORENCE','L.'],['SIOBAL','JUSTINE CARLO','R.'],['VILLA','LOUIE FRANCIS','M.'],['ABARIENTOS','PRINCESS MAE','B.'],['ABRASALDO','TRISHA MAE','G.'],['APALIN','NORANE ANGELA','.'],['AYO','SHARINA MAE','T.'],['BOBIS','JAIRISH','G.'],['CORREOS','GLORY MAE','V.'],['CUALBAR','GERMAINE JOY','E.'],['HICANA','PRINCESS','M.'],['JAMER','EUNICE BIANCA','C.'],['JARDIO','JALEN ROSE','C.'],['PABLO','REGINE','A.'],['ROQUE','LORIEDEL','G.'],['TROPEL','PRINCESS LOVELY','E.'],['VILLANUEVA','MA. ANTHONETTE','U.']],
-        'ICT-1N1' => [['ADIS','JABEZ MIEL','G.'],['ANASARIO','JEFF RYAN','T.'],['DE LUNA','JOHN CLIEYAN','M.'],['DE LUNA','LENNARD','M.'],['DE SOSA','ERIZ KHEL','V.'],['DE VERA','MIGUEL','R.'],['FERMANTE','IORI','M.'],['GARCIA','YURI','A.'],['LUMIANO','EDGIE','S.'],['OFENDA','AURIO','G.'],['POLANCOS','JOMARI','M.'],['RACAB','KING GENESIS','L.'],['TADEO','CHAZZ','.'],['TAMBIS','JOHN ZENDRICK','P.'],['TUATIS','DANILO JR.','A.'],['TULIPAT','KYLE NOELLEMAR','A.'],['VALDEZ','JAMES EVANZ','C.'],['ACID','YUNA','C.'],['ASPE','FIONA RICH','D.'],['CAÑA','JAYNALYN','.'],['LEGARDA','DAZZLE','R.'],['MANIABO','JESHLYN CASSANDRA','B.'],['OLAVERE','ZAPHIRE HYCENTH','P.'],['REDUCCION','CHARLENE','P.'],['TRINIDAD','RISHIANE','C.']],
-        'ICT-1N2' => [['ACEVEDA','AL-PRICHVEUZ','B.'],['DANTE','EARL DOULTON','S.'],['DERIGAY','DWAYNE VAL ZEDRICK','T.'],['ENAMNO','MARK VINCENT','D.'],['MERENCILLA','DAREN','L.'],['MICALLER','MARK JUSTINE','D.'],['URGEL','FRENZ AIDEN','E.'],['VENEZUELA','MARK LAWRENCE','A.'],['VILLALVA','JULIAN','R.'],['BUYA','ASHERA MAE','J.'],['FRANCISCO','PRINCESS YVETTE','L.'],['EMBODO','DAN JAYSON','A.'],['Alpeche','Krystal Mae','L.'],['CASTILLO','LOVELY','B.'],['OCON','BERSON MARK','.'],['PESCANTE','RHANE','V.'],['AGABON','SCARLET JADE','V.'],['Caruyan','Trixy','A.'],['ISAAL','DARLENE','L.'],['MALLORCA','LIAN CLARISE','R.'],['MENGUITO','LOUISSE BIANCA','D.'],['Pangandaman','Faysah','M.'],['SILVA','SHERAN ANN','M.'],['UMANDAP','FRANCINE JOICE','.'],['VILLANUEVA','CHELSEY ANNE','.']],
-        'ICT-11SC' => [['ERENEA','FREDERICK','L.'],['QUILLAO','ZIMON FRANCIS','P.'],['BAGAPURO','KC ANGELA','D.']],
         'HUMSS-3M1' => [['ARNALDO','MARK JASTINE','M.'],['Caballero','Paulo','C.'],['Callueng','Vaughn Louelle','B.'],['Carlos','Prince Vernie','I.'],['Delos Reyes','Jhervin Grhei','T.'],['Fuertes','Benjie Jr.','M.'],['JAVELO','JOHN ALFRED','E.'],['Manaig','John Louie','F.'],['Menguito','Prince Kyle','I.'],['NEGOLO','JOHN MARKY','C.'],['Noblefranca','Laurence James','D.'],['PAGCALIWAGAN','AERHON','D.'],['RESTRIVERA','MARK JERICK','A.'],['Talimay','John Angel','C.'],['Valles','Jay Iverson','B.'],['Bayson','Lejana','S.'],['FARO','JEAN KATHLEEN','D.'],['Fuentes','Kyle','B.'],['Garcia','Alyza Chinee','V.'],['Geniblazo','Rhizza','D.'],['Jubay','Janlex Trish','M.'],['MACAPAGAL','ANNA MARIE','R.'],['Mañosa','Diana Grace','B.'],['Modesto','Mharky','C.'],['Mustaza','Aira Camille','P.'],['Quijano','Nadine Alyssa','P.'],['Regondola','Neisha Leiyhan','D.'],['Sagang','larahvelle','H.']],
-        'HUMSS-3M2' => [['Capurihan','Nelbert','D.'],['DELFIN','REY MARLOWE','A.'],['ENOC','MARK JERVIN','T.'],['JAMER','JUSTINE','C.'],['JEVIO','RYU JAZTYN','S.'],['LOZADA','JOHN CARL','D.'],['Moreno','Edward Miguel','B.'],['PURIFICACION JR.','FERNANDO','B.'],['Saut','Richmond Alfred','C.'],['TEPACIA','RIO','I.'],['Tolin','Marvyn','S.'],['VIBAR','SEAN DAVID','B.'],['Villadolid','John Raven','M.'],['YAP III','ROMEO','M.'],['Adis','Faith Anne','G.'],['Bandales','Sherleen Mae','J.'],['CENA','PRECIOUS JANEFREY','D.'],['CONCHIA','Elishia May','S.'],['GOCALIN','NICOLE','E.'],['Hilario','Irish','B.'],['Larede','Christal Faith','V.'],['LEBRERO','ANNA LOWIE','S.'],['Maagma','CLARA MORIEN','B.'],['Nual','Princess Nicole','C.'],['Ortiz','Paulyn','N.'],['Rivas','Quincy Loraine','M.'],['Tubal','Ryzelle Ann','T.'],['Valerio','Loraine Joy','R.']],
-        'HUMSS-3M3' => [['AGULTO','JUSTINE MARK','M.'],['Baluncio','JUSTINE','A.'],['Bayaborda','Nandrew','G.'],['Castillo','Frank Lester','C.'],['Centeno','Angelo Macoy','R.'],['Siscar','John Kenneth','A.'],['Tuibeo','Shanley','S.'],['UDAL','ROHANN DENVER','T.'],['Cagandahan','Jovelyn','S.'],['Catalan','Cyrish Daniela','B.'],['Celis','Kayceen Krisbel','M.'],['Escalona','Rojen','S.'],['ICARO','CLAIREY','T.'],['LAÑOJAN','Pearl Joy','M.'],['Leonida','Chloe','C.'],['LLOSE','ANDREA GAILE','B.'],['MACARAIG','STEPHANIE','S.'],['MACARIOLA','ATHASIA ANN','R.'],['Maglunob','Alyza Mae','U.'],['Minguin','Marie Angelyn','D.'],['Miranda','Seiya','M.'],['Ortillo','Janelle Hazel','P.'],['Revellame','Jenilyn','M.'],['Rico','Jhoana Rose','A.'],['Rocas','Myra Stacey','C.'],['Segunla','Nicole','P.'],['SELDA','SHARLENE MAE','C.'],['Zerrudo','Danica Joy','Z.']],
-        'HUMSS-3M4' => [['CABANGUNAY','JHOHANNES ARIEL','G.'],['DUMRIGUE','FRANCISCO','.'],['FULGAR','KARL BRIX','.'],['Javier','Martin Lordy','C.'],['MADRIGAL','LUIS PHILIP','R.'],['Marquez','Luke Kian','B.'],['PACLE','JHONZEI DAVE','M.'],['PANDIONG','NOEL','B.'],['Riberal','Jimfrixon Fruto','F.'],['Sigue','John Lord','T.'],['Soltes','John Patrick','M.'],['Villaflor','Aldrich','S.'],['Abrera','Princess','M.'],['Albios','Dhenise Mae','P.'],['BAUTISTA','ALLIEZA MEI','T.'],['BLEZA','MARHY JHOY','B.'],['Fabillo','Sabina','R.'],['Fugoso','Lorie Lozel','P.'],['GERALDO','LUCILLE ANGELA','C.'],['HICAP','ANGELICA','M.'],['Jimenez','Jessa','S.'],['Mabansag','Mikylla Anne','G.'],['Mallari','Mary Joy','C.'],['Rabillas','Ashley Nicole','R.'],['Rodrigo','Cristal Joy','E.'],['SIBONGA','JANELL','R.'],['Tagapan','Trisha Nicole','V.'],['TATEMURA','ZAINAKI LOUISE KHATE','S.']],
-        'HUMSS-3N1' => [['Cabanday','Tj','G.'],['CARDEÑO','AARON JAMES','V.'],['CERVEZA','CHRYSLER','G.'],['CUTAMORA','KENJIE','E.'],['FELONIA','ANTHONY','C.'],['MARTINEZ','LHANZ REYVER','F.'],['MATEO','LOUIGIE','H.'],['MATUBANG','ITTSEI','B.'],['Molines','John Kerby','A.'],['RAMIREZ','VANESS','A.'],['Tumbado','Jericho','T.'],['VICENTE','JUSTINE CRIS','V.'],['Baba','Lovely','F.'],['Ballecer','Lovely May','C.'],['CAUNCERAN','GHIA','S.'],['DEMATE','JOANNA CAMILLE','D.'],['Espiritu','Kimberly','P.'],['Go','Princess Kyrylle','M.'],['LABRADOR','ALYSON ANN','T.'],['MARTINEZ','PRINCESS RYEANHNE','C.'],['Parreño','Karen','A.'],['SOLO','VANESA','M.'],['Trinidad','Pearl Joy','H.']],
-        'HUMSS-3N2' => [['BALAGA','JAZZ RIEL','L.'],['CAINTO','CHRISTIAN PAUL','.'],['Mape','Jhestine Cylle','Z.'],['MORADA','ARTH ISRAEL','S.'],['NAVEA','JOHN FRANCIS','T.'],['PEREZ','JHON CYRUZ','D.'],['QUERUBIN','ARNOLD','C.'],['VENTURA','ALOYSIUS JOHN','A.'],['VILLANUEVA','RONJAY','F.'],['ALEGUIOJO','ALLYSA','N.'],['BRUTAS','SHIELAMY','S.'],['GUALIZA','REGINE','.'],['LOYOLA','JASMIN ROSE','M.'],['MANARIN','MARY ROSE','N.'],['Musni','Rochelle','C.'],['Pagayon','Jasmine Kimberly','B.'],['PANGAN','JANA MARIE','R.'],['PANTUA','ANTONETTE','F.'],['PEÑARANDA','NERISSA','.'],['PEREZ','RHAICEL','Y.'],['PONCE','ARIANNE MAE','B.'],['PUNZALAN','AIZEL','D.']],
-        'HUMSS-3N3' => [['Barlao Jr.','Angelito','F.'],['CERIACO','DOMINIC','R.'],['DOBLAS','CRISTIAN','V.'],['Figueroa','Dave Clarence','L.'],['LASPRILLAS','JHASTINE','T.'],['LIZARDO','CARL MATHEW','A.'],['LOTERTE','Rainielle','Q.'],['PORTRIAS','JOHN BRENT','S.'],['Rodriguez','Rainniel','D.'],['Adan','Rainalyn','M.'],['BALDONASA','MIA','D.'],['BAZAR','CRISHEL MAE','R.'],['BERGADO','JOANNA DENIZE','F.'],['BORJA','JANICA EARD','S.'],['Cayosa','Krizz Aubrey','C.'],['Escaran','Jhennica','B.'],['Gasga','Shiela May','J.'],['GICARO','SARAH','L.'],['Jazareno','Shirene','S.'],['TRONGCOSO','BERNAJANE IRISH','P.']],
-        'HUMSS-3N4' => [['ABAJA','JUSTINE DHARYLLE','A.'],['ARAGAY','NORMAN RHAZEL','C.'],['CACO','JUNE MANUEL THIRDY','A.'],['Cilmar','Bharon Jhone','H.'],['GARINGALAO','RENZ LOUIE','M.'],['ROQUE','MARK JENO','D.'],['ABUCAY','REXELLA','L.'],['Aldas','Cristine Reign','E.'],['Dela Cruz','Samantha','K.'],['DELUTE','ANGELA MAE','.'],['Deocariza','Ashly Mae','L.'],['Dimasalang','Aubrey','L.'],['Godinez','Jemarie','M.'],['LAURIO','PRESIOUS CRISTALEI','V.'],['Macalindong','Andrea Mae','L.'],['MANGENTE','JANELLE','S.'],['Mota','Rusha Ann','O.'],['Ontog','Princess Tiffany','M.'],['Robedillo','Liana Kim','G.'],['SERMENCE','MARY ANGELYN','C.'],['TARASONA','JANA MAE','C.'],['Tubos','Kesia Joy','R.'],['VILLANUEVA','RICHELLE','C.'],['Villar','Jhonaimah','.']],
-        'HUMSS-12SC' => [['ELEGUE','JERICKO','C.'],['LACANILAO','MARK THADEOUS','P.'],['LUSTADO','JUSTIN','L.'],['SIMBORIO','Dennis','P.'],['Ayro','Princess Rhianne','A.'],['BABILA','MICA','M.'],['DE LEON','JAMAICA','A.'],['DEMORIN','VANESSA MAE','D.'],['FRIAL','KIMBERLY','F.'],['GUILLERMO','DECERY','S.'],['HADJI FAHAD','JOHANISAH','M.'],['Lingad','Lureyn','Z.'],['Lumor','Nicole','S.'],['Monares','Kathleen Maine','A.'],['NAYVE','ADRIE ANNE','B.'],['Villamaso','Jennifer','B.'],['VIRAY','JENNY','-.']],
         'HE-3M1' => [['BANDONG','JHON JHASPER','C.'],['Carlos','John Paul','T.'],['Cubelo','Ydran-Rick','S.'],['Dispabeladeras','Jerimiah','M.'],['Dominguez','Raja Cebastian','G.'],['Harina','Karl Daniel','D.'],['Maigue','John Harold','G.'],['Melodias','Kurt Lorens','R.'],['ODON','ALDRIN','D.'],['SANGLAY','JOHN WESLEY','G.'],['Secula','Arjay','.'],['Sengco','Mcnesse Jaerjarvi','D.'],['Valenzuela','John Miguel','E.'],['Abejo','Sheena Anne','S.'],['Adonis','Mary Grace','M.'],['Alolor','Shekainah','C.'],['Aspi','Angela','L.'],['AVENDAÑO','Princess Angel','C.'],['BAGUAL','LHAICA','B.'],['Belandres','Charlene','L.'],['Cortez','Ma. Jinky','F.'],['Dela Cruz','Hecy Jya','M.'],['Dimaano','Daphne Vhenice','V.'],['Lacdao','Angel Mae','D.'],['Mero','Lenie Ann','Y.'],['Sale','Carrie Lei','L.'],['STARLING','NATASHA','.']],
-        'HE-3M2' => [['AMARO','SABINO','T.'],['ANTOLIN','RONNEL SHERWIN','C.'],['BALASA','XANDER','C.'],['BAMAN JR.','RUEL','B.'],['BORJA','JIANN','.'],['Calzado','Jhayvee','R.'],['Estrella','Wennard','F.'],['Gratil','Anthony Joseph','A.'],['Magistrado','Carlo','D.'],['PADILLA','MELL CHRISTIAN','N.'],['PLANAS','JHON LENARD','B.'],['Romero','Albrich','B.'],['Tablante','John Reynan','D.'],['YUMANG','ADRIAN','P.'],['ARISTOTELES','AIRISH JHEM','R.'],['CONCEPCION','KATE JASMINE','D.'],['Conferso','Rhiann Denise','L.'],['Crespo','Jane','G.'],['Cusay','Amira Mae','D.'],['DIONISIO','AVRIL ANN','D.'],['Ebina','Karyell','C.'],['Feliciano','Joyce','S.'],['FILLAR','RICH ANNE','M.'],['MARAÑA','MA.ANGELICA','A.'],['MICOSA','ARA MAE','R.'],['PANTANOSA','DANICA','G.'],['Tomaquin','Lianne','S.']],
-        'HE-3M3' => [['CORPUZ','ELJOHN JAMES','T.'],['Escape','John Mesias','G.'],['FERRER','ROWEL','A.'],['ORTEGA','MARK JOSEPH','D.'],['PASIGNA','JOHN MICHAEL','B.'],['Ramirez','Joshua','A.'],['RIVERA','JOHN CURVIE','.'],['ACORDO','LUISA JANE','E.'],['Acosta','Rhyanna Rayne','S.'],['AGUILLON','JOLAND','B.'],['Cabardo','Dyrah','F.'],['Canillo','Anna Geniela','M.'],['CO','Lhei Anne','A.'],['CUADRA','HYACINTH','M.'],['Dela Peña','Kriezza','E.'],['DELA PEÑA','MARIAN','.'],['Fraga','Gwyneth','A.'],['GABRIEL','EDZIEL JOY','C.'],['Hernandez','Kylla May','A.'],['LAGARTO','EZECKIEL JEWEL','S.'],['Nagares','Angel','G.'],['OBEROS','AMANDA BHEA','A.'],['RAMOS','JENNIE PEAL','F.'],['REMO','PRINCESS DIANA MAE','P.'],['SAAVEDRA','JULIA ALYSSA','D.'],['SALICO','SHANICE','V.'],['SARIMOS','MIA MARJORIE','.']],
-        'HE-3M4' => [['AYADE','RENGIE','P.'],['Baro','Rhod Kenneth','T.'],['BAUTISTA','JOHN CARLO','V.'],['Camba','Jhon Rich','A.'],['DISTURA','BEN','.'],['NACIS','LARENCE','A.'],['ROSALES','KIEN RUZZEL','S.'],['ASIS','PRINCESS HANNA','T.'],['Cabate','Emily','T.'],['DE VETERVO','PRINCES JOANA','D.'],['Dizon','Maria Christina Joy','B.'],['DOMASIG','JASMIN','V.'],['Doyola','Charisse Ann','V.'],['ESTREMOS','DANICA','G.'],['Gesmundo','Alyssa','L.'],['Lambunao','Angel Ann','L.'],['Mallorca','Trisha Mae','D.'],['MAPILI','RICHELLE ANN','L.'],['MARQUEZ','KIM CARLA','C.'],['Mendoza','Melnhess Ann','-.'],['Peregrin','Hanna Kim','R.'],['RAMOS','KRISTEL JEAH','.'],['Salvador','Evan','R.'],['Samson','Heizzel','C.'],['SANTIAGO','PRINCESS','D.'],['Trinidad','Astra','T.']],
-        'HE-3N1' => [['FORTUNA','JAY','M.'],['GAYTANO','JOHN CARLO','M.'],['MIRANDA','MARK','R.'],['MONTILLA','JOHN KEN SHAWN','A.'],['ORTIZ','ACE','R.'],['PEÑA','JONATHAN','.'],['RESUELLO','CRIS ALBERT','C.'],['RICO','CLARK LYNELL','L.'],['SEGUIN','CHESTER BENETTON','R.'],['Vibares','Dwight Jaymer','P.'],['ALALAY','LIAN ASHENETTE','O.'],['BALTAZAR','JOLAN','B.'],['CARIÑO','KAMILLE','A.'],['CATIBOS','MICHAELLA','N.'],['DE VILLENA','ANDREA','C.'],['Dominguez','Marjorie Faye','M.'],['ENCARNACION','EDNIELYN','O.'],['LAYUG','PRINCESS ANN','.'],['MORALES','RUBIE ANN','O.'],['Policarpio','Yuri Ann','C.'],['Remorquez','Danica','V.'],['Sarabia','ma. cathryn jamille','C.'],['SIMBORIO','SHIELA MARIE','P.'],['TORRES','MARIEL','A.'],['VALDEZ','OLIVERA','M.']],
-        'HE-3N2' => [['BAYABAY','ALLAN MARION','Q.'],['BEHINIO','MARK ANGELO','.'],['Clasin','Cyrus','S.'],['Dollete','Daniel','S.'],['ESCOL','RALPH CHRISTIAN','C.'],['Enardicido','Joven','V.'],['ESPENILLA','ALEXIS','L.'],['GAMBOA','JHAYPHEE','P.'],['ORTEGA','IVAN KHARL','.'],['QUEBRAL','LOMER','V.'],['Radan','Jericho','C.'],['RIVERA','JILIAN XANDER','.'],['SAMARITA','MARK LESTER','P.'],['BARBOSA','MA. FAUSTINA','P.'],['Esperanza','Elaine','G.'],['MANZANILLA','RHEA LOUISA','L.'],['Martinez','Precious Gem','B.'],['MIRAÑA','MARJO APRIL','M.'],['PALO','JESSIE','M.'],['Saguing','Sharmaine','E.']],
-        'HE-3N3' => [['ARIMAN','MARK ALINUR','C.'],['Baldeo','Mark Angelo','V.'],['BERBULLA','JAMEER','P.'],['CABALES','CHRIS MARK','M.'],['Cantada','John Brix','D.'],['CINCO','RONIE','B.'],['OLEGARIO','LORENCE','D.'],['ORTEGA','KIETH','T.'],['PARCIA','MARK ANTHONY','A.'],['RIVERA','ALDWIN JOHN','O.'],['Ruga','Khenjay','R.'],['BAUTISTA','KRIZZLE','D.'],['Cabrera','Daireen','D.'],['DELA CRUZ','MEYONAH YVONNE','R.'],['ESPINOSA','MARIAN JOY','C.'],['ESPLANA','CHARLOTTE','A.'],['Ford','Shiela Mae','M.'],['MONTENEGRO','LADYLIN','Y.'],['Nieva','JERAMY','J.'],['PADUA','JENNYLYN','.'],['PIZON','ANGIELOU','-.']],
-        'HE-3N4' => [['AGUIRRE','JOHNSSEN','B.'],['CARAAN','KARL','P.'],['CASEM','MICO GABRIEL','K.'],['GUARIN','RHAFAEL','-.'],['LAURENTE','SHERJUN','L.'],['REDILLAS','EARL JOHN','.'],['SAMARITA','LOUIE','M.'],['SINGSON','JANTRO','I.'],['Babagay','Ryza','A.'],['BUCIO','RUDYLIZA','A.'],['DANGANI','JENITIN','J.'],['LIMBO','JULIA','F.'],['LOTO','BLESSIE RAINE','S.'],['MARIANO','ASHLEY','D.'],['Mimay','Princess Kyla','T.'],['MONTIERDE','JESSA','S.']],
-        'HE-12SC' => [['BARUNDIA','GRANT HILL','G.'],['CASAS','MIKE JOSEPH','V.'],['CATIGBE','JOHN MICHAEL','A.'],['MACASIL','MARK JOSHUA','A.'],['POLO','PETER KYLE','N.'],['RICAPLAZA','ALBERT JOSEPH','T.'],['BARLIS','RHEANEL','B.'],['BARRUN','CARELYN','S.'],['Cañada','Queency','D.'],['GABIA','MA.LUISA','H.'],['HONRUBIA','FLOR JAMINE','C.'],['IBARRETA','ALYANA REIN','A.'],['LOZADA','KIMBERLY','G.'],['PEREZ','ALYSA','A.'],['Platino','Mayrish','D.'],['RODRIGUEZ','VERONICA','S.'],['TORRES','ELIZ AUGUSTINE','B.']],
-        'ICT-3M1' => [['AGUILO JR.','RAMEL','R.'],['BALAORO','JOSEPH','C.'],['Baluca','Lowel Ezekiel','T.'],['BARBA','FRANZ RUSSEL','D.'],['CAÑETE','RALPH KENNETH','P.'],['DINGLASAN','JARETT ADHAN','T.'],['EBEN','JAMIR ANGELO','A.'],['ELARDO','ELIZSAR','S.'],['ENRIQUEZ','KIAN GREY','.'],['Lutiva','Ezekiel Carl','.'],['POLENDEY','JHUDIEL','S.'],['RICAFORT','ANDRES PIO','B.'],['SANTOS','RHAINE','B.'],['SANTOS','KARL ALDRIN','M.'],['Tarriela','Justine','G.'],['Tayo','Stanley Emmanuel','D.'],['Tiangson','Lormin Jr','B.'],['Turirit','Justine carl','G.'],['VALDEZ JR.','Charlie','L.'],['Balagat','Michaela Rose','D.'],['Flores','Aryan Rose','R.'],['Maglalang','Jamaica Rain','F.'],['OCAMPO','JAZMINE','P.'],['Paderes','Andrea Nicole','P.'],['PUZON','LYN ANDRAE','A.'],['Tupaz','Sihinity Vaine','N.']],
-        'ICT-3M2' => [['ABEJA','JHARED ROENDHEL','M.'],['AJOC','JHON ALBERT','P.'],['ARCE','KHELVIN RHAIN','G.'],['Calonia','Emmanuel','C.'],['Copada','Aldrin','C.'],['DE CASTRO','JOHN EVRICK','M.'],['FELICIDARIO','AARON CEDRICK','.'],['Garcia','Lenard','D.'],['Mendoza','Moises','B.'],['REFUGIO','SEVEN','A.'],['ROSTATA','KENT AUBREY','C.'],['SALDO','BHOT DARYL','M.'],['TIJING','GIAN CARLO','B.'],['AMBALAN','ROSE JANNE','C.'],['ANDRADA','ANGELA BLESS','F.'],['Castañeto','Angelica','V.'],['De Luna','Charian Aimver','-.'],['DELA CRUZ','MARIE','D.'],['DILLAGUE','RIZANETH','B.'],['FADERANGA','LORELYN','J.'],['LAGARTO','ISAAH JEWEL','S.'],['Macabanti','Princess Jmie','A.'],['MALICDEM','JINNEYFER','S.'],['MERCADO','ALEXIS JEAN','Q.'],['NIOSCO','APPLE JEAN','B.'],['PANGANIBAN','ERNESTLYN','S.'],['QUITILEN','JUDY','D.']],
-        'ICT-3N1' => [['ASPE','LAURO DANIEL','D.'],['Caro','Eirhon Khim','S.'],['CASTILLO','ARBY','B.'],['Doming','Ian Cedric','M.'],['Gamba','John Peter','B.'],['GARING','DANIELLE LORENZ','G.'],['JAYNOS','STEPHEN JOHN','O.'],['Lasanas','John Romel','A.'],['Pantanosa','Jeynard','T.'],['PECUNDO','JOHN MAURICE','.'],['Pimentel','Erick','T.'],['REYES','SEAN EMERSON','M.'],['SIBOLINO','CHRISTIAN','A.'],['SUMILANG','JOHN JOSHUA','S.'],['Torejas','Gabriel Angelo','Q.'],['VERGARA','WINLOVE GOERGE','L.'],['BAUTISTA','ALTHEA','M.'],['CANO','JEZRA','Y.'],['CATIMBANG','PATRICIA ISABEL','E.'],['Convis','Micaella','N.'],['FLORENDO','RYSAH MAE','Y.'],['Macdon','Julie Anne','B.'],['VILLASIS','ALEXANDRA NICOLE','P.']],
-        'ICT-3N2' => [['Alina','Voldemort Yuri','N.'],['Amaro','Cyruz','T.'],['Arsenia','Arvie','E.'],['Cellona','Jason','.'],['Cruz','Renz Jamer','D.'],['DADOR','MIGUELITO','.'],['MEDINA','MHICO EMMANUEL','.'],['PABU-AYA','JHON BERT','R.'],['PANINGBATAN','FARHAN','S.'],['Paralejas','John David','M.'],['Tadena Jr.','Jonathan','G.'],['Bacolod','Rhegine','M.'],['Borale','Krizmarie Jed','A.'],['Buado','Julia Margaret','P.'],['Maghirang','Reyanne','A.'],['PARAGILE','SOFIA','E.'],['Pascua','Deserie','B.'],['ROCABERTE','SHAILA','A.'],['TROPA','ANNABELLE','H.']],
-        'ICT-12SC' => [['ALDEA','JOHN REYRENZ','M.'],['Asucenas','Emmanuel','J.'],['DAVID','LAWRENCE','C.'],['MAHUSAY','JEFF MARLOU','T.'],['MISSION','FREDRICK','D.'],['PASANA','AIDAN JAMES','C.'],['TRINIDAD','JEFFERSON','D.'],['ABORDO','PAMELA','D.'],['BALINA','BEAH','R.'],['HALON','JHAZMINE KLARIZ','H.'],['NIOSCO','STRAWBERRY PEARL','B.'],['PAUNIL','MARJORIE','D.'],['RELLAMA','KATHERINE','T.']]
- 
-
+        'ICT-3M1' => [['AGUILO JR.','RAMEL','R.'],['BALAORO','JOSEPH','C.'],['Baluca','Lowel Ezekiel','T.'],['BARBA','FRANZ RUSSEL','D.'],['CAÑETE','RALPH KENNETH','P.'],['DINGLASAN','JARETT ADHAN','T.'],['EBEN','JAMIR ANGELO','A.'],['ELARDO','ELIZSAR','S.'],['ENRIQUEZ','KIAN GREY','.'],['Lutiva','Ezekiel Carl','.'],['POLENDEY','JHUDIEL','S.'],['RICAFORT','ANDRES PIO','B.'],['SANTOS','RHAINE','B.'],['SANTOS','KARL ALDRIN','M.'],['Tarriela','Justine','G.'],['Tayo','Stanley Emmanuel','D.'],['Tiangson','Lormin Jr','B.'],['Turirit','Justine carl','G.'],['VALDEZ JR.','Charlie','L.'],['Balagat','Michaela Rose','D.'],['Flores','Aryan Rose','R.'],['Maglalang','Jamaica Rain','F.'],['OCAMPO','JAZMINE','P.'],['Paderes','Andrea Nicole','P.'],['PUZON','LYN ANDRAE','A.'],['Tupaz','Sihinity Vaine','N.']]
     ];
 
     $total_students_created = 0;
@@ -194,8 +260,8 @@ try {
     $setup_messages[] = "✅ Created {$student_users_created} new student login accounts. The password for all students is 'pass123'.";
 
     // --- 5. TEACHER DATA AND ASSIGNMENTS ---
-    $college_teachers = [['MR. VELE', 'COLLEGE'], ['MR. RODRIGUEZ', 'COLLEGE'], ['MR. JIMENEZ', 'COLLEGE']];
-    $shs_teachers = [['MR. VELE', 'SHS'], ['MS. TINGSON', 'SHS']];
+    $college_teachers = [['MR. VELE', 'COLLEGE'], ['MR. RODRIGUEZ', 'COLLEGE'], ['MR. JIMENEZ', 'COLLEGE'], ['MS. RENDORA', 'COLLEGE'], ['MR. LACERNA', 'COLLEGE'], ['MR. ATIENZA', 'COLLEGE'], ['MR. ICABANDE', 'COLLEGE'], ['MR. V. GORDON', 'COLLEGE'], ['MRS. TESORO', 'COLLEGE'], ['MR. ELLO', 'COLLEGE']];
+    $shs_teachers = [['MR. VELE', 'SHS'], ['MS. TINGSON', 'SHS'], ['MS. LIBRES', 'SHS'], ['MR. LACERNA', 'SHS'], ['MR. ICABANDE', 'SHS'], ['MR. UMALI', 'SHS'], ['MR. V. GORDON', 'SHS'], ['MS. CARMONA', 'SHS'], ['MR. PATIAM', 'SHS'], ['MS. RENDORA', 'SHS'], ['MR. GARCIA', 'SHS'], ['MR. BATILES', 'SHS'], ['MS. RIVERA', 'SHS'], ['MR. CALCEÑA', 'SHS'], ['MR. RODRIGUEZ', 'SHS'], ['MR. VALENZUELA', 'SHS'], ['MR. MATILA', 'SHS'], ['MR. JIMENEZ', 'SHS'], ['MS. GENTEROY', 'SHS']];
     
     $all_teachers_with_departments = array_merge($college_teachers, $shs_teachers);
     $teachers_created = 0;
@@ -217,16 +283,11 @@ try {
         'BSCS-1M1' => ['MR. VELE', 'MR. RODRIGUEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. LACERNA', 'MR. ATIENZA'],
         'BSCS-2N1' => ['MR. RODRIGUEZ', 'MR. ICABANDE', 'MS. RENDORA', 'MR. V. GORDON'],
         'EDUC-4M1' => ['MRS. TESORO', 'MR. ELLO'],
-        'ICT-3M2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
-        'ICT-3N1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
-        'ICT-3N2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
+        'ICT-3M1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
         'HUMSS-3M1' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
-        'ABM-3M1' => ['MS. CARMONA', 'MR. BATILES', 'MS. RIVERA', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA'],
-        'HE-11SC' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. UMALI', 'MS. GENTEROY'],
-        'ICT-11SC' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. JIMENEZ'],
-        'HE-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MS. GENTEROY'],
-        'ICT-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MR. JIMENEZ']
-
+        'HE-3M1' => ['MS. CARMONA', 'MR. BATILES', 'MS. RIVERA', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA'],
+        'HE-1M1' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. UMALI', 'MS. GENTEROY'],
+        'ICT-1M1' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. JIMENEZ']
     ];
 
     function assignTeachersToSection($pdo, $section_code, $teacher_names, &$total_assignments) {
@@ -269,37 +330,169 @@ try {
 
 } catch (PDOException $e) {
     $errors[] = "❌ Database Error: " . $e->getMessage();
+} catch (Exception $e) {
+    $errors[] = "❌ General Error: " . $e->getMessage();
 }
 ?>
 <!DOCTYPE html>
 <html>
 <head>
     <title>Database Setup Results</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; }
-        .message { padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 5px solid; }
-        .success { background-color: #dff0d8; border-color: #3c763d; color: #3c763d; }
-        .error { background-color: #f2dede; border-color: #a94442; color: #a94442; }
-        .info { background-color: #d9edf7; border-color: #31708f; color: #31708f; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px; 
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 900px; 
+            margin: auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+        }
+        h1 { 
+            text-align: center; 
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .message { 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            border-left: 5px solid; 
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .success { 
+            background-color: #d4edda; 
+            border-color: #28a745; 
+            color: #155724; 
+        }
+        .error { 
+            background-color: #f8d7da; 
+            border-color: #dc3545; 
+            color: #721c24; 
+        }
+        .info { 
+            background-color: #d1ecf1; 
+            border-color: #17a2b8; 
+            color: #0c5460; 
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        .center {
+            text-align: center;
+        }
+        .login-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+        .login-info h3 {
+            color: #495057;
+            margin-top: 0;
+        }
+        .credentials {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .example-card {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Database Setup Results</h1>
+        <h1>🚀 Database Setup Results</h1>
+        
         <?php if (!empty($errors)): ?>
             <?php foreach ($errors as $error): ?>
                 <div class="message error"><?php echo htmlspecialchars($error); ?></div>
             <?php endforeach; ?>
         <?php endif; ?>
+        
         <?php if (!empty($setup_messages)): ?>
             <?php foreach ($setup_messages as $message): ?>
                 <div class="message success"><?php echo htmlspecialchars($message); ?></div>
             <?php endforeach; ?>
         <?php endif; ?>
-         <p><a href="index.php">Return to Login</a></p>
+
+        <?php if (empty($errors)): ?>
+        <div class="login-info">
+            <h3>📝 Login Credentials Created:</h3>
+            <p><strong>Admin Account:</strong></p>
+            <div class="credentials">
+                Username: admin<br>
+                Password: admin123
+            </div>
+            
+            <p><strong>Student Account Examples:</strong></p>
+            <div class="examples">
+                <div class="example-card">
+                    <strong>ABAÑO, SHAWN ROVIC</strong><br>
+                    Username: abanos<br>
+                    Password: pass123
+                </div>
+                <div class="example-card">
+                    <strong>ANDRES, ALLYSA</strong><br>
+                    Username: andresa<br>
+                    Password: pass123
+                </div>
+                <div class="example-card">
+                    <strong>DELA CRUZ, MARIA</strong><br>
+                    Username: delacruzm<br>
+                    Password: pass123
+                </div>
+                <div class="example-card">
+                    <strong>GARCIA, JEROME</strong><br>
+                    Username: garciaj<br>
+                    Password: pass123
+                </div>
+            </div>
+            
+            <p><em><strong>Username Pattern:</strong> lastname + first letter of firstname (all lowercase, special characters removed)</em></p>
+            <p><em>All student passwords are: <strong>pass123</strong></em></p>
+        </div>
+        <?php endif; ?>
+        
+        <div class="center">
+            <a href="index.php" class="btn">🏠 Return to Login</a>
+            <?php if (!empty($errors)): ?>
+                <a href="database_setup.php" class="btn" style="background: #dc3545;">🔄 Retry Setup</a>
+            <?php endif; ?>
+        </div>
     </div>
 </body>
 </html>
-
