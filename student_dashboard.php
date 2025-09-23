@@ -131,6 +131,7 @@ $completed_evaluations = count($evaluated_teachers);
 $remaining_evaluations = $total_teachers - $completed_evaluations;
 $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $total_teachers) * 100, 1) : 0;
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
