@@ -214,93 +214,37 @@ setTimeout(() => {
             padding: 20px;
             position: relative;
             overflow-x: hidden;
-            cursor: auto; /* Default cursor for body */
+            cursor: none; /* Hide default cursor */
         }
         
-        /* Background overlay for interactive effects */
-        .background-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
-        }
-        
-        /* Interactive background grid */
-        .interactive-grid {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: grid;
-            grid-template-columns: repeat(20, 1fr);
-            grid-template-rows: repeat(20, 1fr);
-            gap: 2px;
-            opacity: 0.3;
-        }
-        
-        .grid-cell {
-            background: transparent;
-            transition: all 0.6s ease;
-            border-radius: 2px;
-        }
-        
-        /* Custom cursor - only for background */
+        /* Custom cursor */
         .cursor-trail {
             position: fixed;
-            width: 25px;
-            height: 25px;
+            width: 20px;
+            height: 20px;
             background: radial-gradient(circle, var(--primary-gold) 0%, transparent 70%);
             border-radius: 50%;
             pointer-events: none;
             z-index: 10000;
             mix-blend-mode: screen;
             animation: cursorPulse 2s ease-in-out infinite;
-            transition: transform 0.3s ease, background 0.3s ease;
-            display: none; /* Hidden by default */
         }
         
         .cursor-particle {
             position: fixed;
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             background: var(--primary-gold);
             border-radius: 50%;
             pointer-events: none;
             z-index: 9999;
             opacity: 0;
             mix-blend-mode: screen;
-            transition: all 0.3s ease;
         }
-        
-        /* Color zones for background */
-        .color-zone {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(40px);
-            opacity: 0.4;
-            transition: all 0.8s ease;
-            z-index: -1;
-        }
-        
-        .zone-1 { background: var(--primary-gold); width: 300px; height: 300px; top: 10%; left: 10%; }
-        .zone-2 { background: var(--maroon); width: 400px; height: 400px; bottom: 20%; right: 15%; }
-        .zone-3 { background: var(--goldenrod); width: 250px; height: 250px; top: 50%; left: 70%; }
-        .zone-4 { background: var(--light-gold); width: 350px; height: 350px; bottom: 10%; left: 20%; }
         
         @keyframes cursorPulse {
-            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
-            50% { transform: scale(1.3) rotate(180deg); opacity: 1; }
-        }
-        
-        @keyframes zoneFloat {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            25% { transform: translate(20px, -15px) scale(1.1); }
-            50% { transform: translate(-10px, 10px) scale(0.9); }
-            75% { transform: translate(-15px, -20px) scale(1.05); }
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
         }
         
         body::before {
@@ -315,7 +259,6 @@ setTimeout(() => {
                 radial-gradient(circle at 80% 20%, rgba(247, 233, 142, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 40% 80%, rgba(218, 165, 32, 0.1) 0%, transparent 50%);
             animation: backgroundFloat 20s ease-in-out infinite;
-            z-index: -2;
         }
         
         @keyframes backgroundFloat {
@@ -337,20 +280,8 @@ setTimeout(() => {
                 0 0 0 1px rgba(212, 175, 55, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 0.2);
             position: relative;
-            z-index: 10; /* Higher z-index to be above background effects */
+            z-index: 1;
             animation: containerSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: auto; /* Default cursor inside form */
-        }
-        
-        /* Ensure all form elements have default cursor */
-        .login-container * {
-            cursor: auto;
-        }
-        
-        .login-container input,
-        .login-container button,
-        .login-container a {
-            cursor: auto !important;
         }
         
         @keyframes containerSlideIn {
@@ -362,6 +293,11 @@ setTimeout(() => {
                 opacity: 1;
                 transform: translateY(0) scale(1);
             }
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
         
         .login-header {
@@ -519,6 +455,7 @@ setTimeout(() => {
             color: var(--text-dark);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            cursor: text; /* Show text cursor for inputs */
         }
         
         .form-group input:focus {
@@ -540,6 +477,7 @@ setTimeout(() => {
             opacity: 0.6;
         }
         
+        /* Bounce animation for completed inputs */
         .form-group input.bounce {
             animation: inputBounce 0.5s ease;
         }
@@ -564,6 +502,7 @@ setTimeout(() => {
             padding: 18px;
             border: none;
             border-radius: 12px;
+            cursor: pointer;
             font-size: 16px;
             font-weight: 600;
             font-family: 'Inter', sans-serif;
@@ -684,6 +623,7 @@ setTimeout(() => {
             transition: all 0.3s ease;
             padding: 8px 12px;
             border-radius: 6px;
+            cursor: pointer; /* Show pointer for links */
         }
         
         .footer-links a:hover {
@@ -702,6 +642,10 @@ setTimeout(() => {
             animation: spin 1s linear infinite;
             margin-right: 10px;
         }
+
+        .cursor-particle {
+    filter: drop-shadow(0 0 6px gold) drop-shadow(0 0 12px red);
+}
         
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -716,7 +660,7 @@ setTimeout(() => {
             width: 100%;
             height: 100%;
             overflow: hidden;
-            z-index: 1;
+            z-index: 0;
         }
         
         .particle {
@@ -805,29 +749,29 @@ setTimeout(() => {
                 font-size: 1.8em;
             }
             
+            .demo-account {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .demo-account-info {
+                margin-bottom: 0;
+            }
+            
             .footer-links a {
                 display: block;
                 margin: 5px 0;
             }
             
-            /* Hide custom cursor on mobile */
-            .cursor-trail,
-            .cursor-particle {
-                display: none !important;
+            /* Restore default cursor on mobile */
+            body {
+                cursor: auto;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Background overlay for interactive effects -->
-    <div class="background-overlay">
-        <div class="interactive-grid" id="interactiveGrid"></div>
-        <div class="color-zone zone-1"></div>
-        <div class="color-zone zone-2"></div>
-        <div class="color-zone zone-3"></div>
-        <div class="color-zone zone-4"></div>
-    </div>
-    
     <!-- Custom cursor elements -->
     <div class="cursor-trail" id="cursorTrail"></div>
     
@@ -846,6 +790,7 @@ setTimeout(() => {
 
     <div class="login-container">
         <div class="login-header">
+            <!-- Add your logo image here - update the src path as needed -->
             <img src="logo.png" alt="School Logo" class="logo">
             <div>
                 <h1>Academic Portal</h1>
@@ -896,16 +841,14 @@ setTimeout(() => {
         </form>
         
     <script>
-        // Enhanced cursor trail animation - ONLY for background
+        // Enhanced cursor trail animation
         const cursorTrail = document.getElementById('cursorTrail');
-        const loginContainer = document.querySelector('.login-container');
         let mouseX = 0, mouseY = 0;
         let trailX = 0, trailY = 0;
-        let isOverForm = false;
         
         // Create particle array
         const particles = [];
-        const particleCount = 12;
+        const particleCount = 15;
         
         // Initialize particles
         for (let i = 0; i < particleCount; i++) {
@@ -916,20 +859,12 @@ setTimeout(() => {
                 element: particle,
                 x: 0,
                 y: 0,
-                size: Math.random() * 6 + 3,
-                speed: Math.random() * 0.8 + 0.3,
+                size: Math.random() * 4 + 2,
+                speed: Math.random() * 0.5 + 0.2,
                 angle: 0,
                 life: 0,
-                maxLife: Math.random() * 25 + 15
+                maxLife: Math.random() * 20 + 10
             });
-        }
-        
-        // Create interactive grid
-        const interactiveGrid = document.getElementById('interactiveGrid');
-        for (let i = 0; i < 400; i++) { // 20x20 grid
-            const cell = document.createElement('div');
-            cell.className = 'grid-cell';
-            interactiveGrid.appendChild(cell);
         }
         
         // Mouse move event listener
@@ -937,108 +872,24 @@ setTimeout(() => {
             mouseX = e.clientX;
             mouseY = e.clientY;
             
-            // Check if mouse is over login container
-            const rect = loginContainer.getBoundingClientRect();
-            isOverForm = (
-                mouseX >= rect.left && 
-                mouseX <= rect.right && 
-                mouseY >= rect.top && 
-                mouseY <= rect.bottom
-            );
+            // Create ripple effect when moving fast
+            const deltaX = Math.abs(mouseX - trailX);
+            const deltaY = Math.abs(mouseY - trailY);
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             
-            // Show/hide custom cursor based on position
-            if (isOverForm) {
-                cursorTrail.style.display = 'none';
-                document.body.style.cursor = 'auto';
-            } else {
-                cursorTrail.style.display = 'block';
-                document.body.style.cursor = 'none';
-                
-                // Create ripple effect when moving fast
-                const deltaX = Math.abs(mouseX - trailX);
-                const deltaY = Math.abs(mouseY - trailY);
-                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                
-                if (distance > 40) {
-                    createRipple(mouseX, mouseY);
-                    activateGridCells(mouseX, mouseY);
-                }
+            if (distance > 50) {
+                createRipple(mouseX, mouseY);
             }
-            
-            // Update color zones position based on mouse
-            updateColorZones(mouseX, mouseY);
         });
-        
-        // Update color zones to follow cursor
-        function updateColorZones(x, y) {
-            const zones = document.querySelectorAll('.color-zone');
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-            
-            zones.forEach((zone, index) => {
-                const moveX = (x - centerX) * 0.02;
-                const moveY = (y - centerY) * 0.02;
-                
-                switch(index) {
-                    case 0: // zone-1
-                        zone.style.transform = `translate(${moveX}px, ${moveY}px)`;
-                        break;
-                    case 1: // zone-2
-                        zone.style.transform = `translate(${-moveX * 1.5}px, ${-moveY * 1.5}px)`;
-                        break;
-                    case 2: // zone-3
-                        zone.style.transform = `translate(${moveY}px, ${-moveX}px)`;
-                        break;
-                    case 3: // zone-4
-                        zone.style.transform = `translate(${-moveY}px, ${moveX}px)`;
-                        break;
-                }
-            });
-        }
-        
-        // Activate grid cells around cursor
-        function activateGridCells(x, y) {
-            const cells = document.querySelectorAll('.grid-cell');
-            const gridRect = interactiveGrid.getBoundingClientRect();
-            const cellWidth = gridRect.width / 20;
-            const cellHeight = gridRect.height / 20;
-            
-            const gridX = Math.floor((x - gridRect.left) / cellWidth);
-            const gridY = Math.floor((y - gridRect.top) / cellHeight);
-            
-            cells.forEach((cell, index) => {
-                const cellX = index % 20;
-                const cellY = Math.floor(index / 20);
-                const distance = Math.sqrt(Math.pow(cellX - gridX, 2) + Math.pow(cellY - gridY, 2));
-                
-                if (distance < 3) {
-                    const intensity = 1 - (distance / 3);
-                    const colors = ['#D4AF37', '#F7E98E', '#800020', '#DAA520'];
-                    const color = colors[Math.floor(Math.random() * colors.length)];
-                    
-                    cell.style.background = color;
-                    cell.style.opacity = intensity * 0.3;
-                    cell.style.transform = `scale(${1 + intensity * 0.5})`;
-                    
-                    setTimeout(() => {
-                        cell.style.background = 'transparent';
-                        cell.style.opacity = '0.3';
-                        cell.style.transform = 'scale(1)';
-                    }, 600);
-                }
-            });
-        }
         
         // Create ripple effect
         function createRipple(x, y) {
-            if (isOverForm) return;
-            
             const ripple = document.createElement('div');
             ripple.style.position = 'fixed';
             ripple.style.left = x + 'px';
             ripple.style.top = y + 'px';
-            ripple.style.width = '15px';
-            ripple.style.height = '15px';
+            ripple.style.width = '10px';
+            ripple.style.height = '10px';
             ripple.style.background = 'radial-gradient(circle, var(--primary-gold), transparent)';
             ripple.style.borderRadius = '50%';
             ripple.style.pointerEvents = 'none';
@@ -1053,55 +904,42 @@ setTimeout(() => {
         
         // Animation loop for cursor trail
         function animateCursor() {
-            if (!isOverForm) {
-                // Smooth follow for main cursor
-                trailX += (mouseX - trailX) * 0.15;
-                trailY += (mouseY - trailY) * 0.15;
-                
-                cursorTrail.style.left = trailX - 12.5 + 'px';
-                cursorTrail.style.top = trailY - 12.5 + 'px';
-                
-                // Change cursor color based on position
-                const hue = (trailX / window.innerWidth) * 360;
-                cursorTrail.style.background = `radial-gradient(circle, hsl(${hue}, 70%, 60%) 0%, transparent 70%)`;
-                
-                // Update particles
-                particles.forEach((particle, index) => {
-                    if (particle.life <= 0) {
-                        // Reset particle
-                        particle.life = particle.maxLife;
-                        particle.x = mouseX;
-                        particle.y = mouseY;
-                        particle.angle = Math.random() * Math.PI * 2;
-                        particle.size = Math.random() * 6 + 3;
-                        
-                        // Color based on position
-                        const particleHue = (mouseX / window.innerWidth) * 360;
-                        const colors = [
-                            `hsl(${particleHue}, 80%, 60%)`,
-                            `hsl(${(particleHue + 120) % 360}, 80%, 60%)`,
-                            `hsl(${(particleHue + 240) % 360}, 80%, 60%)`
-                        ];
-                        particle.color = colors[Math.floor(Math.random() * colors.length)];
-                    }
-                    
-                    particle.life--;
-                    particle.x += Math.cos(particle.angle) * particle.speed;
-                    particle.y += Math.sin(particle.angle) * particle.speed;
-                    
-                    const lifeRatio = particle.life / particle.maxLife;
-                    particle.element.style.opacity = lifeRatio * 0.8;
-                    particle.element.style.transform = `translate(${particle.x - particle.size/2}px, ${particle.y - particle.size/2}px) scale(${lifeRatio})`;
-                    particle.element.style.background = particle.color;
-                    particle.element.style.width = particle.size + 'px';
-                    particle.element.style.height = particle.size + 'px';
-                });
-            } else {
-                // Hide particles when over form
-                particles.forEach(particle => {
-                    particle.element.style.opacity = '0';
-                });
-            }
+            // Smooth follow for main cursor
+            trailX += (mouseX - trailX) * 0.2;
+            trailY += (mouseY - trailY) * 0.2;
+            
+            cursorTrail.style.left = trailX - 10 + 'px';
+            cursorTrail.style.top = trailY - 10 + 'px';
+            
+            // Update particles
+particles.forEach((particle) => {
+    if (particle.life <= 0) {
+        // Reset particle
+        particle.life = particle.maxLife;
+        particle.x = mouseX;
+        particle.y = mouseY;
+        particle.angle = Math.random() * Math.PI * 2;
+        particle.size = Math.random() * 6 + 3;
+
+        // Mas makulay na colors
+        const colors = ['#FFD700', '#FF4500', '#FF69B4', '#00FFFF', '#ADFF2F', '#FF1493'];
+        particle.color = colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    particle.life--;
+    particle.x += Math.cos(particle.angle) * particle.speed;
+    particle.y += Math.sin(particle.angle) * particle.speed;
+
+    const lifeRatio = particle.life / particle.maxLife;
+    particle.element.style.opacity = Math.min(1, lifeRatio * 1.2);
+    particle.element.style.transform = `translate(${particle.x - particle.size/2}px, ${particle.y - particle.size/2}px) scale(${lifeRatio})`;
+
+    // Gradient glow para mas malinaw ang kulay
+    particle.element.style.background = `radial-gradient(circle, ${particle.color} 0%, transparent 70%)`;
+    particle.element.style.width = particle.size + 'px';
+    particle.element.style.height = particle.size + 'px';
+});
+
             
             requestAnimationFrame(animateCursor);
         }
@@ -1109,17 +947,70 @@ setTimeout(() => {
         // Start animation
         animateCursor();
         
-        // Hide cursor when not moving (only for background)
+        // Hide cursor when not moving
         let cursorTimeout;
         document.addEventListener('mousemove', () => {
-            if (!isOverForm) {
-                cursorTrail.style.opacity = '1';
-                clearTimeout(cursorTimeout);
-                cursorTimeout = setTimeout(() => {
-                    cursorTrail.style.opacity = '0';
-                }, 1000);
-            }
+            cursorTrail.style.opacity = '1';
+            clearTimeout(cursorTimeout);
+            cursorTimeout = setTimeout(() => {
+                cursorTrail.style.opacity = '0';
+            }, 1000);
         });
+        
+        // Auto-fill login credentials with enhanced animation
+        function fillLogin(username, password) {
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            
+            // Clear inputs first
+            usernameInput.value = '';
+            passwordInput.value = '';
+            
+            // Type animation effect
+            typeWriter(usernameInput, username, () => {
+                setTimeout(() => {
+                    typeWriter(passwordInput, password, () => {
+                        // Add bounce animation after both fields are filled
+                        setTimeout(() => {
+                            usernameInput.classList.add('bounce');
+                            passwordInput.classList.add('bounce');
+                            
+                            // Remove the class after animation completes
+                            setTimeout(() => {
+                                usernameInput.classList.remove('bounce');
+                                passwordInput.classList.remove('bounce');
+                            }, 500);
+                        }, 300);
+                    });
+                }, 300);
+            });
+            
+            // Add visual feedback
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.style.borderColor = 'var(--primary-gold)';
+                input.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.4)';
+                setTimeout(() => {
+                    input.style.borderColor = 'rgba(212, 175, 55, 0.3)';
+                    input.style.boxShadow = 'none';
+                }, 3000);
+            });
+        }
+        
+        // Typewriter effect
+        function typeWriter(element, text, callback) {
+            element.focus();
+            let i = 0;
+            const timer = setInterval(() => {
+                if (i < text.length) {
+                    element.value += text.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(timer);
+                    if (callback) callback();
+                }
+            }, 100);
+        }
         
         // Form submission with enhanced loading state
         document.getElementById('loginForm').addEventListener('submit', function(e) {
@@ -1135,21 +1026,76 @@ setTimeout(() => {
             
             // Add pulse effect
             btn.style.animation = 'pulse 1.5s infinite';
+            
+            // If there's an error, the page will reload and reset the button
+            // For successful login, user will be redirected
+        });
+        
+        // Enhanced Enter key support
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const form = document.getElementById('loginForm');
+                if (form.checkValidity()) {
+                    form.submit();
+                }
+            }
         });
         
         // Enhanced page load animations
         document.addEventListener('DOMContentLoaded', function() {
-            // Animate color zones on load
-            const zones = document.querySelectorAll('.color-zone');
-            zones.forEach(zone => {
-                zone.style.animation = 'zoneFloat 8s ease-in-out infinite';
+            // Stagger input field animations
+            const formGroups = document.querySelectorAll('.form-group');
+            formGroups.forEach((group, index) => {
+                group.style.animationDelay = `${0.7 + index * 0.1}s`;
             });
             
             // Focus on username input with delay
             setTimeout(() => {
                 const usernameInput = document.getElementById('username');
                 usernameInput.focus();
+                
+                // Add gentle glow when focused
+                usernameInput.addEventListener('focus', function() {
+                    this.style.animation = 'inputGlow 2s ease-in-out infinite';
+                });
+                
+                usernameInput.addEventListener('blur', function() {
+                    this.style.animation = 'none';
+                });
             }, 1000);
+            
+            // Add input completion detection for bounce animation
+            const inputs = document.querySelectorAll('#username, #password');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value.length > 0) {
+                        this.classList.add('bounce');
+                        
+                        // Remove the class after animation completes
+                        setTimeout(() => {
+                            this.classList.remove('bounce');
+                        }, 500);
+                    }
+                });
+            });
+        });
+        
+        // Add input interaction effects
+        document.querySelectorAll('.form-group input').forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.value.length > 0) {
+                    this.style.borderColor = 'var(--primary-gold)';
+                    this.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.1)';
+                } else {
+                    this.style.borderColor = 'rgba(212, 175, 55, 0.3)';
+                    this.style.boxShadow = 'none';
+                }
+            });
+            
+            // Add subtle bounce on focus
+            input.addEventListener('focus', function() {
+                this.style.animation = 'inputBounce 0.6s ease-out';
+            });
         });
         
         // Custom CSS animations via JavaScript
@@ -1161,23 +1107,93 @@ setTimeout(() => {
                 100% { transform: scale(1); }
             }
             
+            @keyframes inputGlow {
+                0%, 100% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.3); }
+                50% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.5); }
+            }
+            
+            @keyframes inputBounce {
+                0% { transform: translateY(0); }
+                30% { transform: translateY(-2px); }
+                100% { transform: translateY(0); }
+            }
+            
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+            
+            @keyframes successPulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); border-color: var(--primary-gold); }
+                100% { transform: scale(1); }
+            }
+            
             @keyframes rippleExpand {
                 0% {
                     transform: scale(0);
                     opacity: 1;
                 }
                 100% {
-                    transform: scale(4);
+                    transform: scale(3);
                     opacity: 0;
                 }
             }
-            
-            @keyframes colorShift {
-                0% { filter: hue-rotate(0deg); }
-                100% { filter: hue-rotate(360deg); }
-            }
         `;
         document.head.appendChild(style);
+        
+        // Enhanced credential filling with success animation
+        window.fillLogin = function(username, password) {
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            
+            // Clear inputs first
+            usernameInput.value = '';
+            passwordInput.value = '';
+            
+            // Type animation effect
+            typeWriter(usernameInput, username, () => {
+                setTimeout(() => {
+                    typeWriter(passwordInput, password, () => {
+                        showSuccessAnimation();
+                        
+                        // Add bounce animation after both fields are filled
+                        setTimeout(() => {
+                            usernameInput.classList.add('bounce');
+                            passwordInput.classList.add('bounce');
+                            
+                            // Remove the class after animation completes
+                            setTimeout(() => {
+                                usernameInput.classList.remove('bounce');
+                                passwordInput.classList.remove('bounce');
+                            }, 500);
+                        }, 300);
+                    });
+                }, 300);
+            });
+            
+            // Add visual feedback
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.style.borderColor = 'var(--primary-gold)';
+                input.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.4)';
+                setTimeout(() => {
+                    input.style.borderColor = 'rgba(212, 175, 55, 0.3)';
+                    input.style.boxShadow = 'none';
+                }, 3000);
+            });
+        };
+        
+        function showSuccessAnimation() {
+            const container = document.querySelector('.login-container');
+            container.style.animation = 'successPulse 0.8s ease-out';
+            
+            setTimeout(() => {
+                container.style.animation = '';
+            }, 800);
+        }
     </script>
 </body>
-</html>
+</html> 
