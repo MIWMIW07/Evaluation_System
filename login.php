@@ -214,6 +214,37 @@ setTimeout(() => {
             padding: 20px;
             position: relative;
             overflow-x: hidden;
+            cursor: none; /* Hide default cursor */
+        }
+        
+        /* Custom cursor */
+        .cursor-trail {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, var(--primary-gold) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            mix-blend-mode: screen;
+            animation: cursorPulse 2s ease-in-out infinite;
+        }
+        
+        .cursor-particle {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: var(--primary-gold);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+            mix-blend-mode: screen;
+        }
+        
+        @keyframes cursorPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
         }
         
         body::before {
@@ -424,6 +455,7 @@ setTimeout(() => {
             color: var(--text-dark);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            cursor: text; /* Show text cursor for inputs */
         }
         
         .form-group input:focus {
@@ -591,6 +623,7 @@ setTimeout(() => {
             transition: all 0.3s ease;
             padding: 8px 12px;
             border-radius: 6px;
+            cursor: pointer; /* Show pointer for links */
         }
         
         .footer-links a:hover {
@@ -726,10 +759,18 @@ setTimeout(() => {
                 display: block;
                 margin: 5px 0;
             }
+            
+            /* Restore default cursor on mobile */
+            body {
+                cursor: auto;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Custom cursor elements -->
+    <div class="cursor-trail" id="cursorTrail"></div>
+    
     <!-- Floating particles -->
     <div class="floating-particles">
         <div class="particle"></div>
@@ -796,6 +837,119 @@ setTimeout(() => {
         </form>
         
     <script>
+        // Enhanced cursor trail animation
+        const cursorTrail = document.getElementById('cursorTrail');
+        let mouseX = 0, mouseY = 0;
+        let trailX = 0, trailY = 0;
+        
+        // Create particle array
+        const particles = [];
+        const particleCount = 15;
+        
+        // Initialize particles
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'cursor-particle';
+            document.body.appendChild(particle);
+            particles.push({
+                element: particle,
+                x: 0,
+                y: 0,
+                size: Math.random() * 4 + 2,
+                speed: Math.random() * 0.5 + 0.2,
+                angle: 0,
+                life: 0,
+                maxLife: Math.random() * 20 + 10
+            });
+        }
+        
+        // Mouse move event listener
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Create ripple effect when moving fast
+            const deltaX = Math.abs(mouseX - trailX);
+            const deltaY = Math.abs(mouseY - trailY);
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            if (distance > 50) {
+                createRipple(mouseX, mouseY);
+            }
+        });
+        
+        // Create ripple effect
+        function createRipple(x, y) {
+            const ripple = document.createElement('div');
+            ripple.style.position = 'fixed';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.style.width = '10px';
+            ripple.style.height = '10px';
+            ripple.style.background = 'radial-gradient(circle, var(--primary-gold), transparent)';
+            ripple.style.borderRadius = '50%';
+            ripple.style.pointerEvents = 'none';
+            ripple.style.zIndex = '9998';
+            ripple.style.animation = 'rippleExpand 1s ease-out forwards';
+            document.body.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 1000);
+        }
+        
+        // Animation loop for cursor trail
+        function animateCursor() {
+            // Smooth follow for main cursor
+            trailX += (mouseX - trailX) * 0.2;
+            trailY += (mouseY - trailY) * 0.2;
+            
+            cursorTrail.style.left = trailX - 10 + 'px';
+            cursorTrail.style.top = trailY - 10 + 'px';
+            
+            // Update particles
+            particles.forEach((particle, index) => {
+                if (particle.life <= 0) {
+                    // Reset particle
+                    particle.life = particle.maxLife;
+                    particle.x = mouseX;
+                    particle.y = mouseY;
+                    particle.angle = Math.random() * Math.PI * 2;
+                    particle.size = Math.random() * 4 + 2;
+                    
+                    // Random color from theme
+                    const colors = ['#D4AF37', '#F7E98E', '#800020', '#DAA520'];
+                    particle.color = colors[Math.floor(Math.random() * colors.length)];
+                }
+                
+                particle.life--;
+                particle.x += Math.cos(particle.angle) * particle.speed;
+                particle.y += Math.sin(particle.angle) * particle.speed;
+                
+                const lifeRatio = particle.life / particle.maxLife;
+                particle.element.style.opacity = lifeRatio * 0.7;
+                particle.element.style.transform = `translate(${particle.x - particle.size/2}px, ${particle.y - particle.size/2}px) scale(${lifeRatio})`;
+                particle.element.style.background = particle.color;
+                particle.element.style.width = particle.size + 'px';
+                particle.element.style.height = particle.size + 'px';
+            });
+            
+            requestAnimationFrame(animateCursor);
+        }
+        
+        // Start animation
+        animateCursor();
+        
+        // Hide cursor when not moving
+        let cursorTimeout;
+        document.addEventListener('mousemove', () => {
+            cursorTrail.style.opacity = '1';
+            clearTimeout(cursorTimeout);
+            cursorTimeout = setTimeout(() => {
+                cursorTrail.style.opacity = '0';
+            }, 1000);
+        });
+        
         // Auto-fill login credentials with enhanced animation
         function fillLogin(username, password) {
             const usernameInput = document.getElementById('username');
@@ -937,70 +1091,6 @@ setTimeout(() => {
             });
         });
         
-        // Demo account hover effects
-        document.querySelectorAll('.demo-account').forEach(account => {
-            account.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-3px) scale(1.02)';
-                this.style.boxShadow = '0 12px 30px rgba(212, 175, 55, 0.25)';
-            });
-            
-            account.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0) scale(1)';
-                this.style.boxShadow = '0 4px 15px rgba(212, 175, 55, 0.1)';
-            });
-        });
-        
-        // Enhanced button interactions
-        document.querySelectorAll('.use-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Ripple effect
-                const ripple = document.createElement('span');
-                ripple.style.position = 'absolute';
-                ripple.style.borderRadius = '50%';
-                ripple.style.background = 'rgba(255, 255, 255, 0.6)';
-                ripple.style.transform = 'scale(0)';
-                ripple.style.animation = 'ripple 0.6s linear';
-                ripple.style.left = '50%';
-                ripple.style.top = '50%';
-                ripple.style.width = '20px';
-                ripple.style.height = '20px';
-                ripple.style.marginLeft = '-10px';
-                ripple.style.marginTop = '-10px';
-                
-                this.style.position = 'relative';
-                this.appendChild(ripple);
-                
-                setTimeout(() => {
-                    ripple.remove();
-                }, 600);
-            });
-        });
-        
-        // Parallax effect for background particles
-        document.addEventListener('mousemove', function(e) {
-            const particles = document.querySelectorAll('.particle');
-            const x = e.clientX / window.innerWidth;
-            const y = e.clientY / window.innerHeight;
-            
-            particles.forEach((particle, index) => {
-                const speed = (index + 1) * 0.5;
-                const xPos = x * speed * 10;
-                const yPos = y * speed * 10;
-                
-                particle.style.transform += ` translate(${xPos}px, ${yPos}px)`;
-            });
-        });
-        
-        // Add success animation for successful fills
-        function showSuccessAnimation() {
-            const container = document.querySelector('.login-container');
-            container.style.animation = 'successPulse 0.8s ease-out';
-            
-            setTimeout(() => {
-                container.style.animation = '';
-            }, 800);
-        }
-        
         // Custom CSS animations via JavaScript
         const style = document.createElement('style');
         style.textContent = `
@@ -1032,6 +1122,17 @@ setTimeout(() => {
                 0% { transform: scale(1); }
                 50% { transform: scale(1.05); border-color: var(--primary-gold); }
                 100% { transform: scale(1); }
+            }
+            
+            @keyframes rippleExpand {
+                0% {
+                    transform: scale(0);
+                    opacity: 1;
+                }
+                100% {
+                    transform: scale(3);
+                    opacity: 0;
+                }
             }
         `;
         document.head.appendChild(style);
@@ -1078,34 +1179,14 @@ setTimeout(() => {
             });
         };
         
-        // Page visibility animation
-        let observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        });
-        
-        // Observe elements for scroll animations (if needed for mobile)
-        document.querySelectorAll('.demo-account').forEach(account => {
-            observer.observe(account);
-        });
-        
-        // Add smooth scroll behavior for any internal links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
+        function showSuccessAnimation() {
+            const container = document.querySelector('.login-container');
+            container.style.animation = 'successPulse 0.8s ease-out';
+            
+            setTimeout(() => {
+                container.style.animation = '';
+            }, 800);
+        }
     </script>
 </body>
 </html>
