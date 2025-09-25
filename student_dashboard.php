@@ -135,10 +135,10 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - Teacher Evaluation System</title>
-    <style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Teacher Evaluation System</title>
+    <style>
         * {
             box-sizing: border-box;
             margin: 0;
@@ -464,78 +464,85 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             margin-bottom: 15px;
             color: #800000;
         }
+
+        /* FIXED CSS FOR FORM */
         .program-section-form {
-    background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-    border-left: 5px solid #D4AF37;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-}
+            background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 5px solid #D4AF37;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
 
-.program-section-form h3 {
-    color: #800000;
-    margin-bottom: 10px;
-    font-size: 1.4em;
-    border-bottom: 2px solid #D4AF37;
-    padding-bottom: 10px;
-}
+        .program-section-form h3 {
+            color: #800000;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #D4AF37;
+            padding-bottom: 10px;
+        }
 
-.form-description {
-    color: #500000;
-    margin-bottom: 20px;
-    line-height: 1.5;
-}
+        .form-description {
+            color: #500000;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
 
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    align-items: end;
-}
+        /* FIXED FORM GRID - Now properly responsive */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 20px;
+            align-items: end;
+        }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
 
-.form-group label {
-    color: #800000;
-    font-weight: 600;
-    margin-bottom: 8px;
-    font-size: 0.95em;
-}
+        .form-group label {
+            color: #800000;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
 
-.form-group select {
-    padding: 12px 15px;
-    border: 2px solid #D4AF37;
-    border-radius: 8px;
-    background-color: #fff;
-    color: #500000;
-    font-size: 1em;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
+        .form-group select {
+            padding: 12px 15px;
+            border: 2px solid #D4AF37;
+            border-radius: 8px;
+            background-color: #fff;
+            color: #500000;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            height: 46px; /* Fixed height for alignment */
+        }
 
-.form-group select:focus {
-    outline: none;
-    border-color: #800000;
-    box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.2);
-}
+        .form-group select:focus {
+            outline: none;
+            border-color: #800000;
+            box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.2);
+        }
 
-.form-button-container {
-    display: flex;
-    align-items: center;
-    height: 100%;
-    padding-bottom: 5px;
-}
+        /* FIXED BUTTON CONTAINER */
+        .form-button-container {
+            display: flex;
+            align-items: end;
+            min-width: 140px;
+        }
 
-.form-btn {
-    width: 100%;
-    padding: 12px;
-    font-size: 1em;
-}
+        .form-btn {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 0.95em;
+            height: 46px; /* Match select height */
+            white-space: nowrap;
+        }
         
+        /* IMPROVED MOBILE RESPONSIVENESS */
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -559,209 +566,224 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 text-align: center;
             }
 
+            /* MOBILE FORM LAYOUT */
             .form-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    
-    .form-button-container {
-        padding-bottom: 0;
-        margin-top: 5px;
-    }
-    
-    .program-section-form {
-        padding: 20px;
-    }
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .form-button-container {
+                margin-top: 10px;
+                min-width: auto;
+            }
+            
+            .program-section-form {
+                padding: 20px;
+            }
+
+            .form-btn {
+                min-width: 120px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-grid {
+                gap: 12px;
+            }
+            
+            .form-group select,
+            .form-btn {
+                padding: 10px 12px;
+                height: 42px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="header-content">
-                <img src="logo.png" alt="School Logo" class="logo">
-                <div>
-                    <h1>Student Dashboard</h1>
-                    <p>Teacher Evaluation System</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="user-info">
-            <h3>👤 Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?>!</h3>
-            <div class="info-grid">
-                <div class="info-item">
-                    <label>Username:</label>
-                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
-                </div>
-                <div class="info-item">
-                    <label>Current Program:</label>
-                    <span><?php echo htmlspecialchars($current_program ?: 'Not Set'); ?></span>
-                </div>
-                <div class="info-item">
-                    <label>Current Section:</label>
-                    <span><?php echo htmlspecialchars($current_section ?: 'Not Set'); ?></span>
-                </div>
-            </div>
-        </div>
-        
-        <?php if (!empty($success)): ?>
-            <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-        <?php endif; ?>
-        
-        <?php if (!empty($error)): ?>
-            <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
+    <!-- Demo content to show the fixed layout -->
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div>
+                    <h1>Student Dashboard</h1>
+                    <p>Teacher Evaluation System</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="user-info">
+            <h3>👤 Welcome, Gabriel Vargas!</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Username:</label>
+                    <span>gvargas2020</span>
+                </div>
+                <div class="info-item">
+                    <label>Current Program:</label>
+                    <span>College</span>
+                </div>
+                <div class="info-item">
+                    <label>Current Section:</label>
+                    <span>BSIT-2021</span>
+                </div>
+            </div>
+        </div>
 
-        <div class="program-section-form">
-            <h3>📚 Update Your Program & Section</h3>
-            <p style="margin-bottom: 20px; color: #666;">Please select your program and section to view available teachers for evaluation.</p>
-            
-            <form method="POST" action="">
-                <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
-                <input type="hidden" name="update_info" value="1">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="program">Program *</label>
-                        <select id="program" name="program" required>
-                            <option value="">Select Program</option>
-                            <option value="SHS" <?php echo ($current_program === 'SHS') ? 'selected' : ''; ?>>
-                                Senior High School (SHS)
-                            </option>
-                            <option value="COLLEGE" <?php echo ($current_program === 'COLLEGE') ? 'selected' : ''; ?>>
-                                College
-                            </option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="section">Section *</label>
-                        <select id="section" name="section" required>
-                            <option value="">Select Section</option>
-                            <?php if (!empty($current_program) && isset($sections_by_program[$current_program])): ?>
-                                <?php foreach ($sections_by_program[$current_program] as $section_code): ?>
-                                    <option value="<?php echo htmlspecialchars($section_code); ?>" 
-                                        <?php echo ($current_section === $section_code) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($section_code); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+        <!-- FIXED FORM SECTION -->
+        <div class="program-section-form">
+            <h3>📚 Update Your Program & Section</h3>
+            <p class="form-description">Please select your program and section to view available teachers for evaluation.</p>
+            
+            <form method="POST" action="">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="program">Program *</label>
+                        <select id="program" name="program" required>
+                            <option value="">Select Program</option>
+                            <option value="SHS">Senior High School (SHS)</option>
+                            <option value="COLLEGE" selected>College</option>
                         </select>
-                    </div>
-                    
-                    <button type="submit" class="btn">🔄 Update Info</button>
-                </div>
-            </form>
-        </div>
-        
-        <?php if (!empty($current_program) && !empty($current_section)): ?>
-            <div class="stats-container">
-                <div class="stat-card">
-                    <h3><?php echo $total_teachers; ?></h3>
-                    <p>Total Teachers</p>
-                </div>
-                <div class="stat-card">
-                    <h3><?php echo $completed_evaluations; ?></h3>
-                    <p>Completed Evaluations</p>
-                </div>
-                <div class="stat-card">
-                    <h3><?php echo $remaining_evaluations; ?></h3>
-                    <p>Remaining Evaluations</p>
-                </div>
-                <div class="stat-card progress-card">
-                    <h3><?php echo $completion_percentage; ?>%</h3>
-                    <p>Completion Progress</p>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: <?php echo $completion_percentage; ?>%;">
-                            <?php if ($completion_percentage > 20): ?>
-                                <?php echo $completion_percentage; ?>%
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="teachers-section">
-                <h2>👨‍🏫 Teachers Available for Evaluation</h2>
-                <p style="color: #800000; margin-bottom: 20px;">
-                    Click "Evaluate Teacher" to start evaluating a teacher. Already evaluated teachers are marked as completed.
-                </p>
-                
-                <?php if (!empty($teachers_result)): ?>
-                    <div class="teachers-grid">
-                        <?php foreach($teachers_result as $teacher): ?>
-                            <?php $is_evaluated = in_array($teacher['id'], $evaluated_teachers); ?>
-                            <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
-                                <h4><?php echo htmlspecialchars($teacher['name']); ?></h4>
-                                <p><strong>Department:</strong> <?php echo htmlspecialchars($teacher['department']); ?></p>
-                                
-                                <div class="evaluation-status">
-                                    <?php if ($is_evaluated): ?>
-                                        <span class="status-badge status-completed">✅ Evaluated</span>
-                                        <a href="evaluation_form.php?teacher_id=<?php echo $teacher['id']; ?>" 
-                                           class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
-                                            👁️ View Evaluation
-                                        </a>
-                                    <?php else: ?>
-                                        <span class="status-badge status-pending">⏳ Pending</span>
-                                        <a href="evaluation_form.php?teacher_id=<?php echo $teacher['id']; ?>" 
-                                           class="btn" style="padding: 8px 15px; font-size: 0.9em;">
-                                            📝 Evaluate Teacher
-                                        </a>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <h3>📭 No Teachers Found</h3>
-                        <p>No teachers are assigned to your selected section.</p>
-                        <p>Please contact your administrator if this seems incorrect.</p>
-                    </div>
-                <?php endif; ?>
-            </div>
-        <?php else: ?>
-            <div class="no-program-message">
-                <h3>🔧 Setup Required</h3>
-                <p>Please select your program and section above to see your teachers.</p>
-            </div>
-        <?php endif; ?>
-        
-        <div class="logout-container">
-            <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
-            <p>Teacher Evaluation System - Student Dashboard</p>
-            <p style="margin-top: 10px;">
-                Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
-            </p>
-            <a href="logout.php" class="logout-btn">🚪 Logout</a>
-        </div>
-    </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="section">Section *</label>
+                        <select id="section" name="section" required>
+                            <option value="">Select Section</option>
+                            <option value="BSIT-2021" selected>BSIT-2021</option>
+                            <option value="BSCS-2021">BSCS-2021</option>
+                            <option value="BSA-2021">BSA-2021</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-button-container">
+                        <button type="submit" class="btn form-btn">🔄 Update Info</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Stats section -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>2</h3>
+                <p>Total Teachers</p>
+            </div>
+            <div class="stat-card">
+                <h3>0</h3>
+                <p>Completed Evaluations</p>
+            </div>
+            <div class="stat-card">
+                <h3>2</h3>
+                <p>Remaining Evaluations</p>
+            </div>
+            <div class="stat-card progress-card">
+                <h3>0%</h3>
+                <p>Completion Progress</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Teachers section -->
+        <div class="teachers-section">
+            <h2>👨‍🏫 Teachers Available for Evaluation</h2>
+            <p style="color: #800000; margin-bottom: 20px;">
+                Click "Evaluate Teacher" to start evaluating a teacher. Already evaluated teachers are marked as completed.
+            </p>
+            
+            <div class="teachers-grid">
+                <div class="teacher-card">
+                    <h4>Rica Gerard</h4>
+                    <p><strong>Department:</strong> College</p>
+                    
+                    <div class="evaluation-status">
+                        <span class="status-badge status-pending">⏳ Pending</span>
+                        <a href="#" class="btn" style="padding: 8px 15px; font-size: 0.9em;">
+                            📝 Evaluate Teacher
+                        </a>
+                    </div>
+                </div>
 
-    <script>
-        // Animate stat cards
-        document.addEventListener('DOMContentLoaded', function() {
-            const statCards = document.querySelectorAll('.stat-card');
-            statCards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(20px)';
-                    card.style.transition = 'all 0.5s ease';
-                    
-                    setTimeout(() => {
-                        card.style.opacity = '1';
-                        card.style.transform = 'translateY(0)';
-                    }, 100);
-                }, index * 150);
-            });
-            
-            // Add confirmation for logout
-            document.querySelector('.logout-btn').addEventListener('click', function(e) {
-                if (!confirm('Are you sure you want to logout?')) {
-                    e.preventDefault();
-                }
-            });
-        });
-    </script>
+                <div class="teacher-card">
+                    <h4>Vizquel Mabilog</h4>
+                    <p><strong>Department:</strong> College</p>
+                    
+                    <div class="evaluation-status">
+                        <span class="status-badge status-pending">⏳ Pending</span>
+                        <a href="#" class="btn" style="padding: 8px 15px; font-size: 0.9em;">
+                            📝 Evaluate Teacher
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="logout-container">
+            <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
+            <p>Teacher Evaluation System - Student Dashboard</p>
+            <p style="margin-top: 10px;">
+                Last updated: September 25, 2025 at 9:10 AM
+            </p>
+            <a href="#" class="logout-btn">🚪 Logout</a>
+        </div>
+    </div>
+
+    <script>
+        // Dynamic section loading based on program selection
+        document.addEventListener('DOMContentLoaded', function() {
+            const programSelect = document.getElementById('program');
+            const sectionSelect = document.getElementById('section');
+            
+            // Sample data - replace with actual PHP data
+            const sectionsByProgram = {
+                'SHS': ['Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'],
+                'COLLEGE': ['BSIT-2021', 'BSCS-2021', 'BSA-2021', 'BSBA-2021']
+            };
+            
+            programSelect.addEventListener('change', function() {
+                const selectedProgram = this.value;
+                
+                // Clear current section options
+                sectionSelect.innerHTML = '<option value="">Select Section</option>';
+                
+                // Add sections for selected program
+                if (selectedProgram && sectionsByProgram[selectedProgram]) {
+                    sectionsByProgram[selectedProgram].forEach(function(sectionCode) {
+                        const option = document.createElement('option');
+                        option.value = sectionCode;
+                        option.textContent = sectionCode;
+                        sectionSelect.appendChild(option);
+                    });
+                }
+                
+                // Reset section selection
+                sectionSelect.value = '';
+            });
+
+            // Animate stat cards
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.5s ease';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 150);
+            });
+            
+            // Add confirmation for logout
+            document.querySelector('.logout-btn').addEventListener('click', function(e) {
+                if (!confirm('Are you sure you want to logout?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
