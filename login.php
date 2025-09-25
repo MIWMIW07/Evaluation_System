@@ -237,12 +237,12 @@ setTimeout(() => {
         }
         
         .login-container {
-            max-width: 480px;
+            max-width: 450px;
             width: 100%;
             background: linear-gradient(145deg, rgba(255, 248, 220, 0.95), rgba(255, 248, 220, 0.9));
             backdrop-filter: blur(20px);
             border: 1px solid rgba(212, 175, 55, 0.3);
-            padding: 50px 45px;
+            padding: 40px;
             border-radius: 25px;
             box-shadow: 
                 0 25px 50px var(--shadow-dark),
@@ -264,19 +264,10 @@ setTimeout(() => {
             }
         }
         
-        @keyframes shimmer {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
         .login-header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 35px;
             animation: headerFadeIn 1s ease-out 0.3s both;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
         }
         
         @keyframes headerFadeIn {
@@ -293,6 +284,7 @@ setTimeout(() => {
         .login-header img.logo {
             height: 60px;
             width: auto;
+            margin-bottom: 15px;
             animation: logoBounce 1s ease-out 0.5s both;
         }
         
@@ -314,12 +306,12 @@ setTimeout(() => {
             font-family: 'Playfair Display', serif;
             font-weight: 700;
             color: var(--dark-maroon);
+            font-size: 2.2rem;
             margin-bottom: 15px;
             background: linear-gradient(135deg, var(--maroon), var(--primary-gold));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            position: relative;
         }
         
         .login-header p {
@@ -338,25 +330,6 @@ setTimeout(() => {
             text-align: center;
             position: relative;
             animation: institutionSlideIn 1s ease-out 0.5s both;
-            overflow: hidden;
-        }
-        
-        .institution-info::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(45deg, var(--primary-gold), var(--goldenrod), var(--primary-gold));
-            border-radius: 15px;
-            z-index: -1;
-            animation: borderGlow 4s ease-in-out infinite;
-        }
-        
-        @keyframes borderGlow {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
         }
         
         @keyframes institutionSlideIn {
@@ -388,6 +361,7 @@ setTimeout(() => {
         .form-group {
             margin-bottom: 25px;
             animation: formGroupSlideIn 0.6s ease-out both;
+            position: relative;
         }
         
         .form-group:nth-child(2) { animation-delay: 0.7s; }
@@ -413,6 +387,12 @@ setTimeout(() => {
             letter-spacing: 0.3px;
         }
         
+        .password-input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
         .form-group input {
             width: 100%;
             padding: 18px 20px;
@@ -423,7 +403,50 @@ setTimeout(() => {
             background: rgba(255, 248, 220, 0.8);
             color: var(--text-dark);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+        }
+        
+        .password-input-container input {
+            padding-right: 55px;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        
+        .password-toggle:hover {
+            color: var(--primary-gold);
+            background: rgba(212, 175, 55, 0.1);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .password-toggle:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        
+        .eye-icon {
+            width: 20px;
+            height: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .eye-icon.hidden {
+            opacity: 0;
+            transform: scale(0.8);
+            position: absolute;
         }
         
         .form-group input:focus {
@@ -445,23 +468,6 @@ setTimeout(() => {
             opacity: 0.6;
         }
         
-        /* Bounce animation for completed inputs */
-        .form-group input.bounce {
-            animation: inputBounce 0.5s ease;
-        }
-        
-        @keyframes inputBounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-10px);
-            }
-            60% {
-                transform: translateY(-5px);
-            }
-        }
-        
         .login-btn {
             width: 100%;
             background: linear-gradient(135deg, var(--maroon) 0%, var(--primary-gold) 50%, var(--maroon) 100%);
@@ -479,7 +485,6 @@ setTimeout(() => {
             box-shadow: 
                 0 8px 25px var(--shadow-dark),
                 inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            margin-bottom: 25px;
             position: relative;
             overflow: hidden;
             animation: btnSlideIn 0.6s ease-out 0.9s both;
@@ -563,136 +568,12 @@ setTimeout(() => {
             border-left: 4px solid var(--primary-gold);
         }
         
-        .demo-accounts {
-            background: linear-gradient(135deg, rgba(255, 248, 220, 0.8), rgba(247, 233, 142, 0.3));
-            border: 2px solid var(--light-gold);
-            border-radius: 15px;
-            padding: 25px;
-            margin-top: 30px;
-            animation: demoSlideIn 0.8s ease-out 1.1s both;
-        }
-        
-        @keyframes demoSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .demo-accounts h4 {
-            color: var(--maroon);
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 1.1em;
-            font-weight: 600;
-            font-family: 'Playfair Display', serif;
-        }
-        
-        .demo-account {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 248, 220, 0.8));
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            padding: 18px;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.1);
-            transition: all 0.3s ease;
-            animation: demoAccountSlideIn 0.6s ease-out both;
-        }
-        
-        .demo-account:nth-child(2) { animation-delay: 1.2s; }
-        .demo-account:nth-child(3) { animation-delay: 1.3s; }
-        .demo-account:nth-child(4) { animation-delay: 1.4s; }
-        
-        @keyframes demoAccountSlideIn {
-            from {
-                opacity: 0;
-                transform: translateX(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        .demo-account:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.2);
-            border-color: var(--primary-gold);
-        }
-        
-        .demo-account:last-child {
-            margin-bottom: 0;
-        }
-        
-        .demo-account-info {
-            flex: 1;
-        }
-        
-        .demo-credentials {
-            font-family: 'Inter', monospace;
-            color: var(--text-dark);
-            font-size: 0.9em;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        
-        .demo-account small {
-            color: var(--text-light);
-            font-size: 0.8em;
-        }
-        
-        .demo-account-type {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.75em;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-right: 10px;
-            letter-spacing: 0.5px;
-        }
-        
-        .demo-account-type.admin {
-            background: linear-gradient(135deg, var(--maroon), var(--dark-maroon));
-            color: white;
-        }
-        
-        .demo-account-type.student {
-            background: linear-gradient(135deg, var(--primary-gold), var(--goldenrod));
-            color: white;
-        }
-        
-        .use-btn {
-            background: linear-gradient(135deg, var(--primary-gold), var(--goldenrod));
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8em;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
-        }
-        
-        .use-btn:hover {
-            background: linear-gradient(135deg, var(--goldenrod), var(--primary-gold));
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
-        }
-        
         .footer-links {
             text-align: center;
             margin-top: 30px;
             padding-top: 25px;
             border-top: 1px solid rgba(212, 175, 55, 0.3);
-            animation: footerSlideIn 0.6s ease-out 1.5s both;
+            animation: footerSlideIn 0.6s ease-out 1.1s both;
         }
         
         @keyframes footerSlideIn {
@@ -739,7 +620,6 @@ setTimeout(() => {
             100% { transform: rotate(360deg); }
         }
         
-        /* Floating particles animation */
         .floating-particles {
             position: absolute;
             top: 0;
@@ -758,50 +638,15 @@ setTimeout(() => {
             animation: float 20s infinite linear;
         }
         
-        .particle:nth-child(1) {
-            left: 10%; width: 4px; height: 4px;
-            animation-delay: 0s;
-        }
-        
-        .particle:nth-child(2) {
-            left: 20%; width: 6px; height: 6px;
-            animation-delay: 2s;
-        }
-        
-        .particle:nth-child(3) {
-            left: 30%; width: 3px; height: 3px;
-            animation-delay: 4s;
-        }
-        
-        .particle:nth-child(4) {
-            left: 40%; width: 5px; height: 5px;
-            animation-delay: 6s;
-        }
-        
-        .particle:nth-child(5) {
-            left: 50%; width: 4px; height: 4px;
-            animation-delay: 8s;
-        }
-        
-        .particle:nth-child(6) {
-            left: 60%; width: 6px; height: 6px;
-            animation-delay: 10s;
-        }
-        
-        .particle:nth-child(7) {
-            left: 70%; width: 3px; height: 3px;
-            animation-delay: 12s;
-        }
-        
-        .particle:nth-child(8) {
-            left: 80%; width: 5px; height: 5px;
-            animation-delay: 14s;
-        }
-        
-        .particle:nth-child(9) {
-            left: 90%; width: 4px; height: 4px;
-            animation-delay: 16s;
-        }
+        .particle:nth-child(1) { left: 10%; width: 4px; height: 4px; animation-delay: 0s; }
+        .particle:nth-child(2) { left: 20%; width: 6px; height: 6px; animation-delay: 2s; }
+        .particle:nth-child(3) { left: 30%; width: 3px; height: 3px; animation-delay: 4s; }
+        .particle:nth-child(4) { left: 40%; width: 5px; height: 5px; animation-delay: 6s; }
+        .particle:nth-child(5) { left: 50%; width: 4px; height: 4px; animation-delay: 8s; }
+        .particle:nth-child(6) { left: 60%; width: 6px; height: 6px; animation-delay: 10s; }
+        .particle:nth-child(7) { left: 70%; width: 3px; height: 3px; animation-delay: 12s; }
+        .particle:nth-child(8) { left: 80%; width: 5px; height: 5px; animation-delay: 14s; }
+        .particle:nth-child(9) { left: 90%; width: 4px; height: 4px; animation-delay: 16s; }
         
         @keyframes float {
             0% {
@@ -820,41 +665,203 @@ setTimeout(() => {
             }
         }
         
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 35px 25px;
-                margin: 10px;
-                border-radius: 20px;
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
             }
             
-            .login-header {
-                flex-direction: column;
-                text-align: center;
+            .login-container {
+                padding: 30px;
+                max-width: 400px;
             }
             
             .login-header h1 {
-                font-size: 1.8em;
+                font-size: 1.9rem;
             }
             
-            .demo-account {
-                flex-direction: column;
-                text-align: center;
-                gap: 15px;
+            .login-header p {
+                font-size: 1rem;
             }
             
-            .demo-account-info {
-                margin-bottom: 0;
+            .institution-info {
+                padding: 20px;
+            }
+            
+            .institution-info h3 {
+                font-size: 1.1em;
+            }
+            
+            .form-group input {
+                padding: 16px 18px;
+                font-size: 15px;
+            }
+            
+            .password-input-container input {
+                padding-right: 50px;
+            }
+            
+            .login-btn {
+                padding: 16px;
+                font-size: 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .login-container {
+                padding: 25px;
+                margin: 5px;
+                border-radius: 20px;
+            }
+            
+            .login-header h1 {
+                font-size: 1.7rem;
+                margin-bottom: 10px;
+            }
+            
+            .login-header p {
+                font-size: 0.95em;
+            }
+            
+            .login-header img.logo {
+                height: 50px;
+            }
+            
+            .institution-info {
+                padding: 18px;
+                margin-bottom: 30px;
+            }
+            
+            .institution-info h3 {
+                font-size: 1em;
+                line-height: 1.4;
+            }
+            
+            .institution-info p {
+                font-size: 0.9em;
+            }
+            
+            .form-group {
+                margin-bottom: 20px;
+            }
+            
+            .form-group label {
+                font-size: 0.9em;
+                margin-bottom: 8px;
+            }
+            
+            .form-group input {
+                padding: 15px 16px;
+                font-size: 14px;
+            }
+            
+            .password-input-container input {
+                padding-right: 45px;
+            }
+            
+            .password-toggle {
+                right: 12px;
+                padding: 6px;
+            }
+            
+            .eye-icon {
+                width: 18px;
+                height: 18px;
+            }
+            
+            .login-btn {
+                padding: 15px;
+                font-size: 14px;
+            }
+            
+            .footer-links {
+                margin-top: 25px;
+                padding-top: 20px;
             }
             
             .footer-links a {
                 display: block;
                 margin: 5px 0;
+                font-size: 0.85em;
+            }
+        }
+        
+        @media (max-width: 320px) {
+            .login-container {
+                padding: 20px;
+            }
+            
+            .login-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .form-group input {
+                padding: 14px;
+                font-size: 14px;
+            }
+            
+            .password-input-container input {
+                padding-right: 42px;
+            }
+            
+            .password-toggle {
+                right: 10px;
+            }
+        }
+        
+        /* Landscape orientation adjustments */
+        @media (max-height: 600px) and (orientation: landscape) {
+            body {
+                padding: 10px;
+            }
+            
+            .login-container {
+                padding: 20px;
+                margin: 5px 0;
+            }
+            
+            .login-header {
+                margin-bottom: 20px;
+            }
+            
+            .login-header img.logo {
+                height: 40px;
+            }
+            
+            .login-header h1 {
+                font-size: 1.5rem;
+                margin-bottom: 8px;
+            }
+            
+            .institution-info {
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+            
+            .form-group {
+                margin-bottom: 18px;
+            }
+            
+            .footer-links {
+                margin-top: 20px;
+                padding-top: 15px;
+            }
+        }
+        
+        /* High DPI screens */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .eye-icon {
+                image-rendering: -webkit-optimize-contrast;
+                image-rendering: crisp-edges;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Floating particles -->
     <div class="floating-particles">
         <div class="particle"></div>
         <div class="particle"></div>
@@ -869,12 +876,9 @@ setTimeout(() => {
 
     <div class="login-container">
         <div class="login-header">
-            <!-- Add your logo image here - update the src path as needed -->
-            <img src="logo.png" alt="School Logo" class="logo">
-            <div>
-                <h1>Academic Portal</h1>
-                <p>Teacher Evaluation System</p>
-            </div>
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23800020'/%3E%3Ctext x='50' y='58' text-anchor='middle' fill='%23D4AF37' font-size='16' font-weight='bold'%3ELOGO%3C/text%3E%3C/svg%3E" alt="School Logo" class="logo">
+            <h1>Academic Portal</h1>
+            <p>Teacher Evaluation System</p>
         </div>
         
         <div class="institution-info">
@@ -882,159 +886,101 @@ setTimeout(() => {
             <p><strong>GMA Branch</strong> • 2nd Semester 2024-2025</p>
         </div>
         
-        <?php if (!empty($error)): ?>
-            <div class="alert alert-error">❌ <?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-        
-        <?php if (!empty($success)): ?>
-            <div class="alert alert-success">✅ <?php echo htmlspecialchars($success); ?></div>
-        <?php endif; ?>
-        
         <form method="POST" action="" id="loginForm">
             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+            
             <div class="form-group">
-                <label for="username"> Username</label>
+                <label for="username">Username</label>
                 <input type="text" 
                        id="username" 
                        name="username" 
                        required 
                        autocomplete="username"
-                       placeholder="Enter your username"
-                       value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
+                       placeholder="Enter your username">
             </div>
             
             <div class="form-group">
-                <label for="password"> Password</label>
-                <input type="password" 
-                       id="password" 
-                       name="password" 
-                       required 
-                       autocomplete="current-password"
-                       placeholder="Enter your password">
+                <label for="password">Password</label>
+                <div class="password-input-container">
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           required 
+                           autocomplete="current-password"
+                           placeholder="Enter your password">
+                    <button type="button" class="password-toggle" id="passwordToggle">
+                        <svg class="eye-icon" id="eyeOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <svg class="eye-icon hidden" id="eyeClosed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
             
             <button type="submit" class="login-btn" id="loginBtn">
                 <span class="loading-spinner" id="loadingSpinner"></span>
-                <span id="btnText"> Sign In</span>
+                <span id="btnText">Sign In</span>
             </button>
         </form>
         
-        <div class="demo-accounts">
-            <h4> Demo Accounts</h4>
-            
-            <div class="demo-account">
-                <div class="demo-account-info">
-                    <div class="demo-credentials"><strong>admin</strong> / admin123</div>
-                    <small>System Administrator</small>
-                </div>
-                <div>
-                    <span class="demo-account-type admin">Admin</span>
-                    <button type="button" class="use-btn" onclick="fillLogin('admin', 'admin123')">Use</button>
-                </div>
-            </div>
-            
-            <div class="demo-account">
-                <div class="demo-account-info">
-                    <div class="demo-credentials"><strong>student1</strong> / pass123</div>
-                    <small>Juan Dela Cruz (SHS)</small>
-                </div>
-                <div>
-                    <span class="demo-account-type student">Student</span>
-                    <button type="button" class="use-btn" onclick="fillLogin('student1', 'pass123')">Use</button>
-                </div>
-            </div>
-            
-            <div class="demo-account">
-                <div class="demo-account-info">
-                    <div class="demo-credentials"><strong>student3</strong> / pass123</div>
-                    <small>Pedro Garcia (College)</small>
-                </div>
-                <div>
-                    <span class="demo-account-type student">Student</span>
-                    <button type="button" class="use-btn" onclick="fillLogin('student3', 'pass123')">Use</button>
-                </div>
-            </div>
-        </div>
-        
         <div class="footer-links">
-            <a href="database_setup.php">🔧 Database Setup</a>
-            <a href="test_connection.php">🔍 Test Connection</a>
+            <a href="#help">Help & Support</a>
+            <a href="#contact">Contact IT</a>
+            <a href="#privacy">Privacy Policy</a>
         </div>
     </div>
 
     <script>
-        // Auto-fill login credentials with enhanced animation
-        function fillLogin(username, password) {
-            const usernameInput = document.getElementById('username');
+        // Password visibility toggle functionality
+        function initPasswordToggle() {
             const passwordInput = document.getElementById('password');
+            const passwordToggle = document.getElementById('passwordToggle');
+            const eyeOpen = document.getElementById('eyeOpen');
+            const eyeClosed = document.getElementById('eyeClosed');
             
-            // Clear inputs first
-            usernameInput.value = '';
-            passwordInput.value = '';
-            
-            // Type animation effect
-            typeWriter(usernameInput, username, () => {
-                setTimeout(() => {
-                    typeWriter(passwordInput, password, () => {
-                        // Add bounce animation after both fields are filled
-                        setTimeout(() => {
-                            usernameInput.classList.add('bounce');
-                            passwordInput.classList.add('bounce');
-                            
-                            // Remove the class after animation completes
-                            setTimeout(() => {
-                                usernameInput.classList.remove('bounce');
-                                passwordInput.classList.remove('bounce');
-                            }, 500);
-                        }, 300);
-                    });
-                }, 300);
-            });
-            
-            // Add visual feedback
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.style.borderColor = 'var(--primary-gold)';
-                input.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.4)';
-                setTimeout(() => {
-                    input.style.borderColor = 'rgba(212, 175, 55, 0.3)';
-                    input.style.boxShadow = 'none';
-                }, 3000);
-            });
-        }
-        
-        // Typewriter effect
-        function typeWriter(element, text, callback) {
-            element.focus();
-            let i = 0;
-            const timer = setInterval(() => {
-                if (i < text.length) {
-                    element.value += text.charAt(i);
-                    i++;
+            passwordToggle.addEventListener('click', function() {
+                const isPassword = passwordInput.type === 'password';
+                
+                // Toggle input type
+                passwordInput.type = isPassword ? 'text' : 'password';
+                
+                // Toggle eye icons with smooth animation
+                if (isPassword) {
+                    // Show password - display closed eye (crossed out)
+                    eyeOpen.classList.add('hidden');
+                    eyeClosed.classList.remove('hidden');
                 } else {
-                    clearInterval(timer);
-                    if (callback) callback();
+                    // Hide password - display open eye
+                    eyeClosed.classList.add('hidden');
+                    eyeOpen.classList.remove('hidden');
                 }
-            }, 100);
+                
+                // Add click animation
+                passwordToggle.style.transform = 'translateY(-50%) scale(0.9)';
+                setTimeout(() => {
+                    passwordToggle.style.transform = 'translateY(-50%) scale(1)';
+                }, 100);
+                
+                // Brief focus on input after toggle
+                passwordInput.focus();
+            });
         }
         
-        // Form submission with enhanced loading state
+        // Form submission with loading state
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             const btn = document.getElementById('loginBtn');
             const spinner = document.getElementById('loadingSpinner');
             const btnText = document.getElementById('btnText');
             
-            // Show loading state with animation
+            // Show loading state
             btn.disabled = true;
             btn.style.transform = 'scale(0.98)';
             spinner.style.display = 'inline-block';
             btnText.textContent = 'Authenticating...';
-            
-            // Add pulse effect
-            btn.style.animation = 'pulse 1.5s infinite';
-            
-            // If there's an error, the page will reload and reset the button
-            // For successful login, user will be redirected
         });
         
         // Enhanced Enter key support
@@ -1047,46 +993,17 @@ setTimeout(() => {
             }
         });
         
-        // Enhanced page load animations
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Stagger input field animations
-            const formGroups = document.querySelectorAll('.form-group');
-            formGroups.forEach((group, index) => {
-                group.style.animationDelay = `${0.7 + index * 0.1}s`;
-            });
+            initPasswordToggle();
             
-            // Focus on username input with delay
+            // Focus on username input
             setTimeout(() => {
-                const usernameInput = document.getElementById('username');
-                usernameInput.focus();
-                
-                // Add gentle glow when focused
-                usernameInput.addEventListener('focus', function() {
-                    this.style.animation = 'inputGlow 2s ease-in-out infinite';
-                });
-                
-                usernameInput.addEventListener('blur', function() {
-                    this.style.animation = 'none';
-                });
-            }, 1000);
-            
-            // Add input completion detection for bounce animation
-            const inputs = document.querySelectorAll('#username, #password');
-            inputs.forEach(input => {
-                input.addEventListener('blur', function() {
-                    if (this.value.length > 0) {
-                        this.classList.add('bounce');
-                        
-                        // Remove the class after animation completes
-                        setTimeout(() => {
-                            this.classList.remove('bounce');
-                        }, 500);
-                    }
-                });
-            });
+                document.getElementById('username').focus();
+            }, 500);
         });
         
-        // Add input interaction effects
+        // Input interaction effects
         document.querySelectorAll('.form-group input').forEach(input => {
             input.addEventListener('input', function() {
                 if (this.value.length > 0) {
@@ -1097,170 +1014,9 @@ setTimeout(() => {
                     this.style.boxShadow = 'none';
                 }
             });
-            
-            // Add subtle bounce on focus
-            input.addEventListener('focus', function() {
-                this.style.animation = 'inputBounce 0.6s ease-out';
-            });
         });
         
-        // Demo account hover effects
-        document.querySelectorAll('.demo-account').forEach(account => {
-            account.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-3px) scale(1.02)';
-                this.style.boxShadow = '0 12px 30px rgba(212, 175, 55, 0.25)';
-            });
-            
-            account.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0) scale(1)';
-                this.style.boxShadow = '0 4px 15px rgba(212, 175, 55, 0.1)';
-            });
-        });
-        
-        // Enhanced button interactions
-        document.querySelectorAll('.use-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Ripple effect
-                const ripple = document.createElement('span');
-                ripple.style.position = 'absolute';
-                ripple.style.borderRadius = '50%';
-                ripple.style.background = 'rgba(255, 255, 255, 0.6)';
-                ripple.style.transform = 'scale(0)';
-                ripple.style.animation = 'ripple 0.6s linear';
-                ripple.style.left = '50%';
-                ripple.style.top = '50%';
-                ripple.style.width = '20px';
-                ripple.style.height = '20px';
-                ripple.style.marginLeft = '-10px';
-                ripple.style.marginTop = '-10px';
-                
-                this.style.position = 'relative';
-                this.appendChild(ripple);
-                
-                setTimeout(() => {
-                    ripple.remove();
-                }, 600);
-            });
-        });
-        
-        // Parallax effect for background particles
-        document.addEventListener('mousemove', function(e) {
-            const particles = document.querySelectorAll('.particle');
-            const x = e.clientX / window.innerWidth;
-            const y = e.clientY / window.innerHeight;
-            
-            particles.forEach((particle, index) => {
-                const speed = (index + 1) * 0.5;
-                const xPos = x * speed * 10;
-                const yPos = y * speed * 10;
-                
-                particle.style.transform += ` translate(${xPos}px, ${yPos}px)`;
-            });
-        });
-        
-        // Add success animation for successful fills
-        function showSuccessAnimation() {
-            const container = document.querySelector('.login-container');
-            container.style.animation = 'successPulse 0.8s ease-out';
-            
-            setTimeout(() => {
-                container.style.animation = '';
-            }, 800);
-        }
-        
-        // Custom CSS animations via JavaScript
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.02); }
-                100% { transform: scale(1); }
-            }
-            
-            @keyframes inputGlow {
-                0%, 100% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.3); }
-                50% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.5); }
-            }
-            
-            @keyframes inputBounce {
-                0% { transform: translateY(0); }
-                30% { transform: translateY(-2px); }
-                100% { transform: translateY(0); }
-            }
-            
-            @keyframes ripple {
-                to {
-                    transform: scale(4);
-                    opacity: 0;
-                }
-            }
-            
-            @keyframes successPulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.05); border-color: var(--primary-gold); }
-                100% { transform: scale(1); }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Enhanced credential filling with success animation
-        window.fillLogin = function(username, password) {
-            const usernameInput = document.getElementById('username');
-            const passwordInput = document.getElementById('password');
-            
-            // Clear inputs first
-            usernameInput.value = '';
-            passwordInput.value = '';
-            
-            // Type animation effect
-            typeWriter(usernameInput, username, () => {
-                setTimeout(() => {
-                    typeWriter(passwordInput, password, () => {
-                        showSuccessAnimation();
-                        
-                        // Add bounce animation after both fields are filled
-                        setTimeout(() => {
-                            usernameInput.classList.add('bounce');
-                            passwordInput.classList.add('bounce');
-                            
-                            // Remove the class after animation completes
-                            setTimeout(() => {
-                                usernameInput.classList.remove('bounce');
-                                passwordInput.classList.remove('bounce');
-                            }, 500);
-                        }, 300);
-                    });
-                }, 300);
-            });
-            
-            // Add visual feedback
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.style.borderColor = 'var(--primary-gold)';
-                input.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.4)';
-                setTimeout(() => {
-                    input.style.borderColor = 'rgba(212, 175, 55, 0.3)';
-                    input.style.boxShadow = 'none';
-                }, 3000);
-            });
-        };
-        
-        // Page visibility animation
-        let observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        });
-        
-        // Observe elements for scroll animations (if needed for mobile)
-        document.querySelectorAll('.demo-account').forEach(account => {
-            observer.observe(account);
-        });
-        
-        // Add smooth scroll behavior for any internal links
+        // Smooth scroll for footer links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
