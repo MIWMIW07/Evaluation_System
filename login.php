@@ -216,6 +216,19 @@ setTimeout(() => {
             overflow-x: hidden;
             cursor: none; /* Hide default cursor */
         }
+
+        input[type="text"], 
+input[type="password"], 
+textarea {
+    cursor: text !important;
+}
+
+button, 
+input[type="submit"], 
+.login-btn {
+    cursor: pointer !important;
+}
+
         
         /* Custom cursor */
         .cursor-trail {
