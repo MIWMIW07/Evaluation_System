@@ -132,6 +132,133 @@ $remaining_evaluations = $total_teachers - $completed_evaluations;
 $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $total_teachers) * 100, 1) : 0;
 ?>
 
+<?php
+// student_dashboard.php - Student Dashboard
+session_start();
+
+require_once 'includes/security.php';
+
+// Check if user is logged in and is a student
+if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
+    header('Location: login.php');
+    exit;
+}
+
+// Include database connection
+require_once 'includes/db_connection.php';
+
+$success = '';
+$error = '';
+
+// Handle program/section update
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
+    if (!validate_csrf_token($_POST['csrf_token'])) {
+        die('CSRF token validation failed');
+    }
+    
+    try {
+        $program = trim($_POST['program']);
+        $section = trim($_POST['section']);
+        
+        if (empty($program) || empty($section)) {
+            throw new Exception("Program and section are required.");
+        }
+        
+        // Update user information
+        query("UPDATE users SET program = ?, section = ? WHERE id = ?", 
+              [$program, $section, $_SESSION['user_id']]);
+        
+        // Update session variables
+        $_SESSION['program'] = $program;
+        $_SESSION['section'] = $section;
+        
+        $success = "✅ Your program and section have been updated successfully!";
+        
+    } catch (Exception $e) {
+        $error = "❌ " . $e->getMessage();
+    }
+}
+
+// Get student's current program and section
+$current_section = $_SESSION['section'] ?? '';
+$current_program = $_SESSION['program'] ?? '';
+
+// Fetch all sections and group them by program for the dynamic dropdown
+try {
+    $all_sections_stmt = query("SELECT section_code, program FROM sections WHERE is_active = true ORDER BY section_code");
+    $all_sections = fetch_all($all_sections_stmt);
+    
+    $sections_by_program = [];
+    foreach ($all_sections as $section) {
+        // Group sections under their program ('COLLEGE' or 'SHS')
+        $sections_by_program[$section['program']][] = $section['section_code'];
+    }
+} catch (Exception $e) {
+    $error = "Could not load section list: " . $e->getMessage();
+    $sections_by_program = [];
+}
+
+// Get teachers based on student's program
+$teachers_result = [];
+$evaluated_teachers = [];
+
+// Get evaluated teachers for this student
+try {
+    $evaluated_stmt = query("SELECT teacher_id FROM evaluations WHERE user_id = ?", 
+                            [$_SESSION['user_id']]);
+    $evaluated_teachers_result = fetch_all($evaluated_stmt);
+    $evaluated_teachers = array_column($evaluated_teachers_result, 'teacher_id');
+} catch (Exception $e) {
+    $error = "Could not load evaluation data: " . $e->getMessage();
+}
+
+// Get teachers for student's section using the new structure
+if (!empty($current_section)) {
+    try {
+        $teachers_stmt = query("
+            SELECT DISTINCT
+                t.id, 
+                t.name, 
+                t.department
+            FROM teachers t
+            JOIN section_teachers st ON t.id = st.teacher_id
+            JOIN sections sec ON st.section_id = sec.id
+            WHERE sec.section_code = ?
+              AND t.department = sec.program
+              AND st.is_active = true
+              AND t.is_active = true
+            ORDER BY t.name", 
+            [$current_section]
+        );
+        $teachers_result = fetch_all($teachers_stmt);
+        
+        if (empty($teachers_result)) {
+            // Fallback: This query is already correct as it uses the program.
+            $teachers_stmt = query("
+                SELECT id, name, department 
+                FROM teachers 
+                WHERE department = ? AND is_active = true 
+                ORDER BY name", 
+                [$current_program]
+            );
+            $teachers_result = fetch_all($teachers_stmt);
+        }
+        
+    } catch (Exception $e) {
+        $error = "Could not load teachers list: " . $e->getMessage();
+        $teachers_result = [];
+    }
+} else {
+    $teachers_result = [];
+}
+
+// Get evaluation statistics
+$total_teachers = count($teachers_result);
+$completed_evaluations = count($evaluated_teachers);
+$remaining_evaluations = $total_teachers - $completed_evaluations;
+$completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $total_teachers) * 100, 1) : 0;
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -600,10 +727,10 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
     </style>
 </head>
 <body>
-    <!-- Demo content to show the fixed layout -->
     <div class="container">
         <div class="header">
             <div class="header-content">
+                <img src="logo.png" alt="School Logo" class="logo">
                 <div>
                     <h1>Student Dashboard</h1>
                     <p>Teacher Evaluation System</p>
@@ -612,36 +739,49 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         </div>
         
         <div class="user-info">
-            <h3>👤 Welcome, Gabriel Vargas!</h3>
+            <h3>👤 Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?>!</h3>
             <div class="info-grid">
                 <div class="info-item">
                     <label>Username:</label>
-                    <span>gvargas2020</span>
+                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
                 </div>
                 <div class="info-item">
                     <label>Current Program:</label>
-                    <span>College</span>
+                    <span><?php echo htmlspecialchars($current_program ?: 'Not Set'); ?></span>
                 </div>
                 <div class="info-item">
                     <label>Current Section:</label>
-                    <span>BSIT-2021</span>
+                    <span><?php echo htmlspecialchars($current_section ?: 'Not Set'); ?></span>
                 </div>
             </div>
         </div>
+        
+        <?php if (!empty($success)): ?>
+            <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+        <?php endif; ?>
+        
+        <?php if (!empty($error)): ?>
+            <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+        <?php endif; ?>
 
-        <!-- FIXED FORM SECTION -->
         <div class="program-section-form">
             <h3>📚 Update Your Program & Section</h3>
             <p class="form-description">Please select your program and section to view available teachers for evaluation.</p>
             
             <form method="POST" action="">
+                <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                <input type="hidden" name="update_info" value="1">
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="program">Program *</label>
                         <select id="program" name="program" required>
                             <option value="">Select Program</option>
-                            <option value="SHS">Senior High School (SHS)</option>
-                            <option value="COLLEGE" selected>College</option>
+                            <option value="SHS" <?php echo ($current_program === 'SHS') ? 'selected' : ''; ?>>
+                                Senior High School (SHS)
+                            </option>
+                            <option value="COLLEGE" <?php echo ($current_program === 'COLLEGE') ? 'selected' : ''; ?>>
+                                College
+                            </option>
                         </select>
                     </div>
                     
@@ -649,9 +789,14 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                         <label for="section">Section *</label>
                         <select id="section" name="section" required>
                             <option value="">Select Section</option>
-                            <option value="BSIT-2021" selected>BSIT-2021</option>
-                            <option value="BSCS-2021">BSCS-2021</option>
-                            <option value="BSA-2021">BSA-2021</option>
+                            <?php if (!empty($current_program) && isset($sections_by_program[$current_program])): ?>
+                                <?php foreach ($sections_by_program[$current_program] as $section_code): ?>
+                                    <option value="<?php echo htmlspecialchars($section_code); ?>" 
+                                        <?php echo ($current_section === $section_code) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($section_code); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
                     
@@ -662,71 +807,87 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             </form>
         </div>
         
-        <!-- Stats section -->
-        <div class="stats-container">
-            <div class="stat-card">
-                <h3>2</h3>
-                <p>Total Teachers</p>
-            </div>
-            <div class="stat-card">
-                <h3>0</h3>
-                <p>Completed Evaluations</p>
-            </div>
-            <div class="stat-card">
-                <h3>2</h3>
-                <p>Remaining Evaluations</p>
-            </div>
-            <div class="stat-card progress-card">
-                <h3>0%</h3>
-                <p>Completion Progress</p>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 0%;">
+        <?php if (!empty($current_program) && !empty($current_section)): ?>
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3><?php echo $total_teachers; ?></h3>
+                    <p>Total Teachers</p>
+                </div>
+                <div class="stat-card">
+                    <h3><?php echo $completed_evaluations; ?></h3>
+                    <p>Completed Evaluations</p>
+                </div>
+                <div class="stat-card">
+                    <h3><?php echo $remaining_evaluations; ?></h3>
+                    <p>Remaining Evaluations</p>
+                </div>
+                <div class="stat-card progress-card">
+                    <h3><?php echo $completion_percentage; ?>%</h3>
+                    <p>Completion Progress</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: <?php echo $completion_percentage; ?>%;">
+                            <?php if ($completion_percentage > 20): ?>
+                                <?php echo $completion_percentage; ?>%
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Teachers section -->
-        <div class="teachers-section">
-            <h2>👨‍🏫 Teachers Available for Evaluation</h2>
-            <p style="color: #800000; margin-bottom: 20px;">
-                Click "Evaluate Teacher" to start evaluating a teacher. Already evaluated teachers are marked as completed.
-            </p>
             
-            <div class="teachers-grid">
-                <div class="teacher-card">
-                    <h4>Rica Gerard</h4>
-                    <p><strong>Department:</strong> College</p>
-                    
-                    <div class="evaluation-status">
-                        <span class="status-badge status-pending">⏳ Pending</span>
-                        <a href="#" class="btn" style="padding: 8px 15px; font-size: 0.9em;">
-                            📝 Evaluate Teacher
-                        </a>
+            <div class="teachers-section">
+                <h2>👨‍🏫 Teachers Available for Evaluation</h2>
+                <p style="color: #800000; margin-bottom: 20px;">
+                    Click "Evaluate Teacher" to start evaluating a teacher. Already evaluated teachers are marked as completed.
+                </p>
+                
+                <?php if (!empty($teachers_result)): ?>
+                    <div class="teachers-grid">
+                        <?php foreach($teachers_result as $teacher): ?>
+                            <?php $is_evaluated = in_array($teacher['id'], $evaluated_teachers); ?>
+                            <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
+                                <h4><?php echo htmlspecialchars($teacher['name']); ?></h4>
+                                <p><strong>Department:</strong> <?php echo htmlspecialchars($teacher['department']); ?></p>
+                                
+                                <div class="evaluation-status">
+                                    <?php if ($is_evaluated): ?>
+                                        <span class="status-badge status-completed">✅ Evaluated</span>
+                                        <a href="evaluation_form.php?teacher_id=<?php echo $teacher['id']; ?>" 
+                                           class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
+                                            👁️ View Evaluation
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="status-badge status-pending">⏳ Pending</span>
+                                        <a href="evaluation_form.php?teacher_id=<?php echo $teacher['id']; ?>" 
+                                           class="btn" style="padding: 8px 15px; font-size: 0.9em;">
+                                            📝 Evaluate Teacher
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
-                </div>
-
-                <div class="teacher-card">
-                    <h4>Vizquel Mabilog</h4>
-                    <p><strong>Department:</strong> College</p>
-                    
-                    <div class="evaluation-status">
-                        <span class="status-badge status-pending">⏳ Pending</span>
-                        <a href="#" class="btn" style="padding: 8px 15px; font-size: 0.9em;">
-                            📝 Evaluate Teacher
-                        </a>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <h3>📭 No Teachers Found</h3>
+                        <p>No teachers are assigned to your selected section.</p>
+                        <p>Please contact your administrator if this seems incorrect.</p>
                     </div>
-                </div>
+                <?php endif; ?>
             </div>
-        </div>
+        <?php else: ?>
+            <div class="no-program-message">
+                <h3>🔧 Setup Required</h3>
+                <p>Please select your program and section above to see your teachers.</p>
+            </div>
+        <?php endif; ?>
         
         <div class="logout-container">
             <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
             <p>Teacher Evaluation System - Student Dashboard</p>
             <p style="margin-top: 10px;">
-                Last updated: September 25, 2025 at 9:10 AM
+                Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
             </p>
-            <a href="#" class="logout-btn">🚪 Logout</a>
+            <a href="logout.php" class="logout-btn">🚪 Logout</a>
         </div>
     </div>
 
@@ -736,11 +897,8 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             const programSelect = document.getElementById('program');
             const sectionSelect = document.getElementById('section');
             
-            // Sample data - replace with actual PHP data
-            const sectionsByProgram = {
-                'SHS': ['Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'],
-                'COLLEGE': ['BSIT-2021', 'BSCS-2021', 'BSA-2021', 'BSBA-2021']
-            };
+            // Pass PHP sections data to JavaScript
+            const sectionsByProgram = <?php echo json_encode($sections_by_program); ?>;
             
             programSelect.addEventListener('change', function() {
                 const selectedProgram = this.value;
@@ -761,6 +919,16 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 // Reset section selection
                 sectionSelect.value = '';
             });
+
+            // Initialize sections based on current program
+            if (programSelect.value) {
+                programSelect.dispatchEvent(new Event('change'));
+                // Restore the current section if it exists
+                const currentSection = '<?php echo htmlspecialchars($current_section); ?>';
+                if (currentSection) {
+                    sectionSelect.value = currentSection;
+                }
+            }
 
             // Animate stat cards
             const statCards = document.querySelectorAll('.stat-card');
