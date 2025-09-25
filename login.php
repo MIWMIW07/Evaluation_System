@@ -784,7 +784,7 @@ setTimeout(() => {
         
         <div class="institution-info">
             <h3>Philippine Technological Institute of Science Arts and Trade, Inc.</h3>
-            <p><strong>GMA Branch</strong> • 2nd Semester 2024-2025</p>
+            <p><strong>GMA Branch</strong> • 1st Semester 2025-2026</p>
         </div>
         
         <?php if (!empty($error)): ?>
