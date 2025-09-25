@@ -217,17 +217,11 @@ setTimeout(() => {
             cursor: none; /* Hide default cursor */
         }
 
-        input[type="text"], 
-input[type="password"], 
-textarea {
-    cursor: text !important;
+        /* Balik sa default system cursor kapag nasa form fields */
+input, button, textarea, select, label {
+    cursor: auto !important;
 }
 
-button, 
-input[type="submit"], 
-.login-btn {
-    cursor: pointer !important;
-}
 
         
         /* Custom cursor */
