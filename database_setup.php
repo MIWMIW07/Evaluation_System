@@ -50,6 +50,15 @@ try {
 
     // --- 1. TABLE CREATION (CORRECT ORDER) ---
 
+    -- Remove subject column if not needed
+    ALTER TABLE evaluations DROP COLUMN subject;
+
+    -- If you don’t need user_id and will use student_id only
+    ALTER TABLE evaluations DROP COLUMN user_id;
+
+    -- Make sure student_id is NOT NULL and references students table
+    ALTER TABLE evaluations ALTER COLUMN student_id SET NOT NULL;
+
     $create_sections_table = "CREATE TABLE IF NOT EXISTS sections (
         id $auto_increment,
         section_code VARCHAR(20) UNIQUE NOT NULL,
@@ -76,22 +85,6 @@ try {
     )";
     $pdo->exec($create_students_table);
     $setup_messages[] = "✅ Students table created/verified";
-
-    $create_users_table = "CREATE TABLE IF NOT EXISTS users (
-        id $auto_increment,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        user_type VARCHAR(20) NOT NULL DEFAULT 'student',
-        full_name VARCHAR(100) NOT NULL,
-        student_id VARCHAR(20),
-        program VARCHAR(50),
-        section VARCHAR(50),
-        created_at $timestamp_default,
-        last_login TIMESTAMP NULL,
-        student_table_id INTEGER" . ($is_postgres ? " REFERENCES students(id)" : "") . "
-    )";
-    $pdo->exec($create_users_table);
-    $setup_messages[] = "✅ Users table created/verified";
 
     $create_teachers_table = "CREATE TABLE IF NOT EXISTS teachers (
         id $auto_increment,
@@ -585,6 +578,7 @@ $setup_messages[] = "✅ Processed teacher assignments. Total new assignments: {
     </div>
 </body>
 </html>
+
 
 
 
