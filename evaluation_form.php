@@ -138,14 +138,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
         $negative = trim($_POST['q5-negative-en'] ?? $_POST['q5-negative-tl'] ?? '');
         $comments = "Positive: $positive\nNegative: $negative";
 
-        // Insert evaluation
-        $insert_sql = "INSERT INTO evaluations (user_id, student_id, student_name, section, program, teacher_id, 
-                      q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
-                      q2_1, q2_2, q2_3, q2_4,
-                      q3_1, q3_2, q3_3, q3_4,
-                      q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
-                      comments) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // FIXED INSERT STATEMENT - Match exact column count (27 columns + auto-increment id)
+        $insert_sql = "INSERT INTO evaluations (
+            user_id, student_id, student_name, section, program, teacher_id, 
+            q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
+            q2_1, q2_2, q2_3, q2_4,
+            q3_1, q3_2, q3_3, q3_4,
+            q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
+            comments
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         $params = [
             $_SESSION['user_id'], 
@@ -161,6 +162,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             $comments
         ];
 
+        // Debug: Check counts match
+        $placeholders = substr_count($insert_sql, '?');
+        $param_count = count($params);
+        
+        if ($placeholders !== $param_count) {
+            throw new Exception("Parameter count mismatch: $placeholders placeholders vs $param_count parameters");
+        }
+
         $stmt = query($insert_sql, $params);
 
         if ($stmt) {
@@ -175,9 +184,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
         }
 
     } catch (Exception $e) {
-        $error = $e->getMessage();
+        $error = "Error: " . $e->getMessage();
     }
 }
+
+// ... REST OF THE CODE REMAINS THE SAME ...
 
 // Helper function to safely display values
 function safe_display($value, $default = 'Not Available') {
