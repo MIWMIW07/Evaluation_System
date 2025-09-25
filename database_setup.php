@@ -50,14 +50,27 @@ try {
 
     // --- 1. TABLE CREATION (CORRECT ORDER) ---
 
-    -- Remove subject column if not needed
-    ALTER TABLE evaluations DROP COLUMN subject;
+    try {
+    // Drop subject column if exists
+    $pdo->exec("ALTER TABLE evaluations DROP COLUMN IF EXISTS subject");
 
-    -- If you don’t need user_id and will use student_id only
-    ALTER TABLE evaluations DROP COLUMN user_id;
+    // Drop user_id column if exists
+    $pdo->exec("ALTER TABLE evaluations DROP COLUMN IF EXISTS user_id");
 
-    -- Make sure student_id is NOT NULL and references students table
-    ALTER TABLE evaluations ALTER COLUMN student_id SET NOT NULL;
+    // Make sure student_id is NOT NULL
+    $pdo->exec("ALTER TABLE evaluations ALTER COLUMN student_id SET NOT NULL");
+
+    // Add foreign key reference to students table if not already set
+    $pdo->exec("
+        ALTER TABLE evaluations
+        ADD CONSTRAINT fk_evaluations_students
+        FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE
+    ");
+
+    echo "✅ Database migration applied successfully!";
+} catch (PDOException $e) {
+    echo "❌ Migration failed: " . $e->getMessage();
+}
 
     $create_sections_table = "CREATE TABLE IF NOT EXISTS sections (
         id $auto_increment,
@@ -578,6 +591,7 @@ $setup_messages[] = "✅ Processed teacher assignments. Total new assignments: {
     </div>
 </body>
 </html>
+
 
 
 
