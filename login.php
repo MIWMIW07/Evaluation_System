@@ -1,5 +1,5 @@
 <?php
-// login.php - Enhanced login system
+// login.php - Enhanced login system with neon cursor
 session_start();
 
 require_once 'includes/security.php';
@@ -99,6 +99,7 @@ if ($show_preloader && $redirect_url) {
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                cursor: none; /* Hide cursor on preloader */
             }
             .preloader-overlay {
                 position: fixed;
@@ -202,6 +203,115 @@ setTimeout(() => {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            cursor: none; /* Hide default cursor everywhere */
+        }
+        
+        /* Custom Neon Cursor */
+        .neon-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease;
+            mix-blend-mode: difference;
+        }
+        
+        .cursor-ring {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--primary-gold);
+            border-radius: 50%;
+            animation: rotateCursor 2s linear infinite;
+            box-shadow: 
+                0 0 10px var(--primary-gold),
+                0 0 20px var(--maroon),
+                inset 0 0 10px var(--primary-gold);
+            transition: all 0.3s ease;
+        }
+        
+        .cursor-ring::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border: 1px solid var(--maroon);
+            border-radius: 50%;
+            animation: rotateCursorReverse 1.5s linear infinite;
+            box-shadow: 
+                0 0 15px var(--maroon),
+                inset 0 0 5px var(--maroon);
+        }
+        
+        .cursor-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: var(--light-gold);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 
+                0 0 10px var(--light-gold),
+                0 0 20px var(--primary-gold);
+            transition: all 0.2s ease;
+        }
+        
+        /* Cursor animations */
+        @keyframes rotateCursor {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes rotateCursorReverse {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
+        }
+        
+        /* Cursor effects when hovering over interactive elements */
+        .login-container:hover ~ .neon-cursor .cursor-ring {
+            border-color: var(--light-gold);
+            box-shadow: 
+                0 0 15px var(--light-gold),
+                0 0 30px var(--primary-gold),
+                inset 0 0 15px var(--light-gold);
+            transform: scale(1.2);
+        }
+        
+        input:hover ~ .neon-cursor .cursor-ring,
+        button:hover ~ .neon-cursor .cursor-ring {
+            border-color: gold;
+            box-shadow: 
+                0 0 20px gold,
+                0 0 40px var(--primary-gold),
+                inset 0 0 20px gold;
+            transform: scale(1.3);
+        }
+        
+        /* Pulse effect for the cursor */
+        @keyframes cursorPulse {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 10px var(--primary-gold),
+                    0 0 20px var(--maroon);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 20px var(--primary-gold),
+                    0 0 40px var(--maroon);
+            }
+        }
+        
+        .cursor-ring {
+            animation: 
+                rotateCursor 2s linear infinite,
+                cursorPulse 3s ease-in-out infinite;
         }
         
         body {
@@ -470,7 +580,7 @@ setTimeout(() => {
             padding: 18px;
             border: none;
             border-radius: 12px;
-            cursor: pointer;
+            cursor: none; /* Hide default cursor */
             font-size: 16px;
             font-weight: 600;
             font-family: 'Inter', sans-serif;
@@ -591,6 +701,7 @@ setTimeout(() => {
             transition: all 0.3s ease;
             padding: 8px 12px;
             border-radius: 6px;
+            cursor: none; /* Hide default cursor */
         }
         
         .footer-links a:hover {
@@ -726,10 +837,24 @@ setTimeout(() => {
                 display: block;
                 margin: 5px 0;
             }
+            
+            /* Hide custom cursor on mobile for better usability */
+            .neon-cursor {
+                display: none;
+            }
+            * {
+                cursor: auto;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Custom Neon Cursor -->
+    <div class="neon-cursor">
+        <div class="cursor-ring"></div>
+        <div class="cursor-dot"></div>
+    </div>
+
     <!-- Floating particles -->
     <div class="floating-particles">
         <div class="particle"></div>
@@ -796,6 +921,82 @@ setTimeout(() => {
         </form>
         
     <script>
+        // Custom Neon Cursor Functionality
+        const cursor = document.querySelector('.neon-cursor');
+        const cursorRing = document.querySelector('.cursor-ring');
+        const cursorDot = document.querySelector('.cursor-dot');
+        
+        let mouseX = 0;
+        let mouseY = 0;
+        let cursorX = 0;
+        let cursorY = 0;
+        
+        // Update cursor position with smooth follow
+        function updateCursor() {
+            const dx = mouseX - cursorX;
+            const dy = mouseY - cursorY;
+            
+            cursorX += dx * 0.1;
+            cursorY += dy * 0.1;
+            
+            cursor.style.transform = `translate(${cursorX - 20}px, ${cursorY - 20}px)`;
+            
+            requestAnimationFrame(updateCursor);
+        }
+        
+        // Track mouse movement
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        // Start cursor animation
+        updateCursor();
+        
+        // Cursor effects when hovering over interactive elements
+        const interactiveElements = document.querySelectorAll('input, button, a, .login-btn');
+        
+        interactiveElements.forEach(element => {
+            element.addEventListener('mouseenter', () => {
+                cursorRing.style.transform = 'scale(1.3)';
+                cursorRing.style.borderColor = 'gold';
+                cursorRing.style.boxShadow = 
+                    '0 0 20px gold, 0 0 40px var(--primary-gold), inset 0 0 20px gold';
+                cursorDot.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                cursorDot.style.background = 'gold';
+            });
+            
+            element.addEventListener('mouseleave', () => {
+                cursorRing.style.transform = 'scale(1)';
+                cursorRing.style.borderColor = 'var(--primary-gold)';
+                cursorRing.style.boxShadow = 
+                    '0 0 10px var(--primary-gold), 0 0 20px var(--maroon), inset 0 0 10px var(--primary-gold)';
+                cursorDot.style.transform = 'translate(-50%, -50%) scale(1)';
+                cursorDot.style.background = 'var(--light-gold)';
+            });
+        });
+        
+        // Click effect
+        document.addEventListener('mousedown', () => {
+            cursorRing.style.transform = 'scale(0.8)';
+            cursorDot.style.transform = 'translate(-50%, -50%) scale(0.5)';
+        });
+        
+        document.addEventListener('mouseup', () => {
+            cursorRing.style.transform = 'scale(1)';
+            cursorDot.style.transform = 'translate(-50%, -50%) scale(1)';
+        });
+        
+        // Hide cursor when not moving (after 3 seconds)
+        let cursorTimeout;
+        document.addEventListener('mousemove', () => {
+            cursor.style.opacity = '1';
+            clearTimeout(cursorTimeout);
+            cursorTimeout = setTimeout(() => {
+                cursor.style.opacity = '0';
+            }, 3000);
+        });
+
         // Auto-fill login credentials with enhanced animation
         function fillLogin(username, password) {
             const usernameInput = document.getElementById('username');
