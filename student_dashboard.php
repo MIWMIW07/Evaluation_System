@@ -73,7 +73,7 @@ $evaluated_teachers = [];
 
 // Get evaluated teachers for this student
 try {
-    $evaluated_stmt = query("SELECT teacher_id FROM evaluations WHERE user_id = ?", 
+    $evaluated_stmt = query("SELECT teacher_id FROM evaluations WHERE student_id = ?",
                             [$_SESSION['user_id']]);
     $evaluated_teachers_result = fetch_all($evaluated_stmt);
     $evaluated_teachers = array_column($evaluated_teachers_result, 'teacher_id');
