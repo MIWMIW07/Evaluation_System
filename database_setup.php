@@ -145,7 +145,7 @@ try {
         q4_6 INTEGER NOT NULL,
         comments $text_type,
         evaluation_date $timestamp_default,
-        UNIQUE(user_id, teacher_id, subject)
+        UNIQUE(user_id, teacher_id)
     )";
     $pdo->exec($create_evaluations_table);
     $setup_messages[] = "✅ Evaluations table created/verified";
@@ -585,6 +585,7 @@ $setup_messages[] = "✅ Processed teacher assignments. Total new assignments: {
     </div>
 </body>
 </html>
+
 
 
 
