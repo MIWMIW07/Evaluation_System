@@ -807,16 +807,6 @@ setTimeout(() => {
                        placeholder="Enter your username"
                        value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
             </div>
-            
-            <div class="form-group">
-                <label for="password"> Password</label>
-                <input type="password" 
-                       id="password" 
-                       name="password" 
-                       required 
-                       autocomplete="current-password"
-                       placeholder="Enter your password">
-            </div>
 
             <div class="form-group password-group">
     <label for="password">Password</label>
