@@ -264,6 +264,11 @@ setTimeout(() => {
             }
         }
         
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
         .login-header {
             text-align: center;
             margin-bottom: 40px;
@@ -383,7 +388,6 @@ setTimeout(() => {
         .form-group {
             margin-bottom: 25px;
             animation: formGroupSlideIn 0.6s ease-out both;
-            position: relative;
         }
         
         .form-group:nth-child(2) { animation-delay: 0.7s; }
@@ -409,12 +413,6 @@ setTimeout(() => {
             letter-spacing: 0.3px;
         }
         
-        .password-input-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        
         .form-group input {
             width: 100%;
             padding: 18px 20px;
@@ -426,49 +424,6 @@ setTimeout(() => {
             color: var(--text-dark);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-        }
-        
-        .password-input-container input {
-            padding-right: 55px;
-        }
-        
-        .password-toggle {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            color: var(--text-light);
-            transition: all 0.3s ease;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2;
-        }
-        
-        .password-toggle:hover {
-            color: var(--primary-gold);
-            background: rgba(212, 175, 55, 0.1);
-            transform: translateY(-50%) scale(1.1);
-        }
-        
-        .password-toggle:active {
-            transform: translateY(-50%) scale(0.95);
-        }
-        
-        .eye-icon {
-            width: 20px;
-            height: 20px;
-            transition: opacity 0.3s ease;
-        }
-        
-        .eye-icon.hidden {
-            opacity: 0;
-            position: absolute;
         }
         
         .form-group input:focus {
@@ -490,6 +445,7 @@ setTimeout(() => {
             opacity: 0.6;
         }
         
+        /* Bounce animation for completed inputs */
         .form-group input.bounce {
             animation: inputBounce 0.5s ease;
         }
@@ -783,6 +739,7 @@ setTimeout(() => {
             100% { transform: rotate(360deg); }
         }
         
+        /* Floating particles animation */
         .floating-particles {
             position: absolute;
             top: 0;
@@ -912,7 +869,8 @@ setTimeout(() => {
 
     <div class="login-container">
         <div class="login-header">
-            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23800020'/%3E%3Ctext x='50' y='58' text-anchor='middle' fill='%23D4AF37' font-size='16' font-weight='bold'%3ELOGO%3C/text%3E%3C/svg%3E" alt="School Logo" class="logo">
+            <!-- Add your logo image here - update the src path as needed -->
+            <img src="logo.png" alt="School Logo" class="logo">
             <div>
                 <h1>Academic Portal</h1>
                 <p>Teacher Evaluation System</p>
@@ -924,120 +882,44 @@ setTimeout(() => {
             <p><strong>GMA Branch</strong> • 2nd Semester 2024-2025</p>
         </div>
         
-        <div class="alert alert-success">✅ Demo login system - Use the credentials below</div>
+        <?php if (!empty($error)): ?>
+            <div class="alert alert-error">❌ <?php echo htmlspecialchars($error); ?></div>
+        <?php endif; ?>
+        
+        <?php if (!empty($success)): ?>
+            <div class="alert alert-success">✅ <?php echo htmlspecialchars($success); ?></div>
+        <?php endif; ?>
         
         <form method="POST" action="" id="loginForm">
-            <input type="hidden" name="csrf_token" value="demo_token">
-            
+            <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
             <div class="form-group">
-                <label for="username">👤 Username</label>
+                <label for="username"> Username</label>
                 <input type="text" 
                        id="username" 
                        name="username" 
                        required 
                        autocomplete="username"
-                       placeholder="Enter your username">
+                       placeholder="Enter your username"
+                       value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
             </div>
             
             <div class="form-group">
-                <label for="password">🔒 Password</label>
-                <div class="password-input-container">
-                    <input type="password" 
-                           id="password" 
-                           name="password" 
-                           required 
-                           autocomplete="current-password"
-                           placeholder="Enter your password">
-                    <button type="button" class="password-toggle" id="passwordToggle">
-                        <svg class="eye-icon" id="eyeOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        <svg class="eye-icon hidden" id="eyeClosed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                            <line x1="1" y1="1" x2="23" y2="23"/>
-                        </svg>
-                    </button>
-                </div>
+                <label for="password"> Password</label>
+                <input type="password" 
+                       id="password" 
+                       name="password" 
+                       required 
+                       autocomplete="current-password"
+                       placeholder="Enter your password">
             </div>
             
             <button type="submit" class="login-btn" id="loginBtn">
                 <span class="loading-spinner" id="loadingSpinner"></span>
-                <span id="btnText">🔐 Sign In</span>
+                <span id="btnText"> Sign In</span>
             </button>
         </form>
         
-        <div class="demo-accounts">
-            <h4>Demo Accounts</h4>
-            <div class="demo-account">
-                <div class="demo-account-info">
-                    <div class="demo-credentials">admin / admin123</div>
-                    <small>System Administrator Access</small>
-                </div>
-                <div class="demo-account-type admin">Admin</div>
-                <button class="use-btn" onclick="fillLogin('admin', 'admin123')">Use</button>
-            </div>
-            <div class="demo-account">
-                <div class="demo-account-info">
-                    <div class="demo-credentials">student1 / student123</div>
-                    <small>Student Dashboard Access</small>
-                </div>
-                <div class="demo-account-type student">Student</div>
-                <button class="use-btn" onclick="fillLogin('student1', 'student123')">Use</button>
-            </div>
-            <div class="demo-account">
-                <div class="demo-account-info">
-                    <div class="demo-credentials">teacher1 / teacher123</div>
-                    <small>Faculty Evaluation Access</small>
-                </div>
-                <div class="demo-account-type student">Faculty</div>
-                <button class="use-btn" onclick="fillLogin('teacher1', 'teacher123')">Use</button>
-            </div>
-        </div>
-        
-        <div class="footer-links">
-            <a href="#help">Help & Support</a>
-            <a href="#contact">Contact IT</a>
-            <a href="#privacy">Privacy Policy</a>
-        </div>
-    </div>
-
     <script>
-        // Password visibility toggle functionality
-        function initPasswordToggle() {
-            const passwordInput = document.getElementById('password');
-            const passwordToggle = document.getElementById('passwordToggle');
-            const eyeOpen = document.getElementById('eyeOpen');
-            const eyeClosed = document.getElementById('eyeClosed');
-            
-            passwordToggle.addEventListener('click', function() {
-                const isPassword = passwordInput.type === 'password';
-                
-                // Toggle input type
-                passwordInput.type = isPassword ? 'text' : 'password';
-                
-                // Toggle eye icons with smooth animation
-                if (isPassword) {
-                    // Show password - display closed eye (crossed out)
-                    eyeOpen.classList.add('hidden');
-                    eyeClosed.classList.remove('hidden');
-                } else {
-                    // Hide password - display open eye
-                    eyeClosed.classList.add('hidden');
-                    eyeOpen.classList.remove('hidden');
-                }
-                
-                // Add click animation
-                passwordToggle.style.transform = 'translateY(-50%) scale(0.9)';
-                setTimeout(() => {
-                    passwordToggle.style.transform = 'translateY(-50%) scale(1)';
-                }, 100);
-                
-                // Brief focus on input after toggle
-                passwordInput.focus();
-            });
-        }
-        
         // Auto-fill login credentials with enhanced animation
         function fillLogin(username, password) {
             const usernameInput = document.getElementById('username');
@@ -1046,11 +928,6 @@ setTimeout(() => {
             // Clear inputs first
             usernameInput.value = '';
             passwordInput.value = '';
-            
-            // Reset password field to hidden state
-            passwordInput.type = 'password';
-            document.getElementById('eyeClosed').classList.add('hidden');
-            document.getElementById('eyeOpen').classList.remove('hidden');
             
             // Type animation effect
             typeWriter(usernameInput, username, () => {
@@ -1100,8 +977,6 @@ setTimeout(() => {
         
         // Form submission with enhanced loading state
         document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevent actual submission for demo
-            
             const btn = document.getElementById('loginBtn');
             const spinner = document.getElementById('loadingSpinner');
             const btnText = document.getElementById('btnText');
@@ -1115,22 +990,8 @@ setTimeout(() => {
             // Add pulse effect
             btn.style.animation = 'pulse 1.5s infinite';
             
-            // Simulate authentication process
-            setTimeout(() => {
-                spinner.style.display = 'none';
-                btnText.textContent = 'Success! Redirecting...';
-                btn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
-                btn.style.animation = 'none';
-                btn.style.transform = 'scale(1)';
-                
-                setTimeout(() => {
-                    alert('Login successful! (This is a demo)');
-                    // Reset form
-                    btn.disabled = false;
-                    btn.style.background = '';
-                    btnText.textContent = '🔐 Sign In';
-                }, 1500);
-            }, 2000);
+            // If there's an error, the page will reload and reset the button
+            // For successful login, user will be redirected
         });
         
         // Enhanced Enter key support
@@ -1138,16 +999,13 @@ setTimeout(() => {
             if (e.key === 'Enter') {
                 const form = document.getElementById('loginForm');
                 if (form.checkValidity()) {
-                    form.dispatchEvent(new Event('submit'));
+                    form.submit();
                 }
             }
         });
         
         // Enhanced page load animations
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize password toggle
-            initPasswordToggle();
-            
             // Stagger input field animations
             const formGroups = document.querySelectorAll('.form-group');
             formGroups.forEach((group, index) => {
@@ -1299,19 +1157,6 @@ setTimeout(() => {
                 50% { transform: scale(1.05); border-color: var(--primary-gold); }
                 100% { transform: scale(1); }
             }
-            
-            .eye-icon {
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            }
-            
-            .eye-icon.hidden {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-            
-            .password-toggle:hover .eye-icon {
-                transform: scale(1.1);
-            }
         `;
         document.head.appendChild(style);
         
@@ -1323,11 +1168,6 @@ setTimeout(() => {
             // Clear inputs first
             usernameInput.value = '';
             passwordInput.value = '';
-            
-            // Reset password field to hidden state
-            passwordInput.type = 'password';
-            document.getElementById('eyeClosed').classList.add('hidden');
-            document.getElementById('eyeOpen').classList.remove('hidden');
             
             // Type animation effect
             typeWriter(usernameInput, username, () => {
