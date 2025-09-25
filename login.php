@@ -808,19 +808,20 @@ setTimeout(() => {
                        value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
             </div>
 
-           <div class="form-group password-group">
+<div class="form-group password-group">
     <label for="password">Password</label>
     <div class="password-wrapper">
         <input type="password" id="password" name="password" placeholder="Enter your password">
         <button type="button" id="togglePassword" aria-label="Toggle password visibility">
-            <!-- New eye icon SVG -->
+            <!-- Eye icon SVG -->
             <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                 <circle cx="12" cy="12" r="3"/>
-                <path d="M2 12c2-5 10-5 10-5s8 0 10 5c-2 5-10 5-10 5s-8 0-10-5z"/>
             </svg>
         </button>
     </div>
 </div>
+
 
 
             
