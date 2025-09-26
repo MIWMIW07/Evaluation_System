@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions (including PostgreSQL support)
+# Install PHP extensions (including database support for hybrid approach)
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql pdo_pgsql zip
 
@@ -53,9 +53,14 @@ RUN mkdir -p /var/www/html/reports /var/www/html/credentials \
 # Expose port 80
 EXPOSE 80
 
-# Health check to ensure container is running properly
+# Health check for Google Sheets based system
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost/test_connection.php || exit 1
+    CMD curl -f http://localhost/ || exit 1
+
+# Enable PHP error logging
+RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-custom.ini \
+    && echo "error_log = /var/log/apache2/php_errors.log" >> /usr/local/etc/php/conf.d/docker-php-ext-custom.ini \
+    && echo "display_errors = Off" >> /usr/local/etc/php/conf.d/docker-php-ext-custom.ini
 
 # Start Apache in foreground
 CMD ["apache2-foreground"]
