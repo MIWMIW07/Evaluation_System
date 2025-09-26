@@ -37,8 +37,11 @@ COPY . /var/www/html/
 # Set working directory
 WORKDIR /var/www/html
 
-# Install PHP dependencies if composer.json exists
-RUN if [ -f "composer.json" ]; then composer install --no-dev --optimize-autoloader; fi
+# Install PHP dependencies with better error handling
+RUN if [ -f "composer.json" ]; then \
+        composer install --no-dev --optimize-autoloader --no-interaction || \
+        (echo "Composer install failed" && exit 1); \
+    fi
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html \
@@ -55,3 +58,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 
 # Start Apache
 CMD ["apache2-foreground"]
+
