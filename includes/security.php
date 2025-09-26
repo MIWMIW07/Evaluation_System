@@ -1,5 +1,5 @@
 <?php
-// security.php - Security utility functions
+// security.php - Security utility functions (Safe version)
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -55,8 +55,23 @@ function validate_password_strength($password) {
            preg_match('/[0-9]/', $password);
 }
 
-// Rate limiting for login attempts
+// Check if database connection is available
+function is_database_available() {
+    global $pdo;
+    try {
+        return isset($pdo) && $pdo instanceof PDO;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+// Rate limiting for login attempts (safe version)
 function check_login_rate_limit($username) {
+    if (!is_database_available()) {
+        error_log("Database not available for rate limiting - allowing login attempt");
+        return ['success' => true, 'message' => 'Rate limiting unavailable - proceeding'];
+    }
+    
     global $pdo;
     
     $max_attempts = 5;
@@ -73,7 +88,7 @@ function check_login_rate_limit($username) {
             locked_until TIMESTAMP NULL
         )");
         
-        $ip = $_SERVER['REMOTE_ADDR'];
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         
         // Clean up old records (older than 24 hours)
         $pdo->prepare("DELETE FROM login_attempts WHERE last_attempt < NOW() - INTERVAL '24 hours'")->execute();
@@ -157,10 +172,14 @@ function check_login_rate_limit($username) {
 
 // Reset login attempts after successful login
 function reset_login_attempts($username) {
+    if (!is_database_available()) {
+        return;
+    }
+    
     global $pdo;
     
     try {
-        $ip = $_SERVER['REMOTE_ADDR'];
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $stmt = $pdo->prepare("DELETE FROM login_attempts WHERE ip_address = ? OR username = ?");
         $stmt->execute([$ip, $username]);
     } catch (PDOException $e) {
@@ -168,8 +187,13 @@ function reset_login_attempts($username) {
     }
 }
 
-// Log security events
+// Log security events (safe version)
 function log_security_event($event_type, $details = '') {
+    if (!is_database_available()) {
+        error_log("Security event (DB unavailable): $event_type - $details");
+        return;
+    }
+    
     global $pdo;
     
     try {
@@ -183,7 +207,7 @@ function log_security_event($event_type, $details = '') {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )");
         
-        $ip = $_SERVER['REMOTE_ADDR'];
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
         
         $stmt = $pdo->prepare("INSERT INTO security_log (event_type, ip_address, user_agent, details) VALUES (?, ?, ?, ?)");
@@ -194,12 +218,16 @@ function log_security_event($event_type, $details = '') {
     }
 }
 
-// Check for suspicious activity patterns
+// Check for suspicious activity patterns (safe version)
 function detect_suspicious_activity() {
+    if (!is_database_available()) {
+        return false;
+    }
+    
     global $pdo;
     
     try {
-        $ip = $_SERVER['REMOTE_ADDR'];
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         
         // Check for rapid requests (more than 50 requests in 5 minutes)
         $stmt = $pdo->prepare("SELECT COUNT(*) as request_count FROM security_log 
@@ -207,7 +235,7 @@ function detect_suspicious_activity() {
         $stmt->execute([$ip]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($row['request_count'] > 50) {
+        if ($row && $row['request_count'] > 50) {
             log_security_event('SUSPICIOUS_ACTIVITY', "Rapid requests detected: {$row['request_count']} requests in 5 minutes");
             return true;
         }
