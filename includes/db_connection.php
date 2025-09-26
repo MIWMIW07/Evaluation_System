@@ -1,10 +1,20 @@
 <?php
 // includes/db_connection.php - Hybrid approach (Database + Google Sheets)
 
+// Debug flag (set to true only when needed)
+$DEBUG_MODE = false;
+
+// Safe debug log function
+function debug_log($message) {
+    global $DEBUG_MODE;
+    if ($DEBUG_MODE) {
+        error_log("[DEBUG] " . $message);
+    }
+}
+
 // Database connection (for teachers, sections, evaluations)
 function getDatabaseConnection() {
     try {
-        // Railway: DATABASE_URL (Postgres or MySQL depending on setup)
         $database_url = getenv('DATABASE_URL');
         
         if ($database_url) {
@@ -24,7 +34,7 @@ function getDatabaseConnection() {
                 throw new Exception("Missing required database connection parameters");
             }
 
-            // Detect scheme: postgres or mysql
+            // Detect scheme
             if ($db_parts['scheme'] === 'postgres' || $db_parts['scheme'] === 'postgresql') {
                 $dsn = "pgsql:host=$host;port=" . ($port ?? 5432) . ";dbname=$dbname";
             } elseif ($db_parts['scheme'] === 'mysql') {
@@ -33,7 +43,7 @@ function getDatabaseConnection() {
                 throw new Exception("Unsupported database scheme: " . ($db_parts['scheme'] ?? 'unknown'));
             }
         } else {
-            // Local development fallback (MySQL)
+            // Local dev fallback (MySQL)
             $dsn = "mysql:host=localhost;dbname=evaluation_system;charset=utf8mb4";
             $username = "root";
             $password = "";
@@ -45,26 +55,24 @@ function getDatabaseConnection() {
             PDO::ATTR_TIMEOUT => 30
         ]);
         
+        debug_log("Database connection successful.");
         return $pdo;
         
     } catch (PDOException $e) {
         error_log("Database connection failed: " . $e->getMessage());
-        // Don't die here - return false so we can handle gracefully
         return false;
     }
 }
 
-// Try to establish database connection
 $pdo = getDatabaseConnection();
 
-// Database helper functions (with error handling)
+// Database helper functions
 function query($sql, $params = []) {
     global $pdo;
     if (!$pdo) {
         error_log("Database query attempted but no connection available: $sql");
         return false;
     }
-    
     try {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
@@ -83,38 +91,31 @@ function fetch_all($result) {
     return $result ? $result->fetchAll(PDO::FETCH_ASSOC) : [];
 }
 
-// Check if database is available
 function isDatabaseAvailable() {
     global $pdo;
     return $pdo !== false;
 }
 
-// Google Sheets helper - SAFELY load with error handling
+// Google Sheets helper
 function loadGoogleSheetsHelper() {
     static $sheetsHelper = null;
     static $loadAttempted = false;
     
-    if ($loadAttempted) {
-        return $sheetsHelper;
-    }
-    
+    if ($loadAttempted) return $sheetsHelper;
     $loadAttempted = true;
     
     try {
-        // Check if vendor autoload exists
         $autoloadPath = __DIR__ . '/../vendor/autoload.php';
         if (!file_exists($autoloadPath)) {
             error_log("Google Sheets: vendor/autoload.php not found");
             return null;
         }
         
-        // Check if required environment variables exist
         if (!getenv('GOOGLE_CREDENTIALS_JSON') || !getenv('GOOGLE_SPREADSHEET_ID')) {
             error_log("Google Sheets: Missing required environment variables");
             return null;
         }
         
-        // Try to include the Google Sheets connection
         require_once __DIR__ . '/google_sheets_connection.php';
         $sheetsHelper = getGoogleSheetsHelper();
         
@@ -138,10 +139,9 @@ class HybridDataManager {
         $this->sheetsHelper = loadGoogleSheetsHelper();
     }
     
-    // Student authentication using Google Sheets with simple credentials
     public function authenticateStudent($username, $password) {
         if (!$this->sheetsHelper) {
-            // Fallback: create a simple test student if Google Sheets unavailable
+            // Fallback test account
             if ($username === 'TESTUSER' && $password === 'pass123') {
                 return [
                     'student_id' => 'TEST001',
@@ -152,47 +152,38 @@ class HybridDataManager {
                     'user_type' => 'student'
                 ];
             }
-           return false;
+            return false;
         }
         
-         // Check if password matches the standard password
-    if ($password !== 'pass123') {
-        return false;
-    }
-    
-    $students = $this->sheetsHelper->readSheet('Students!A:D'); // Adjust range as needed
-    
-    if (!$students) {
-        return false;
-    }
-    
-    foreach ($students as $index => $row) {
-        if ($index === 0) continue; // Skip header row
+        if ($password !== 'pass123') return false;
         
-        if (isset($row[1]) && isset($row[2])) {
-            $lastName = strtoupper(trim($row[1]));
-            $firstName = strtoupper(trim($row[2]));
-            $generatedUsername = $lastName . $firstName;
-            
-            if ($generatedUsername === strtoupper($username)) {
-                return [
-                    'student_id' => $row[0] ?? '',
-                    'full_name' => trim($row[2] . ' ' . $row[1]),
-                    'section' => $row[3] ?? '',
-                    'program' => $row[4] ?? '',
-                    'username' => $generatedUsername,
-                    'user_type' => 'student'
-                ];
+        $students = $this->sheetsHelper->readSheet('Students!A:D');
+        if (!$students) return false;
+        
+        foreach ($students as $index => $row) {
+            if ($index === 0) continue;
+            if (isset($row[1]) && isset($row[2])) {
+                $lastName = strtoupper(trim($row[1]));
+                $firstName = strtoupper(trim($row[2]));
+                $generatedUsername = $lastName . $firstName;
+                
+                if ($generatedUsername === strtoupper($username)) {
+                    return [
+                        'student_id' => $row[0] ?? '',
+                        'full_name' => trim($row[2] . ' ' . $row[1]),
+                        'section' => $row[3] ?? '',
+                        'program' => $row[4] ?? '',
+                        'username' => $generatedUsername,
+                        'user_type' => 'student'
+                    ];
+                }
             }
         }
+        
+        return false;
     }
     
-    return false;
-}
-    
-    // Admin authentication using database or fallback
     public function authenticateAdmin($username, $password) {
-        // Try database first
         if (isDatabaseAvailable()) {
             $stmt = query("SELECT * FROM users WHERE username = ? AND user_type = 'admin'", [$username]);
             if ($stmt) {
@@ -208,7 +199,7 @@ class HybridDataManager {
             }
         }
         
-        // Fallback admin credentials
+        // Fallback admin
         if ($username === 'admin' && $password === 'admin123') {
             return [
                 'user_id' => 'admin',
@@ -221,30 +212,23 @@ class HybridDataManager {
         return false;
     }
     
-    // Get teachers from database or Google Sheets
     public function getTeachers() {
-        // Try database first
         if (isDatabaseAvailable()) {
             $stmt = query("SELECT * FROM teachers ORDER BY name");
             $teachers = $stmt ? fetch_all($stmt) : [];
-            if (!empty($teachers)) {
-                return $teachers;
-            }
+            if (!empty($teachers)) return $teachers;
         }
         
-        // Try Google Sheets as fallback
         if ($this->sheetsHelper) {
             return $this->sheetsHelper->getTeachers();
         }
         
-        // Return sample data if nothing available
         return [
             ['id' => 1, 'name' => 'Sample Teacher 1', 'department' => 'Mathematics', 'subject' => 'Algebra'],
             ['id' => 2, 'name' => 'Sample Teacher 2', 'department' => 'Science', 'subject' => 'Physics'],
         ];
     }
     
-    // Save evaluation to database
     public function saveEvaluation($evaluationData) {
         if (!isDatabaseAvailable()) {
             error_log("Cannot save evaluation - database not available");
@@ -274,24 +258,12 @@ class HybridDataManager {
             $evaluationData['section'],
             $evaluationData['program'],
             $evaluationData['subject'] ?? '',
-            
-            // Section 1: Teaching Ability (6 questions)
             $evaluationData['q1_1'], $evaluationData['q1_2'], $evaluationData['q1_3'],
             $evaluationData['q1_4'], $evaluationData['q1_5'], $evaluationData['q1_6'],
-            
-            // Section 2: Management Skills (4 questions)  
-            $evaluationData['q2_1'], $evaluationData['q2_2'], 
-            $evaluationData['q2_3'], $evaluationData['q2_4'],
-            
-            // Section 3: Guidance Skills (4 questions)
-            $evaluationData['q3_1'], $evaluationData['q3_2'], 
-            $evaluationData['q3_3'], $evaluationData['q3_4'],
-            
-            // Section 4: Personal and Social Characteristics (6 questions)
+            $evaluationData['q2_1'], $evaluationData['q2_2'], $evaluationData['q2_3'], $evaluationData['q2_4'],
+            $evaluationData['q3_1'], $evaluationData['q3_2'], $evaluationData['q3_3'], $evaluationData['q3_4'],
             $evaluationData['q4_1'], $evaluationData['q4_2'], $evaluationData['q4_3'],
             $evaluationData['q4_4'], $evaluationData['q4_5'], $evaluationData['q4_6'],
-            
-            // Comments
             $evaluationData['comments'] ?? ''
         ];
         
@@ -299,44 +271,23 @@ class HybridDataManager {
         return $stmt !== false;
     }
     
-    // Check if student already evaluated a teacher
     public function hasStudentEvaluatedTeacher($studentId, $teacherId) {
-        if (!isDatabaseAvailable()) {
-            return false; // Allow evaluation if we can't check
-        }
-        
+        if (!isDatabaseAvailable()) return false;
         $stmt = query("SELECT COUNT(*) as count FROM evaluations WHERE student_id = ? AND teacher_id = ?", 
                      [$studentId, $teacherId]);
-        
-        if ($stmt) {
-            $result = fetch_assoc($stmt);
-            return $result && $result['count'] > 0;
-        }
-        
-        return false;
+        $result = $stmt ? fetch_assoc($stmt) : null;
+        return $result && $result['count'] > 0;
     }
 }
 
-// Global instance
 $hybridManager = new HybridDataManager();
 
-// Backward compatibility functions
+// Backward compatibility
 function authenticateUser($username, $password) {
     global $hybridManager;
-    
-    // Try student authentication first
     $student = $hybridManager->authenticateStudent($username, $password);
-    if ($student) {
-        return $student;
-    }
-    
-    // Try admin authentication
+    if ($student) return $student;
     $admin = $hybridManager->authenticateAdmin($username, $password);
-    if ($admin) {
-        return $admin;
-    }
-    
+    if ($admin) return $admin;
     return false;
 }
-?>
-
