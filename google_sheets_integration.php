@@ -3,6 +3,18 @@
 
 require_once 'vendor/autoload.php'; // Composer autoload for Google Client
 
+// Check if service account file exists
+if (!file_exists(__DIR__ . '/credentials/service-account-key.json')) {
+    // Return error response instead of crashing
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Google Sheets integration not configured. Missing service account key.'
+    ]);
+    exit;
+}
+
+
 class GoogleSheetsIntegration {
     private $client;
     private $service;
