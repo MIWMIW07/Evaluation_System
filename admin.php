@@ -7,6 +7,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     header('Location: login.php');
     exit;
 }
+
+// ✅ Use HybridDataManager
+$dataManager = getDataManager();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -79,28 +82,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     th {
       background: #f1f1f1;
     }
-    .actions {
-      display: flex;
-      gap: 10px;
-    }
-    .actions a {
-      text-decoration: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 14px;
-      color: white;
-    }
-    .edit { background: #f0ad4e; }
-    .delete { background: #d9534f; }
-    .add-btn {
-      display: inline-block;
-      margin-bottom: 10px;
-      background: #5cb85c;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 6px;
-      text-decoration: none;
-    }
     .logout-btn {
       background: #d9534f;
     }
@@ -122,36 +103,33 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
   <div class="container">
     <!-- Teachers Section -->
     <div class="card">
-      <h2>Teachers</h2>
-      <a href="add_teacher.php" class="add-btn">➕ Add Teacher</a>
+      <h2>Teachers (from Google Sheets)</h2>
       <?php
       try {
-          $stmt = $pdo->query("SELECT id, name, email FROM teachers ORDER BY id ASC");
-          if ($stmt->rowCount() > 0) {
+          $teachers = $dataManager->getTeachers();
+          if (!empty($teachers)) {
               echo "<table>";
-              echo "<tr><th>ID</th><th>Name</th><th>Email</th><th>Actions</th></tr>";
-              while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+              echo "<tr><th>#</th><th>Name</th><th>Department</th><th>Subject</th></tr>";
+              foreach ($teachers as $index => $row) {
+                  $name = htmlspecialchars($row[0] ?? '');
+                  $department = htmlspecialchars($row[1] ?? '');
+                  $subject = htmlspecialchars($row[2] ?? '');
                   echo "<tr>";
-                  echo "<td>" . htmlspecialchars($row['id']) . "</td>";
-                  echo "<td>" . htmlspecialchars($row['name']) . "</td>";
-                  echo "<td>" . htmlspecialchars($row['email']) . "</td>";
-                  echo "<td class='actions'>
-                          <a class='edit' href='edit_teacher.php?id=" . urlencode($row['id']) . "'>Edit</a>
-                          <a class='delete' href='delete_teacher.php?id=" . urlencode($row['id']) . "' onclick=\"return confirm('Delete this teacher?');\">Delete</a>
-                        </td>";
+                  echo "<td>" . ($index + 1) . "</td>";
+                  echo "<td>$name</td>";
+                  echo "<td>$department</td>";
+                  echo "<td>$subject</td>";
                   echo "</tr>";
               }
               echo "</table>";
           } else {
-              echo "<p>No teachers found.</p>";
+              echo "<p>No teachers found in Google Sheets.</p>";
           }
-      } catch (PDOException $e) {
+      } catch (Exception $e) {
           echo "<p>Error fetching teachers: " . htmlspecialchars($e->getMessage()) . "</p>";
       }
       ?>
     </div>
-
-    <!-- Add more sections later (Evaluations, Students, Reports, etc.) -->
   </div>
 </body>
 </html>
