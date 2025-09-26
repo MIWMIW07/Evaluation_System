@@ -152,45 +152,43 @@ class HybridDataManager {
                     'user_type' => 'student'
                 ];
             }
-            throw new Exception("Google Sheets not available for student authentication");
+           return false;
         }
         
-        // Check if password matches the standard password
-        if ($password !== 'pass123') {
-            return false;
-        }
-        
-        $students = $this->sheetsHelper->readSheet('Students!A:D'); // Adjust range as needed
-        
-        if (!$students) {
-            throw new Exception("Could not read student data from Google Sheets");
-        }
-        
-        foreach ($students as $index => $row) {
-            if ($index === 0) continue; // Skip header row
-            
-            // Assuming columns: Student_ID, Last_Name, First_Name, Section, Program
-            if (isset($row[1]) && isset($row[2])) {
-                $lastName = strtoupper(trim($row[1]));
-                $firstName = strtoupper(trim($row[2]));
-                $generatedUsername = $lastName . $firstName;
-                
-                // Check if the generated username matches the input
-                if ($generatedUsername === strtoupper($username)) {
-                    return [
-                        'student_id' => $row[0] ?? '',
-                        'full_name' => trim($row[2] . ' ' . $row[1]), // First Last format
-                        'section' => $row[3] ?? '',
-                        'program' => $row[4] ?? '',
-                        'username' => $generatedUsername,
-                        'user_type' => 'student'
-                    ];
-                }
-            }
-        }
-        
+         // Check if password matches the standard password
+    if ($password !== 'pass123') {
         return false;
     }
+    
+    $students = $this->sheetsHelper->readSheet('Students!A:D'); // Adjust range as needed
+    
+    if (!$students) {
+        return false;
+    }
+    
+    foreach ($students as $index => $row) {
+        if ($index === 0) continue; // Skip header row
+        
+        if (isset($row[1]) && isset($row[2])) {
+            $lastName = strtoupper(trim($row[1]));
+            $firstName = strtoupper(trim($row[2]));
+            $generatedUsername = $lastName . $firstName;
+            
+            if ($generatedUsername === strtoupper($username)) {
+                return [
+                    'student_id' => $row[0] ?? '',
+                    'full_name' => trim($row[2] . ' ' . $row[1]),
+                    'section' => $row[3] ?? '',
+                    'program' => $row[4] ?? '',
+                    'username' => $generatedUsername,
+                    'user_type' => 'student'
+                ];
+            }
+        }
+    }
+    
+    return false;
+}
     
     // Admin authentication using database or fallback
     public function authenticateAdmin($username, $password) {
@@ -341,3 +339,4 @@ function authenticateUser($username, $password) {
     return false;
 }
 ?>
+
