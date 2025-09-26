@@ -113,19 +113,29 @@ class HybridDataManager {
         return null;
     }
 
+    /** ------------------ PUBLIC GETTERS ------------------- */
     public function getTeachers() {
         $range = "Teachers!A:C";
         $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
         $rows = $response->getValues();
-        return array_slice($rows, 1);
+        return array_slice($rows, 1); // remove header row
+    }
+
+    public function getPDO() {
+        return $this->pdo;
     }
 }
 
-// ✅ Helper function
+// ✅ Helper function for DataManager
 function getDataManager() {
     static $manager = null;
     if (!$manager) {
         $manager = new HybridDataManager();
     }
     return $manager;
+}
+
+// ✅ Helper function for raw PDO (if needed)
+function getPDO() {
+    return getDataManager()->getPDO();
 }
