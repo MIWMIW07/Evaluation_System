@@ -2,110 +2,119 @@
 session_start();
 require_once __DIR__ . '/includes/db_connection.php';
 
+$error = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
-    $password = trim($_POST['password'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    try {
-        $manager = getDataManager();
-        $user = $manager->authenticateUser($username, $password);
+    if ($username && $password) {
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+            $stmt->execute([$username]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_type'] = strtolower($user['type']); // normalize to lowercase
+            if ($user && password_verify($password, $user['password'])) {
+                // ✅ Successful login
+                $_SESSION['user_id']   = $user['id'];
+                $_SESSION['username']  = $user['username'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['user_type'] = $user['user_type'];
 
-            switch ($_SESSION['user_type']) {
-                case 'admin':
-                    header("Location: admin.php");
-                    break;
-                case 'teacher':
-                    header("Location: teacher_dashboard.php");
-                    break;
-                case 'student':
-                    header("Location: student_dashboard.php");
-                    break;
-                default:
-                    // if unexpected role
-                    header("Location: login.php?error=invalid_role");
-                    break;
+                // Update last login timestamp
+                $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?")
+                    ->execute([$user['id']]);
+
+                // Log success
+                logActivity("login", "User '{$username}' logged in successfully", "success", $user['id']);
+
+                header("Location: " . ($user['user_type'] === 'admin' ? 'admin.php' : 'student_dashboard.php'));
+                exit;
+            } else {
+                // ❌ Failed login
+                logActivity("login", "Failed login attempt for username '{$username}'", "error", null);
+                $error = "Invalid username or password.";
             }
-            exit;
-        } else {
-            $error = "❌ Invalid username or password.";
+        } catch (PDOException $e) {
+            logActivity("login", "Database error during login: " . $e->getMessage(), "error", null);
+            $error = "An error occurred. Please try again later.";
         }
-    } catch (Exception $e) {
-        $error = "❌ Login failed: " . $e->getMessage();
+    } else {
+        $error = "Please enter both username and password.";
     }
 }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login - Evaluation System</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <title>Login</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background: #f4f6f9;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             height: 100vh;
+            margin: 0;
         }
         .login-box {
-            background: #fff;
+            background: white;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
-            width: 300px;
+            border-radius: 8px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            width: 350px;
+            text-align: center;
         }
         h2 {
-            text-align: center;
-            color: #333;
+            margin-top: 0;
         }
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 10px;
+        .input-group {
+            margin: 15px 0;
+            text-align: left;
         }
         input {
             width: 100%;
-            padding: 8px;
-            margin-top: 5px;
+            padding: 10px;
+            margin-top: 6px;
+            border: 1px solid #ddd;
             border-radius: 6px;
-            border: 1px solid #ccc;
         }
         button {
-            margin-top: 20px;
             width: 100%;
-            padding: 10px;
-            background: #007bff;
-            color: white;
-            font-weight: bold;
+            padding: 12px;
+            background: #4a90e2;
             border: none;
+            color: white;
             border-radius: 6px;
             cursor: pointer;
+            margin-top: 15px;
         }
         button:hover {
-            background: #0056b3;
+            background: #357abd;
         }
         .error {
-            color: red;
-            text-align: center;
+            color: #e74c3c;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="login-box">
         <h2>Login</h2>
-        <?php if (!empty($error)) echo "<p class='error'>$error</p>"; ?>
+        <?php if ($error): ?>
+            <div class="error"><?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
         <form method="POST">
-            <label>Username:</label>
-            <input type="text" name="username" required>
-            
-            <label>Password:</label>
-            <input type="password" name="password" required>
-            
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input type="text" name="username" id="username" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password" required>
+            </div>
             <button type="submit">Login</button>
         </form>
     </div>
