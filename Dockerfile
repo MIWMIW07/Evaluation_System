@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install required PHP extensions for PostgreSQL
 RUN apt-get update && apt-get install -y libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql
+    && docker-php-ext-install pdo_pgsql
 
 
 # Install Composer
@@ -66,4 +66,5 @@ EXPOSE 80
 
 # Start with our custom script
 CMD ["/start.sh"]
+
 
