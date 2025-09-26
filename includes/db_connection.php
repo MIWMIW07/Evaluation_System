@@ -1,6 +1,6 @@
 <?php
 // includes/db_connection.php - Hybrid approach (Database + Google Sheets)
-
+// require_once __DIR__ . '/google_sheets_connection.php';
 // Database connection (for teachers, sections, evaluations)
 function getDatabaseConnection() {
     try {
@@ -278,3 +278,4 @@ function authenticateUser($username, $password) {
     return false;
 }
 ?>
+
