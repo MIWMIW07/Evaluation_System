@@ -10,24 +10,20 @@ $username  = $_SESSION['username']  ?? 'Unknown';
 $full_name = $_SESSION['full_name'] ?? 'User';
 $user_type = $_SESSION['user_type'] ?? '';
 
-// Save goodbye message
-$_SESSION['logout_message'] = "👋 Goodbye, " . htmlspecialchars($full_name) . "! You have been logged out successfully.";
-$_SESSION['user_type_was']  = $user_type;
-
 // ✅ Log activity if user was logged in
 if ($user_id) {
     logActivity("logout", "$username logged out", "success", $user_id);
 }
 
-// Clear session but keep the logout message temporarily
-$temp_message    = $_SESSION['logout_message'];
-$temp_user_type  = $_SESSION['user_type_was'];
+// Prepare goodbye message
+$logout_message = "👋 Goodbye, " . htmlspecialchars($full_name) . "! You have been logged out successfully.";
 
+// Destroy session
 session_unset();
 session_destroy();
 
-// Keep values for redirect
-$logout_message = urlencode($temp_message);
+// Encode message for redirect
+$logout_message = urlencode($logout_message);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -39,11 +35,12 @@ $logout_message = urlencode($temp_message);
         body, html {
             width: 100%;
             height: 100%;
+            margin: 0;
             background: linear-gradient(135deg, #4A0012 0%, #800020 25%, #DAA520 100%);
-            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
         }
         .preloader-overlay {
             position: fixed;
@@ -56,7 +53,7 @@ $logout_message = urlencode($temp_message);
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            transition: opacity 0.4s;
+            transition: opacity 0.6s ease;
         }
         .circle-border {
             width: 170px;
@@ -93,13 +90,19 @@ $logout_message = urlencode($temp_message);
     </style>
 </head>
 <body>
-   <div id="preloader">
+   <div class="preloader-overlay" id="preloader">
         <div class="circle-border">
-            <img src="logo.png" alt="Logo">
+            <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
         </div>
     </div>
 
     <script>
+        // Fade out before redirect
+        setTimeout(() => {
+            document.getElementById("preloader").style.opacity = "0";
+        }, 2500);
+
+        // Redirect after 3 seconds
         setTimeout(() => {
             window.location.href = "login.php?logout_message=<?php echo $logout_message; ?>";
         }, 3000);
