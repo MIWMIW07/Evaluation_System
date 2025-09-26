@@ -7,30 +7,29 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libfreetype6-dev \
     libzip-dev \
-    libpq-dev \
     zip \
     unzip \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions (including database support for hybrid approach)
+# Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql pdo_pgsql zip
+    && docker-php-ext-install gd pdo pdo_mysql zip
 
-# Install Composer (latest version from official image)
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Enable Apache mod_rewrite and headers, set ServerName
-RUN a2enmod rewrite headers \
+# Enable Apache mod_rewrite and set ServerName
+RUN a2enmod rewrite \
     && echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# Create custom Apache configuration to handle .htaccess properly
-RUN echo "<Directory /var/www/html>" > /etc/apache2/conf-available/custom.conf \
-    && echo "    AllowOverride All" >> /etc/apache2/conf-available/custom.conf \
-    && echo "    Require all granted" >> /etc/apache2/conf-available/custom.conf \
-    && echo "</Directory>" >> /etc/apache2/conf-available/custom.conf \
-    && a2enconf custom
+# Configure Apache for Railway
+RUN echo "<Directory /var/www/html>" > /etc/apache2/conf-available/railway.conf \
+    && echo "    AllowOverride All" >> /etc/apache2/conf-available/railway.conf \
+    && echo "    Require all granted" >> /etc/apache2/conf-available/railway.conf \
+    && echo "</Directory>" >> /etc/apache2/conf-available/railway.conf \
+    && a2enconf railway
 
 # Copy application files
 COPY . /var/www/html/
@@ -38,29 +37,21 @@ COPY . /var/www/html/
 # Set working directory
 WORKDIR /var/www/html
 
-# Install PHP dependencies with Composer (if composer.json exists)
+# Install PHP dependencies if composer.json exists
 RUN if [ -f "composer.json" ]; then composer install --no-dev --optimize-autoloader; fi
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html
-
-# Create necessary directories if they don't exist
-RUN mkdir -p /var/www/html/reports /var/www/html/credentials \
-    && chown -R www-data:www-data /var/www/html/reports /var/www/html/credentials \
-    && chmod 755 /var/www/html/reports /var/www/html/credentials
+    && chmod -R 755 /var/www/html \
+    && mkdir -p /var/www/html/reports \
+    && chown www-data:www-data /var/www/html/reports
 
 # Expose port 80
 EXPOSE 80
 
-# Health check for Google Sheets based system
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
+    CMD curl -f http://localhost/healthcheck.php || exit 1
 
-# Enable PHP error logging
-RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-custom.ini \
-    && echo "error_log = /var/log/apache2/php_errors.log" >> /usr/local/etc/php/conf.d/docker-php-ext-custom.ini \
-    && echo "display_errors = Off" >> /usr/local/etc/php/conf.d/docker-php-ext-custom.ini
-
-# Start Apache in foreground
+# Start Apache
 CMD ["apache2-foreground"]
