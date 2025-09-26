@@ -1,8 +1,10 @@
 <?php
-// database_setup.php - Hybrid setup (DB for teachers/evaluations, Google Sheets for students)
+// database_setup.php
+// Hybrid setup (DB for teachers/evaluations, Google Sheets for students)
 
 require_once 'includes/db_connection.php';
 
+// ✅ If database is not available, show info page
 if (!isDatabaseAvailable()) {
     ?>
     <!DOCTYPE html>
@@ -12,7 +14,7 @@ if (!isDatabaseAvailable()) {
         <style>
             body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
             .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
-            .error { color: #e74c3c; }
+            .error { color: #e74c3c; font-weight: bold; }
             .info { background: #e8f4fd; padding: 15px; border-radius: 5px; margin: 15px 0; }
         </style>
     </head>
@@ -31,14 +33,12 @@ if (!isDatabaseAvailable()) {
                 <p><strong>Next Steps:</strong></p>
                 <ol>
                     <li>Set up your database service on Railway (PostgreSQL or MySQL)</li>
-                    <li>Ensure DATABASE_URL environment variable is set</li>
-                    <li>Run this setup again to create teacher/evaluation tables</li>
+                    <li>Ensure <code>DATABASE_URL</code> environment variable is set</li>
+                    <li>Reload this setup to create teacher/evaluation tables</li>
                 </ol>
             </div>
             
-            <div>
-                <a href="index.php" style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Home</a>
-            </div>
+            <p><a href="index.php" style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Home</a></p>
         </div>
     </body>
     </html>
@@ -49,7 +49,11 @@ if (!isDatabaseAvailable()) {
 try {
     echo "🔧 Setting up hybrid database system...\n\n";
 
-    // Create sections table
+    // ==============================
+    // TABLE CREATION
+    // ==============================
+
+    // Sections
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS sections (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -62,9 +66,9 @@ try {
             INDEX idx_program (program)
         )
     ");
-    echo "✓ Sections table created/updated\n";
+    echo "✓ Sections table ready\n";
 
-    // Create teachers table
+    // Teachers
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS teachers (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -76,9 +80,9 @@ try {
             INDEX idx_department (department)
         )
     ");
-    echo "✓ Teachers table created/updated\n";
+    echo "✓ Teachers table ready\n";
 
-    // Create teacher_sections table (many-to-many relationship)
+    // Teacher-Section assignments
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS teacher_sections (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -97,9 +101,9 @@ try {
             INDEX idx_section (section_id)
         )
     ");
-    echo "✓ Teacher-Section assignments table created/updated\n";
+    echo "✓ Teacher-Sections table ready\n";
 
-    // Create evaluations table
+    // Evaluations
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS evaluations (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -109,59 +113,52 @@ try {
             section VARCHAR(50) NOT NULL,
             program ENUM('SHS', 'COLLEGE') NOT NULL,
             subject VARCHAR(100),
-            
-            -- Section 1: Teaching Ability (6 questions)
+
+            -- Teaching Ability (6 questions)
             q1_1 TINYINT NOT NULL CHECK (q1_1 BETWEEN 1 AND 5),
             q1_2 TINYINT NOT NULL CHECK (q1_2 BETWEEN 1 AND 5),
             q1_3 TINYINT NOT NULL CHECK (q1_3 BETWEEN 1 AND 5),
             q1_4 TINYINT NOT NULL CHECK (q1_4 BETWEEN 1 AND 5),
             q1_5 TINYINT NOT NULL CHECK (q1_5 BETWEEN 1 AND 5),
             q1_6 TINYINT NOT NULL CHECK (q1_6 BETWEEN 1 AND 5),
-            
-            -- Section 2: Management Skills (4 questions)
+
+            -- Management Skills (4 questions)
             q2_1 TINYINT NOT NULL CHECK (q2_1 BETWEEN 1 AND 5),
             q2_2 TINYINT NOT NULL CHECK (q2_2 BETWEEN 1 AND 5),
             q2_3 TINYINT NOT NULL CHECK (q2_3 BETWEEN 1 AND 5),
             q2_4 TINYINT NOT NULL CHECK (q2_4 BETWEEN 1 AND 5),
-            
-            -- Section 3: Guidance Skills (4 questions)
+
+            -- Guidance Skills (4 questions)
             q3_1 TINYINT NOT NULL CHECK (q3_1 BETWEEN 1 AND 5),
             q3_2 TINYINT NOT NULL CHECK (q3_2 BETWEEN 1 AND 5),
             q3_3 TINYINT NOT NULL CHECK (q3_3 BETWEEN 1 AND 5),
             q3_4 TINYINT NOT NULL CHECK (q3_4 BETWEEN 1 AND 5),
-            
-            -- Section 4: Personal and Social Characteristics (6 questions)
+
+            -- Personal & Social (6 questions)
             q4_1 TINYINT NOT NULL CHECK (q4_1 BETWEEN 1 AND 5),
             q4_2 TINYINT NOT NULL CHECK (q4_2 BETWEEN 1 AND 5),
             q4_3 TINYINT NOT NULL CHECK (q4_3 BETWEEN 1 AND 5),
             q4_4 TINYINT NOT NULL CHECK (q4_4 BETWEEN 1 AND 5),
             q4_5 TINYINT NOT NULL CHECK (q4_5 BETWEEN 1 AND 5),
             q4_6 TINYINT NOT NULL CHECK (q4_6 BETWEEN 1 AND 5),
-            
-            -- Comments
+
             comments TEXT,
-            
-            -- Timestamps
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             submitted_at TIMESTAMP NULL,
-            
-            -- Indexes
+
+            FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_eval (student_id, teacher_id),
+
             INDEX idx_student (student_id),
             INDEX idx_teacher (teacher_id),
             INDEX idx_section (section),
             INDEX idx_program (program),
-            INDEX idx_created (created_at),
-            
-            -- Foreign key
-            FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
-            
-            -- Prevent duplicate evaluations
-            UNIQUE KEY unique_evaluation (student_id, teacher_id)
+            INDEX idx_created (created_at)
         )
     ");
-    echo "✓ Evaluations table created/updated\n";
+    echo "✓ Evaluations table ready\n";
 
-    // Create admin users table (minimal, just for admin access)
+    // Admin Users
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS users (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -171,14 +168,13 @@ try {
             full_name VARCHAR(100),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP NULL,
-            
             INDEX idx_username (username),
             INDEX idx_user_type (user_type)
         )
     ");
-    echo "✓ Admin users table created/updated\n";
+    echo "✓ Admin users table ready\n";
 
-    // Create activity log
+    // Activity Log
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS activity_log (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -192,95 +188,70 @@ try {
             INDEX idx_status (status)
         )
     ");
-    echo "✓ Activity log table created/updated\n";
+    echo "✓ Activity log table ready\n";
 
-    // Insert sample data if empty
-    
-    // Check if admin exists
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE user_type = 'admin'");
-    $stmt->execute();
-    
+    // ==============================
+    // DEFAULT DATA
+    // ==============================
+
+    // Default Admin
+    $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE user_type = 'admin'");
     if ($stmt->fetchColumn() == 0) {
-        $adminPassword = password_hash('admin123', PASSWORD_DEFAULT);
+        $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
         $pdo->prepare("INSERT INTO users (username, password, user_type, full_name) VALUES (?, ?, 'admin', 'System Administrator')")
-            ->execute(['admin', $adminPassword]);
-        echo "✓ Admin user created (username: admin, password: admin123)\n";
-    } else {
-        echo "✓ Admin user already exists\n";
+            ->execute(['admin', $adminPass]);
+        echo "✓ Default admin created (username: admin, password: admin123)\n";
     }
 
-    // Insert sample sections if empty
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM sections");
-    $stmt->execute();
-    
+    // Default Sections
+    $stmt = $pdo->query("SELECT COUNT(*) FROM sections");
     if ($stmt->fetchColumn() == 0) {
-        $sampleSections = [
+        $sections = [
             ['SHS-11A', 'Grade 11 Section A', 'SHS', 'Grade 11'],
-            ['SHS-11B', 'Grade 11 Section B', 'SHS', 'Grade 11'],
             ['SHS-12A', 'Grade 12 Section A', 'SHS', 'Grade 12'],
-            ['COL-IT1A', 'IT 1st Year Section A', 'COLLEGE', '1st Year'],
-            ['COL-IT2A', 'IT 2nd Year Section A', 'COLLEGE', '2nd Year']
+            ['COL-IT1A', 'IT 1st Year A', 'COLLEGE', '1st Year'],
+            ['COL-IT2A', 'IT 2nd Year A', 'COLLEGE', '2nd Year']
         ];
-        
-        foreach ($sampleSections as $section) {
+        foreach ($sections as $s) {
             $pdo->prepare("INSERT INTO sections (section_code, section_name, program, year_level) VALUES (?, ?, ?, ?)")
-                ->execute($section);
+                ->execute($s);
         }
         echo "✓ Sample sections created\n";
-    } else {
-        echo "✓ Sections already exist\n";
     }
 
-    // Insert sample teachers if empty
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM teachers");
-    $stmt->execute();
-    
+    // Default Teachers
+    $stmt = $pdo->query("SELECT COUNT(*) FROM teachers");
     if ($stmt->fetchColumn() == 0) {
-        $sampleTeachers = [
+        $teachers = [
             ['Ms. Maria Santos', 'SHS', 'Mathematics'],
             ['Mr. Juan Dela Cruz', 'SHS', 'English'],
-            ['Dr. Ana Rodriguez', 'COLLEGE', 'Computer Programming'],
-            ['Prof. Carlos Mendoza', 'COLLEGE', 'Database Systems'],
-            ['Ms. Linda Garcia', 'SHS', 'Science']
+            ['Dr. Ana Rodriguez', 'COLLEGE', 'Programming'],
+            ['Prof. Carlos Mendoza', 'COLLEGE', 'Database Systems']
         ];
-        
-        foreach ($sampleTeachers as $teacher) {
+        foreach ($teachers as $t) {
             $pdo->prepare("INSERT INTO teachers (name, department, subject) VALUES (?, ?, ?)")
-                ->execute($teacher);
+                ->execute($t);
         }
         echo "✓ Sample teachers created\n";
-    } else {
-        echo "✓ Teachers already exist\n";
     }
 
-    echo "\n=== Hybrid Database Setup Complete! ===\n\n";
-    echo "📊 System Configuration:\n";
-    echo "✓ Database: Teachers, Sections, Evaluations\n";
-    echo "✓ Google Sheets: Student authentication & enrollment data\n\n";
-    
-    echo "📋 Next Steps:\n";
-    echo "1. Set up your Google Sheet with student data\n";
-    echo "2. Configure teacher-section assignments\n";
-    echo "3. Test student login with Google Sheets data\n\n";
-    
-    echo "📝 Google Sheets Format (Students sheet):\n";
-    echo "Column A: Student_ID (e.g., 2025001)\n";
-    echo "Column B: Last_Name (e.g., Dela Cruz)\n";
-    echo "Column C: First_Name (e.g., Juan)\n";
-    echo "Column D: Section (e.g., SHS-11A)\n";
-    echo "Column E: Program (SHS or COLLEGE)\n\n";
-    
-    echo "🔐 Student Login System:\n";
-    echo "• Username: LASTNAME + FIRSTNAME (all caps, no spaces)\n";
-    echo "• Password: pass123 (for all students)\n";
-    echo "• Example: 'Dela Cruz, Juan' → Username: DELACRUZJUAN, Password: pass123\n\n";
+    // ==============================
+    // SUMMARY
+    // ==============================
 
-    // Log setup completion
+    echo "\n=== ✅ Hybrid Database Setup Complete ===\n\n";
+    echo "📊 Database holds: Teachers, Sections, Evaluations, Admins\n";
+    echo "📑 Google Sheets holds: Student authentication & enrollment\n\n";
+    echo "📝 Student Login (via Google Sheets):\n";
+    echo "• Username: LASTNAMEFIRSTNAME (uppercase, no spaces)\n";
+    echo "• Password: pass123\n\n";
+
+    // Log completion
     $pdo->prepare("INSERT INTO activity_log (action, description, status, user_id) VALUES (?, ?, ?, ?)")
-        ->execute(['database_setup', 'Hybrid database setup completed successfully', 'success', 'system']);
+        ->execute(['setup', 'Hybrid DB setup completed', 'success', 'system']);
 
 } catch (PDOException $e) {
-    echo "❌ Error: " . $e->getMessage() . "\n";
+    echo "❌ Error: " . $e->getMessage();
     exit(1);
 }
 ?>
