@@ -14,7 +14,6 @@ ini_set('display_errors', 1);
 
 // Include database connection with error handling
 try {
-    require_once 'includes/db_connection.php';
     
     if (!isset($pdo)) {
         throw new Exception("Database connection not established");
@@ -456,8 +455,9 @@ try {
         <div class="actions-container">
             <a href="database_setup.php" class="btn btn-secondary">🔧 Database Setup</a>
             <a href="#" onclick="location.reload();" class="btn btn-secondary">🔄 Refresh Data</a>
-            echo '<a href="google_integration_dashboard.php" class="btn btn-secondary">🔗 Google Integration</a>';
+            <a href="google_integration_dashboard.php" class="btn btn-secondary">🔗 Google Integration</a>
         </div>
+
 
         <div class="report-generation-section">
             <h2 style="color: #5a0000; margin-bottom: 20px; display: flex; align-items: center;">
