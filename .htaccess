@@ -1,9 +1,7 @@
 # .htaccess for PHP Teacher Evaluation System on Railway
-# Fixed version without Directory directives
+# Fixed version - removed invalid directives
 
 RewriteEngine On
-
-ServerName localhost
 
 # Prevent infinite loops by checking if we're already processing a redirect
 RewriteCond %{ENV:REDIRECT_STATUS} 200
@@ -23,7 +21,7 @@ RewriteRule ^.*$ - [L]
 # Block access to includes directory from direct web access
 RewriteRule ^includes/ - [F,L]
 
-# Allow access to reports directory - using RewriteRule instead of Directory
+# Allow access to reports directory
 RewriteCond %{REQUEST_URI} ^/reports/
 RewriteRule ^reports/(.*)$ reports/$1 [L]
 
@@ -83,4 +81,3 @@ php_value memory_limit 256M
 
 # Custom 403 page for reports access denied
 ErrorDocument 403 "Access to this file is restricted."
-
