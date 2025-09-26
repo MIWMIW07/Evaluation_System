@@ -1,77 +1,61 @@
 <?php
-// login.php - Enhanced login system
 session_start();
 
-require_once 'includes/security.php';
-
-// Check for logout message
-if (isset($_SESSION['logout_message'])) {
-    $success = $_SESSION['logout_message'];
-    unset($_SESSION['logout_message']);
-    
-    // Also check if user was admin to show appropriate redirect option
-    $was_admin = isset($_SESSION['user_type_was']) && $_SESSION['user_type_was'] === 'admin';
-    unset($_SESSION['user_type_was']);
-}
-
-$show_preloader = false;
-$redirect_url = "";
-
-// If user is already logged in, show preloader and redirect
+// Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['user_type'] === 'admin') {
-        $redirect_url = 'admin.php';
+        header('Location: admin.php');
+        exit;
     } else {
-        $redirect_url = 'student_dashboard.php';
+        header('Location: student_dashboard.php');
+        exit;
     }
-    $show_preloader = true;
 }
 
-// Include database connection
-require_once 'includes/db_connection.php';
-
 $error = '';
-$success = isset($success) ? $success : '';
+$success = '';
 
 // Handle login form submission
-if ($_SERVER["REQUEST_METHOD"] == "POST" && !$show_preloader) {
-    if (!validate_csrf_token($_POST['csrf_token'])) {
-        die('CSRF token validation failed');
-    }
-    
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
         $username = trim($_POST['username']);
         $password = trim($_POST['password']);
         
-        // Validate input
         if (empty($username) || empty($password)) {
             throw new Exception("Username and password are required.");
         }
         
-        // Check user in database
-        $stmt = query("SELECT id, username, password, user_type, full_name, student_id, program, section FROM users WHERE username = ?", [$username]);
-        $user = fetch_assoc($stmt);
+        // Use hybrid authentication
+        require_once 'includes/db_connection.php';
+        $user = authenticateUser($username, $password);
         
-        if ($user && password_verify($password, $user['password'])) {
+        if ($user) {
             // Valid login - create session
-            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_id'] = $user['user_id'] ?? $user['student_id'] ?? $user['username'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['user_type'] = $user['user_type'];
             $_SESSION['full_name'] = $user['full_name'];
-            $_SESSION['student_id'] = $user['student_id'];
-            $_SESSION['program'] = $user['program'];
-            $_SESSION['section'] = $user['section'];
             
-            // Update last login time
-            query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$user['id']]);
-            
-            // Set redirect url and show preloader
-            if ($user['user_type'] === 'admin') {
-                $redirect_url = 'admin.php';
-            } else {
-                $redirect_url = 'student_dashboard.php';
+            // Additional student data if available
+            if ($user['user_type'] === 'student') {
+                $_SESSION['student_id'] = $user['student_id'];
+                $_SESSION['section'] = $user['section'];
+                $_SESSION['program'] = $user['program'];
             }
-            $show_preloader = true;
+            
+            // Update last login for admin users
+            if ($user['user_type'] === 'admin' && isDatabaseAvailable()) {
+                query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = ?", [$username]);
+            }
+            
+            // Redirect based on user type
+            if ($user['user_type'] === 'admin') {
+                header('Location: admin.php');
+                exit;
+            } else {
+                header('Location: student_dashboard.php');
+                exit;
+            }
         } else {
             throw new Exception("Invalid username or password.");
         }
@@ -79,11 +63,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$show_preloader) {
     } catch (Exception $e) {
         $error = $e->getMessage();
     }
-} 
-
-// If login successful (existing session or just logged in), show preloader and exit
-if ($show_preloader && $redirect_url) {
-    ?>
+}
+?>
     <!DOCTYPE html>
     <html lang="en">
     <head>
