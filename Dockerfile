@@ -39,8 +39,11 @@ WORKDIR /var/www/html
 
 # Install PHP dependencies with better error handling
 RUN if [ -f "composer.json" ]; then \
+        echo "Installing Composer dependencies..." && \
         composer install --no-dev --optimize-autoloader --no-interaction || \
         (echo "Composer install failed" && exit 1); \
+    else \
+        echo "No composer.json found, skipping dependency installation"; \
     fi
 
 # Set proper permissions
@@ -52,10 +55,5 @@ RUN chown -R www-data:www-data /var/www/html \
 # Expose port 80
 EXPOSE 80
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost/healthcheck.php || exit 1
-
 # Start Apache
 CMD ["apache2-foreground"]
-
