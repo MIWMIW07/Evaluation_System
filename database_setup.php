@@ -100,35 +100,26 @@ try {
             section VARCHAR(50) NOT NULL,
             program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
             subject VARCHAR(100),
-
-            -- Teaching Ability (6 questions)
             q1_1 SMALLINT CHECK (q1_1 BETWEEN 1 AND 5),
             q1_2 SMALLINT CHECK (q1_2 BETWEEN 1 AND 5),
             q1_3 SMALLINT CHECK (q1_3 BETWEEN 1 AND 5),
             q1_4 SMALLINT CHECK (q1_4 BETWEEN 1 AND 5),
             q1_5 SMALLINT CHECK (q1_5 BETWEEN 1 AND 5),
             q1_6 SMALLINT CHECK (q1_6 BETWEEN 1 AND 5),
-
-            -- Management Skills (4 questions)
             q2_1 SMALLINT CHECK (q2_1 BETWEEN 1 AND 5),
             q2_2 SMALLINT CHECK (q2_2 BETWEEN 1 AND 5),
             q2_3 SMALLINT CHECK (q2_3 BETWEEN 1 AND 5),
             q2_4 SMALLINT CHECK (q2_4 BETWEEN 1 AND 5),
-
-            -- Guidance Skills (4 questions)
             q3_1 SMALLINT CHECK (q3_1 BETWEEN 1 AND 5),
             q3_2 SMALLINT CHECK (q3_2 BETWEEN 1 AND 5),
             q3_3 SMALLINT CHECK (q3_3 BETWEEN 1 AND 5),
             q3_4 SMALLINT CHECK (q3_4 BETWEEN 1 AND 5),
-
-            -- Personal & Social (6 questions)
             q4_1 SMALLINT CHECK (q4_1 BETWEEN 1 AND 5),
             q4_2 SMALLINT CHECK (q4_2 BETWEEN 1 AND 5),
             q4_3 SMALLINT CHECK (q4_3 BETWEEN 1 AND 5),
             q4_4 SMALLINT CHECK (q4_4 BETWEEN 1 AND 5),
             q4_5 SMALLINT CHECK (q4_5 BETWEEN 1 AND 5),
             q4_6 SMALLINT CHECK (q4_6 BETWEEN 1 AND 5),
-
             comments TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             submitted_at TIMESTAMP NULL,
@@ -157,25 +148,23 @@ try {
     echo "✓ Admin users table ready\n";
 
     // ==============================
-    // Activity Log
+    // Activity Logs
     // ==============================
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS activity_log (
+        CREATE TABLE IF NOT EXISTS activity_logs (
             id SERIAL PRIMARY KEY,
+            user_id INT NULL,
             action VARCHAR(100) NOT NULL,
-            description TEXT,
-            status VARCHAR(10) DEFAULT 'success' CHECK (status IN ('success','error','warning')),
-            user_id VARCHAR(50),
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            details TEXT,
+            status VARCHAR(20),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     ");
-    echo "✓ Activity log table ready\n";
+    echo "✓ Activity logs table ready\n";
 
     // ==============================
     // Default Data
     // ==============================
-
-    // Default Admin
     $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE user_type = 'admin'");
     if ($stmt->fetchColumn() == 0) {
         $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
@@ -184,7 +173,6 @@ try {
         echo "✓ Default admin created (username: admin, password: admin123)\n";
     }
 
-    // Default Sections
     $stmt = $pdo->query("SELECT COUNT(*) FROM sections");
     if ($stmt->fetchColumn() == 0) {
         $sections = [
@@ -201,7 +189,7 @@ try {
     }
 
     // ==============================
-    // Summary
+    // Summary + Activity Log
     // ==============================
     echo "\n=== ✅ Hybrid Database Setup Complete ===\n\n";
     echo "📊 PostgreSQL holds: Sections, Teacher Assignments, Evaluations, Admins\n";
@@ -210,10 +198,11 @@ try {
     echo "• Username: LASTNAMEFIRSTNAME (uppercase, no spaces)\n";
     echo "• Password: pass123\n\n";
 
-    $pdo->prepare("INSERT INTO activity_log (action, description, status, user_id) VALUES (?, ?, ?, ?)")
-        ->execute(['setup', 'Hybrid DB setup completed', 'success', 'system']);
+    // Log setup completion
+    logActivity("setup", "Hybrid DB setup completed", "success", null);
 
 } catch (PDOException $e) {
+    logActivity("setup", "Database setup failed: " . $e->getMessage(), "error", null);
     echo "❌ Error: " . $e->getMessage();
     exit(1);
 }
