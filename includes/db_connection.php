@@ -61,3 +61,4 @@ function fetch_all($result) {
     return $result ? $result->fetchAll(PDO::FETCH_ASSOC) : [];
 }
 ?>
+
