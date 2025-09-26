@@ -1,6 +1,7 @@
 <?php
 // database_setup.php
-// Hybrid setup: PostgreSQL for teachers/evaluations/admin, Google Sheets for students
+// Hybrid setup: PostgreSQL for teachers assignments, evaluations, admins
+// Google Sheets for student + teacher lists
 
 require_once 'includes/db_connection.php';
 
@@ -27,14 +28,15 @@ if (!isDatabaseAvailable()) {
                 <h3>Hybrid System Information:</h3>
                 <ul>
                     <li><strong>Students Data:</strong> Stored in Google Sheets</li>
-                    <li><strong>Teachers & Evaluations:</strong> Stored in PostgreSQL</li>
+                    <li><strong>Teachers List:</strong> Stored in Google Sheets</li>
+                    <li><strong>Teacher Assignments, Evaluations, Admins:</strong> Stored in PostgreSQL</li>
                 </ul>
                 
                 <p><strong>Next Steps:</strong></p>
                 <ol>
                     <li>Set up your PostgreSQL database on Railway</li>
                     <li>Ensure <code>DATABASE_URL</code> environment variable is set</li>
-                    <li>Reload this setup to create teacher/evaluation tables</li>
+                    <li>Reload this setup to create the necessary tables</li>
                 </ol>
             </div>
             
@@ -50,10 +52,8 @@ try {
     echo "🔧 Setting up hybrid database system...\n\n";
 
     // ==============================
-    // TABLE CREATION (Postgres syntax)
-    // ==============================
-
     // Sections
+    // ==============================
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS sections (
             id SERIAL PRIMARY KEY,
@@ -68,90 +68,81 @@ try {
     ");
     echo "✓ Sections table ready\n";
 
-    // Teachers
+    // ==============================
+    // Teacher Assignments
+    // ==============================
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS teachers (
+        CREATE TABLE IF NOT EXISTS teacher_assignments (
             id SERIAL PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            department VARCHAR(10) NOT NULL CHECK (department IN ('SHS', 'COLLEGE', 'BOTH')),
-            subject VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        CREATE INDEX IF NOT EXISTS idx_name ON teachers(name);
-        CREATE INDEX IF NOT EXISTS idx_department ON teachers(department);
-    ");
-    echo "✓ Teachers table ready\n";
-
-    // Teacher-Section assignments
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS teacher_sections (
-            id SERIAL PRIMARY KEY,
-            teacher_id INT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+            teacher_name VARCHAR(100) NOT NULL,
             section_id INT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
-            subject VARCHAR(100),
+            subject VARCHAR(100) NOT NULL,
+            program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
             school_year VARCHAR(20) DEFAULT '2025-2026',
             semester VARCHAR(10) DEFAULT '1st' CHECK (semester IN ('1st','2nd')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE (teacher_id, section_id, subject, school_year, semester)
+            UNIQUE (teacher_name, section_id, subject, school_year, semester)
         );
-        CREATE INDEX IF NOT EXISTS idx_teacher ON teacher_sections(teacher_id);
-        CREATE INDEX IF NOT EXISTS idx_section ON teacher_sections(section_id);
+        CREATE INDEX IF NOT EXISTS idx_teacher_assign ON teacher_assignments(teacher_name);
+        CREATE INDEX IF NOT EXISTS idx_section_assign ON teacher_assignments(section_id);
     ");
-    echo "✓ Teacher-Sections table ready\n";
+    echo "✓ Teacher assignments table ready\n";
 
+    // ==============================
     // Evaluations
+    // ==============================
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS evaluations (
             id SERIAL PRIMARY KEY,
             student_id VARCHAR(20) NOT NULL,
             student_name VARCHAR(100) NOT NULL,
-            teacher_id INT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+            teacher_name VARCHAR(100) NOT NULL,
             section VARCHAR(50) NOT NULL,
             program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
             subject VARCHAR(100),
 
             -- Teaching Ability (6 questions)
-            q1_1 SMALLINT NOT NULL CHECK (q1_1 BETWEEN 1 AND 5),
-            q1_2 SMALLINT NOT NULL CHECK (q1_2 BETWEEN 1 AND 5),
-            q1_3 SMALLINT NOT NULL CHECK (q1_3 BETWEEN 1 AND 5),
-            q1_4 SMALLINT NOT NULL CHECK (q1_4 BETWEEN 1 AND 5),
-            q1_5 SMALLINT NOT NULL CHECK (q1_5 BETWEEN 1 AND 5),
-            q1_6 SMALLINT NOT NULL CHECK (q1_6 BETWEEN 1 AND 5),
+            q1_1 SMALLINT CHECK (q1_1 BETWEEN 1 AND 5),
+            q1_2 SMALLINT CHECK (q1_2 BETWEEN 1 AND 5),
+            q1_3 SMALLINT CHECK (q1_3 BETWEEN 1 AND 5),
+            q1_4 SMALLINT CHECK (q1_4 BETWEEN 1 AND 5),
+            q1_5 SMALLINT CHECK (q1_5 BETWEEN 1 AND 5),
+            q1_6 SMALLINT CHECK (q1_6 BETWEEN 1 AND 5),
 
             -- Management Skills (4 questions)
-            q2_1 SMALLINT NOT NULL CHECK (q2_1 BETWEEN 1 AND 5),
-            q2_2 SMALLINT NOT NULL CHECK (q2_2 BETWEEN 1 AND 5),
-            q2_3 SMALLINT NOT NULL CHECK (q2_3 BETWEEN 1 AND 5),
-            q2_4 SMALLINT NOT NULL CHECK (q2_4 BETWEEN 1 AND 5),
+            q2_1 SMALLINT CHECK (q2_1 BETWEEN 1 AND 5),
+            q2_2 SMALLINT CHECK (q2_2 BETWEEN 1 AND 5),
+            q2_3 SMALLINT CHECK (q2_3 BETWEEN 1 AND 5),
+            q2_4 SMALLINT CHECK (q2_4 BETWEEN 1 AND 5),
 
             -- Guidance Skills (4 questions)
-            q3_1 SMALLINT NOT NULL CHECK (q3_1 BETWEEN 1 AND 5),
-            q3_2 SMALLINT NOT NULL CHECK (q3_2 BETWEEN 1 AND 5),
-            q3_3 SMALLINT NOT NULL CHECK (q3_3 BETWEEN 1 AND 5),
-            q3_4 SMALLINT NOT NULL CHECK (q3_4 BETWEEN 1 AND 5),
+            q3_1 SMALLINT CHECK (q3_1 BETWEEN 1 AND 5),
+            q3_2 SMALLINT CHECK (q3_2 BETWEEN 1 AND 5),
+            q3_3 SMALLINT CHECK (q3_3 BETWEEN 1 AND 5),
+            q3_4 SMALLINT CHECK (q3_4 BETWEEN 1 AND 5),
 
             -- Personal & Social (6 questions)
-            q4_1 SMALLINT NOT NULL CHECK (q4_1 BETWEEN 1 AND 5),
-            q4_2 SMALLINT NOT NULL CHECK (q4_2 BETWEEN 1 AND 5),
-            q4_3 SMALLINT NOT NULL CHECK (q4_3 BETWEEN 1 AND 5),
-            q4_4 SMALLINT NOT NULL CHECK (q4_4 BETWEEN 1 AND 5),
-            q4_5 SMALLINT NOT NULL CHECK (q4_5 BETWEEN 1 AND 5),
-            q4_6 SMALLINT NOT NULL CHECK (q4_6 BETWEEN 1 AND 5),
+            q4_1 SMALLINT CHECK (q4_1 BETWEEN 1 AND 5),
+            q4_2 SMALLINT CHECK (q4_2 BETWEEN 1 AND 5),
+            q4_3 SMALLINT CHECK (q4_3 BETWEEN 1 AND 5),
+            q4_4 SMALLINT CHECK (q4_4 BETWEEN 1 AND 5),
+            q4_5 SMALLINT CHECK (q4_5 BETWEEN 1 AND 5),
+            q4_6 SMALLINT CHECK (q4_6 BETWEEN 1 AND 5),
 
             comments TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             submitted_at TIMESTAMP NULL,
-            UNIQUE (student_id, teacher_id)
+            UNIQUE (student_id, teacher_name, subject)
         );
-        CREATE INDEX IF NOT EXISTS idx_student ON evaluations(student_id);
-        CREATE INDEX IF NOT EXISTS idx_teacher_eval ON evaluations(teacher_id);
+        CREATE INDEX IF NOT EXISTS idx_student_eval ON evaluations(student_id);
+        CREATE INDEX IF NOT EXISTS idx_teacher_eval ON evaluations(teacher_name);
         CREATE INDEX IF NOT EXISTS idx_section_eval ON evaluations(section);
-        CREATE INDEX IF NOT EXISTS idx_program_eval ON evaluations(program);
-        CREATE INDEX IF NOT EXISTS idx_created_eval ON evaluations(created_at);
     ");
     echo "✓ Evaluations table ready\n";
 
+    // ==============================
     // Admin Users
+    // ==============================
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -162,12 +153,12 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP NULL
         );
-        CREATE INDEX IF NOT EXISTS idx_username ON users(username);
-        CREATE INDEX IF NOT EXISTS idx_user_type ON users(user_type);
     ");
     echo "✓ Admin users table ready\n";
 
+    // ==============================
     // Activity Log
+    // ==============================
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS activity_log (
             id SERIAL PRIMARY KEY,
@@ -177,14 +168,11 @@ try {
             user_id VARCHAR(50),
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-        CREATE INDEX IF NOT EXISTS idx_timestamp ON activity_log(timestamp);
-        CREATE INDEX IF NOT EXISTS idx_user ON activity_log(user_id);
-        CREATE INDEX IF NOT EXISTS idx_status ON activity_log(status);
     ");
     echo "✓ Activity log table ready\n";
 
     // ==============================
-    // DEFAULT DATA
+    // Default Data
     // ==============================
 
     // Default Admin
@@ -212,34 +200,16 @@ try {
         echo "✓ Sample sections created\n";
     }
 
-    // Default Teachers
-    $stmt = $pdo->query("SELECT COUNT(*) FROM teachers");
-    if ($stmt->fetchColumn() == 0) {
-        $teachers = [
-            ['Ms. Maria Santos', 'SHS', 'Mathematics'],
-            ['Mr. Juan Dela Cruz', 'SHS', 'English'],
-            ['Dr. Ana Rodriguez', 'COLLEGE', 'Programming'],
-            ['Prof. Carlos Mendoza', 'COLLEGE', 'Database Systems']
-        ];
-        foreach ($teachers as $t) {
-            $pdo->prepare("INSERT INTO teachers (name, department, subject) VALUES (?, ?, ?)")
-                ->execute($t);
-        }
-        echo "✓ Sample teachers created\n";
-    }
-
     // ==============================
-    // SUMMARY
+    // Summary
     // ==============================
-
     echo "\n=== ✅ Hybrid Database Setup Complete ===\n\n";
-    echo "📊 PostgreSQL holds: Teachers, Sections, Evaluations, Admins\n";
-    echo "📑 Google Sheets holds: Student authentication & enrollment\n\n";
+    echo "📊 PostgreSQL holds: Sections, Teacher Assignments, Evaluations, Admins\n";
+    echo "📑 Google Sheets holds: Student list + Teacher list\n\n";
     echo "📝 Student Login (via Google Sheets):\n";
     echo "• Username: LASTNAMEFIRSTNAME (uppercase, no spaces)\n";
     echo "• Password: pass123\n\n";
 
-    // Log completion
     $pdo->prepare("INSERT INTO activity_log (action, description, status, user_id) VALUES (?, ?, ?, ?)")
         ->execute(['setup', 'Hybrid DB setup completed', 'success', 'system']);
 
