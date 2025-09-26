@@ -59,7 +59,7 @@ class HybridDataManager {
         $this->sheetsService = new Sheets($client);
 
         // Your Google Sheet ID (from the URL of the sheet)
-        $this->sheetId = getenv('1cFkTmh_1DUX4lb6VLK-EJjw5hlB9zvnYK8W__rTML-I');
+        $this->sheetId = getenv('GOOGLE_SHEET_ID');
         if (!$this->sheetId) {
             throw new Exception("❌ GOOGLE_SHEET_ID environment variable not set");
         }
@@ -168,4 +168,5 @@ function logActivity(string $action, string $description, string $status = 'succ
     $hybrid->logActivity($action, $description, $status, $userId);
 }
 ?>
+
 
