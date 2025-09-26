@@ -99,13 +99,18 @@ class HybridDataManager {
         $this->sheetsHelper = getGoogleSheetsHelper();
     }
     
-    // Student authentication using Google Sheets
+    // Student authentication using Google Sheets with simple credentials
     public function authenticateStudent($username, $password) {
         if (!$this->sheetsHelper) {
             throw new Exception("Google Sheets not available for student authentication");
         }
         
-        $students = $this->sheetsHelper->readSheet('Students!A:F'); // Adjust range as needed
+        // Check if password matches the standard password
+        if ($password !== 'pass123') {
+            return false;
+        }
+        
+        $students = $this->sheetsHelper->readSheet('Students!A:D'); // Adjust range as needed
         
         if (!$students) {
             throw new Exception("Could not read student data from Google Sheets");
@@ -114,16 +119,20 @@ class HybridDataManager {
         foreach ($students as $index => $row) {
             if ($index === 0) continue; // Skip header row
             
-            // Assuming columns: Student_ID, Full_Name, Section, Program, Username, Password
-            if (isset($row[4]) && $row[4] === $username) {
-                // Check password (assuming it's hashed in Google Sheets)
-                if (isset($row[5]) && password_verify($password, $row[5])) {
+            // Assuming columns: Student_ID, Last_Name, First_Name, Section, Program
+            if (isset($row[1]) && isset($row[2])) {
+                $lastName = strtoupper(trim($row[1]));
+                $firstName = strtoupper(trim($row[2]));
+                $generatedUsername = $lastName . $firstName;
+                
+                // Check if the generated username matches the input
+                if ($generatedUsername === strtoupper($username)) {
                     return [
                         'student_id' => $row[0] ?? '',
-                        'full_name' => $row[1] ?? '',
-                        'section' => $row[2] ?? '',
-                        'program' => $row[3] ?? '',
-                        'username' => $row[4] ?? '',
+                        'full_name' => trim($row[2] . ' ' . $row[1]), // First Last format
+                        'section' => $row[3] ?? '',
+                        'program' => $row[4] ?? '',
+                        'username' => $generatedUsername,
                         'user_type' => 'student'
                     ];
                 }
