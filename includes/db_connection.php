@@ -139,3 +139,32 @@ function getDataManager() {
 function getPDO() {
     return getDataManager()->getPDO();
 }
+
+// ---------------- Activity Logger ----------------
+function logActivity($action, $details, $status = "info", $userId = null) {
+    try {
+        $manager = getDataManager();
+
+        // Access the private $pdo property inside HybridDataManager
+        $refClass = new ReflectionClass($manager);
+        $pdoProp  = $refClass->getProperty('pdo');
+        $pdoProp->setAccessible(true);
+        $conn = $pdoProp->getValue($manager);
+
+        // Insert into activity_logs table
+        $stmt = $conn->prepare("
+            INSERT INTO activity_logs (user_id, action, details, status, created_at)
+            VALUES (:user_id, :action, :details, :status, NOW())
+        ");
+        $stmt->execute([
+            ':user_id' => $userId,
+            ':action'  => $action,
+            ':details' => $details,
+            ':status'  => $status
+        ]);
+    } catch (Exception $e) {
+        error_log("⚠️ logActivity failed: " . $e->getMessage());
+    }
+}
+
+
