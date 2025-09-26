@@ -2,23 +2,38 @@
 // Database connection (supports Railway + local development)
 function getDatabaseConnection() {
     // Railway: DATABASE_URL (Postgres or MySQL depending on setup)
-    if (isset($_ENV['DATABASE_URL'])) {
-        $database_url = $_ENV['DATABASE_URL'];
+    $database_url = getenv('DATABASE_URL');
+    
+    // Debug: Log what we're getting
+    error_log("DATABASE_URL exists: " . ($database_url ? 'yes' : 'no'));
+    if ($database_url) {
+        error_log("DATABASE_URL starts with: " . substr($database_url, 0, 20));
+    }
+    
+    if ($database_url) {
         $db_parts = parse_url($database_url);
 
-        $host = $db_parts['host'];
+        if (!$db_parts) {
+            die("Invalid DATABASE_URL format");
+        }
+
+        $host = $db_parts['host'] ?? null;
         $port = $db_parts['port'] ?? null;
-        $dbname = ltrim($db_parts['path'], '/');
-        $username = $db_parts['user'];
-        $password = $db_parts['pass'];
+        $dbname = isset($db_parts['path']) ? ltrim($db_parts['path'], '/') : null;
+        $username = $db_parts['user'] ?? null;
+        $password = $db_parts['pass'] ?? null;
+
+        if (!$host || !$dbname || !$username) {
+            die("Missing required database connection parameters");
+        }
 
         // Detect scheme: postgres or mysql
-        if ($db_parts['scheme'] === 'postgres') {
+        if ($db_parts['scheme'] === 'postgres' || $db_parts['scheme'] === 'postgresql') {
             $dsn = "pgsql:host=$host;port=" . ($port ?? 5432) . ";dbname=$dbname";
         } elseif ($db_parts['scheme'] === 'mysql') {
             $dsn = "mysql:host=$host;port=" . ($port ?? 3306) . ";dbname=$dbname;charset=utf8mb4";
         } else {
-            die("Unsupported database scheme: " . $db_parts['scheme']);
+            die("Unsupported database scheme: " . ($db_parts['scheme'] ?? 'unknown'));
         }
     } else {
         // Local development fallback (MySQL)
@@ -30,11 +45,13 @@ function getDatabaseConnection() {
     try {
         $pdo = new PDO($dsn, $username, $password, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_TIMEOUT => 30
         ]);
         return $pdo;
     } catch (PDOException $e) {
-        die("Connection failed: " . $e->getMessage());
+        error_log("Database connection failed: " . $e->getMessage());
+        die("Database connection failed. Please check your configuration.");
     }
 }
 
@@ -61,4 +78,3 @@ function fetch_all($result) {
     return $result ? $result->fetchAll(PDO::FETCH_ASSOC) : [];
 }
 ?>
-
