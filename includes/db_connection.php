@@ -1,151 +1,170 @@
 <?php
 // includes/db_connection.php
+// PostgreSQL + Google Sheets Hybrid
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php'; // Composer autoload for Google API
 
 use Google\Client;
 use Google\Service\Sheets;
 
-// ================================
-// GOOGLE SHEETS CONNECTION
-// ================================
-function getGoogleService() {
-    static $service = null;
+class HybridDataManager {
+    private $pdo;
+    private $sheetsService;
+    private $sheetId;
 
-    if ($service === null) {
+    public function __construct() {
+        // =========================
+        // PostgreSQL Connection
+        // =========================
+        $dbUrl = getenv('DATABASE_URL');
+        if (!$dbUrl) {
+            throw new Exception("❌ DATABASE_URL environment variable not set");
+        }
+
+        $db = parse_url($dbUrl);
+        if ($db === false || !isset($db['scheme']) || $db['scheme'] !== 'postgresql') {
+            throw new Exception("❌ Unsupported database scheme (only PostgreSQL is allowed)");
+        }
+
+        $dsn = sprintf(
+            "pgsql:host=%s;port=%s;dbname=%s;user=%s;password=%s",
+            $db['host'],
+            $db['port'] ?? 5432,
+            ltrim($db['path'], '/'),
+            $db['user'],
+            $db['pass']
+        );
+
+        try {
+            $this->pdo = new PDO($dsn, $db['user'], $db['pass'], [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            ]);
+        } catch (PDOException $e) {
+            throw new Exception("❌ PostgreSQL connection failed: " . $e->getMessage());
+        }
+
+        // =========================
+        // Google Sheets Connection
+        // =========================
+        $googleCreds = getenv('GOOGLE_CREDENTIALS_JSON');
+        if (!$googleCreds) {
+            throw new Exception("❌ GOOGLE_CREDENTIALS_JSON environment variable not set");
+        }
+
         $client = new Client();
-        $client->setApplicationName("Evaluation System");
-        $client->setScopes([Sheets::SPREADSHEETS_READONLY]);
+        $client->setAuthConfig(json_decode($googleCreds, true));
+        $client->addScope(Sheets::SPREADSHEETS);
 
-        $credentials = getenv('GOOGLE_CREDENTIALS_JSON');
-        if (!$credentials) {
-            throw new Exception("Missing GOOGLE_CREDENTIALS_JSON environment variable");
-        }
+        $this->sheetsService = new Sheets($client);
 
-        $client->setAuthConfig(json_decode($credentials, true));
-        $service = new Sheets($client);
-    }
-
-    return $service;
-}
-
-// Spreadsheet ID from env
-$spreadsheetId = getenv('GOOGLE_SPREADSHEET_ID');
-
-// ================================
-// FETCH STUDENTS (Sheet1)
-// ================================
-function getStudents() {
-    global $spreadsheetId;
-    $service = getGoogleService();
-
-    $range = "Sheet1!A:C"; // adjust if you have more columns
-    $response = $service->spreadsheets_values->get($spreadsheetId, $range);
-    $rows = $response->getValues();
-
-    $students = [];
-    if (!empty($rows)) {
-        $headers = array_map('strtolower', $rows[0]); // first row = headers
-        for ($i = 1; $i < count($rows); $i++) {
-            $row = $rows[$i];
-            $students[] = [
-                'name' => $row[0] ?? '',
-                'department' => $row[1] ?? '',
-                'subject' => $row[2] ?? ''
-            ];
+        // Your Google Sheet ID (from the URL of the sheet)
+        $this->sheetId = getenv('GOOGLE_SHEET_ID');
+        if (!$this->sheetId) {
+            throw new Exception("❌ GOOGLE_SHEET_ID environment variable not set");
         }
     }
-    return $students;
-}
 
-// ================================
-// FETCH TEACHERS (Sheet2)
-// ================================
-function getTeachers() {
-    global $spreadsheetId;
-    $service = getGoogleService();
-
-    $range = "Sheet2!A:C";
-    $response = $service->spreadsheets_values->get($spreadsheetId, $range);
-    $rows = $response->getValues();
-
-    $teachers = [];
-    if (!empty($rows)) {
-        $headers = array_map('strtolower', $rows[0]);
-        for ($i = 1; $i < count($rows); $i++) {
-            $row = $rows[$i];
-            $teachers[] = [
-                'name' => $row[0] ?? '',
-                'department' => strtoupper(trim($row[1] ?? '')),
-                'subject' => $row[2] ?? ''
-            ];
-        }
+    // ✅ Check if PostgreSQL is available
+    public function isDatabaseAvailable(): bool {
+        return $this->pdo !== null;
     }
-    return $teachers;
-}
 
-// ================================
-// DATABASE CONNECTION (Railway)
-// ================================
-
-
-$dsn = getenv("DATABASE_URL");
-$pdo = null;
-
-if ($dsn) {
-    $db = parse_url($dsn);
-
-    $scheme = $db["scheme"] ?? "";
-    $user = $db["user"] ?? "";
-    $pass = $db["pass"] ?? "";
-    $host = $db["host"] ?? "localhost";
-    $port = $db["port"] ?? "";
-    $dbname = ltrim($db["path"], "/");
-
-    if ($scheme === "mysql") {
-        // ✅ MySQL
-        $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-        ]);
-    } elseif ($scheme === "postgres" || $scheme === "postgresql") {
-        // ✅ PostgreSQL
-        $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $pass, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-        ]);
-    } else {
-        throw new Exception("Unsupported database scheme: $scheme");
-    }
-}
-
-
-// ================================
-// AUTHENTICATION
-// ================================
-function authenticateUser($username, $password) {
-    global $pdo;
-
-    // Admins stored in DB
-    if ($pdo) {
-        $stmt = $pdo->prepare("SELECT * FROM admins WHERE username = ?");
+    // ✅ Authenticate users (Admins from DB, Students from Google Sheets)
+    public function authenticateUser(string $username, string $password) {
+        // First, try admin users from PostgreSQL
+        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE username = ?");
         $stmt->execute([$username]);
-        $admin = $stmt->fetch();
-        if ($admin && password_verify($password, $admin['password'])) {
-            return ['type' => 'admin', 'id' => $admin['id'], 'name' => $admin['username']];
-        }
-    }
+        $user = $stmt->fetch();
 
-    // Students from Google Sheets
-    foreach (getStudents() as $student) {
-        if (strtolower($student['name']) === strtolower($username)) {
-            // for demo: password = department (you can change logic later)
-            if ($password === $student['department']) {
-                return ['type' => 'student', 'id' => $student['name'], 'name' => $student['name']];
+        if ($user && password_verify($password, $user['password'])) {
+            return [
+                'id' => $user['id'],
+                'username' => $user['username'],
+                'full_name' => $user['full_name'],
+                'user_type' => $user['user_type']
+            ];
+        }
+
+        // Next, try students from Google Sheets (Sheet1)
+        $range = "Sheet1!A:D"; // Adjust if you have more/less columns
+        $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
+        $rows = $response->getValues();
+
+        if (!empty($rows)) {
+            foreach ($rows as $row) {
+                // Expected columns: [StudentID, Username, Password, FullName]
+                if (count($row) >= 3) {
+                    $sheetUsername = strtoupper(trim($row[1]));
+                    $sheetPassword = trim($row[2]);
+                    $sheetName = $row[3] ?? $row[1];
+
+                    if ($sheetUsername === strtoupper($username) && $sheetPassword === $password) {
+                        return [
+                            'id' => $row[0],
+                            'username' => $sheetUsername,
+                            'full_name' => $sheetName,
+                            'user_type' => 'student'
+                        ];
+                    }
+                }
             }
         }
+
+        return false;
     }
 
-    return null;
+    // ✅ Get Teachers from Google Sheets (Sheet2)
+    public function getTeachersFromSheets(): array {
+        $range = "Sheet2!A:C"; // Name | Department | Subject
+        $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
+        $rows = $response->getValues();
+
+        $teachers = [];
+        if (!empty($rows)) {
+            foreach ($rows as $row) {
+                if (count($row) >= 2) {
+                    $teachers[] = [
+                        'name' => $row[0],
+                        'department' => $row[1],
+                        'subject' => $row[2] ?? ''
+                    ];
+                }
+            }
+        }
+        return $teachers;
+    }
+
+    // ✅ Log activity in PostgreSQL
+    public function logActivity(string $action, string $description, string $status = 'success', $userId = null): void {
+        $stmt = $this->pdo->prepare("INSERT INTO activity_log (action, description, status, user_id) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$action, $description, $status, $userId]);
+    }
 }
 
+// =========================
+// Global instance
+// =========================
+$hybrid = new HybridDataManager();
+
+// Helper function for other scripts
+function isDatabaseAvailable(): bool {
+    global $hybrid;
+    return $hybrid->isDatabaseAvailable();
+}
+
+function authenticateUser(string $username, string $password) {
+    global $hybrid;
+    return $hybrid->authenticateUser($username, $password);
+}
+
+function getTeachersFromSheets(): array {
+    global $hybrid;
+    return $hybrid->getTeachersFromSheets();
+}
+
+function logActivity(string $action, string $description, string $status = 'success', $userId = null): void {
+    global $hybrid;
+    $hybrid->logActivity($action, $description, $status, $userId);
+}
+?>
