@@ -1,6 +1,6 @@
 <?php
 // database_setup.php
-// Hybrid setup (DB for teachers/evaluations, Google Sheets for students)
+// Hybrid setup: PostgreSQL for teachers/evaluations/admin, Google Sheets for students
 
 require_once 'includes/db_connection.php';
 
@@ -27,12 +27,12 @@ if (!isDatabaseAvailable()) {
                 <h3>Hybrid System Information:</h3>
                 <ul>
                     <li><strong>Students Data:</strong> Stored in Google Sheets</li>
-                    <li><strong>Teachers & Evaluations:</strong> Stored in Database</li>
+                    <li><strong>Teachers & Evaluations:</strong> Stored in PostgreSQL</li>
                 </ul>
                 
                 <p><strong>Next Steps:</strong></p>
                 <ol>
-                    <li>Set up your database service on Railway (PostgreSQL or MySQL)</li>
+                    <li>Set up your PostgreSQL database on Railway</li>
                     <li>Ensure <code>DATABASE_URL</code> environment variable is set</li>
                     <li>Reload this setup to create teacher/evaluation tables</li>
                 </ol>
@@ -50,143 +50,136 @@ try {
     echo "🔧 Setting up hybrid database system...\n\n";
 
     // ==============================
-    // TABLE CREATION
+    // TABLE CREATION (Postgres syntax)
     // ==============================
 
     // Sections
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS sections (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             section_code VARCHAR(20) NOT NULL UNIQUE,
             section_name VARCHAR(100) NOT NULL,
-            program ENUM('SHS', 'COLLEGE') NOT NULL,
+            program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
             year_level VARCHAR(20),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_section_code (section_code),
-            INDEX idx_program (program)
-        )
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_section_code ON sections(section_code);
+        CREATE INDEX IF NOT EXISTS idx_program ON sections(program);
     ");
     echo "✓ Sections table ready\n";
 
     // Teachers
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS teachers (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
-            department ENUM('SHS', 'COLLEGE') NOT NULL,
+            department VARCHAR(10) NOT NULL CHECK (department IN ('SHS', 'COLLEGE', 'BOTH')),
             subject VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_name (name),
-            INDEX idx_department (department)
-        )
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_name ON teachers(name);
+        CREATE INDEX IF NOT EXISTS idx_department ON teachers(department);
     ");
     echo "✓ Teachers table ready\n";
 
     // Teacher-Section assignments
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS teacher_sections (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            teacher_id INT NOT NULL,
-            section_id INT NOT NULL,
+            id SERIAL PRIMARY KEY,
+            teacher_id INT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+            section_id INT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
             subject VARCHAR(100),
             school_year VARCHAR(20) DEFAULT '2025-2026',
-            semester ENUM('1st', '2nd') DEFAULT '1st',
+            semester VARCHAR(10) DEFAULT '1st' CHECK (semester IN ('1st','2nd')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            
-            FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
-            FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE CASCADE,
-            
-            UNIQUE KEY unique_assignment (teacher_id, section_id, subject, school_year, semester),
-            INDEX idx_teacher (teacher_id),
-            INDEX idx_section (section_id)
-        )
+            UNIQUE (teacher_id, section_id, subject, school_year, semester)
+        );
+        CREATE INDEX IF NOT EXISTS idx_teacher ON teacher_sections(teacher_id);
+        CREATE INDEX IF NOT EXISTS idx_section ON teacher_sections(section_id);
     ");
     echo "✓ Teacher-Sections table ready\n";
 
     // Evaluations
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS evaluations (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             student_id VARCHAR(20) NOT NULL,
             student_name VARCHAR(100) NOT NULL,
-            teacher_id INT NOT NULL,
+            teacher_id INT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
             section VARCHAR(50) NOT NULL,
-            program ENUM('SHS', 'COLLEGE') NOT NULL,
+            program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
             subject VARCHAR(100),
 
             -- Teaching Ability (6 questions)
-            q1_1 TINYINT NOT NULL CHECK (q1_1 BETWEEN 1 AND 5),
-            q1_2 TINYINT NOT NULL CHECK (q1_2 BETWEEN 1 AND 5),
-            q1_3 TINYINT NOT NULL CHECK (q1_3 BETWEEN 1 AND 5),
-            q1_4 TINYINT NOT NULL CHECK (q1_4 BETWEEN 1 AND 5),
-            q1_5 TINYINT NOT NULL CHECK (q1_5 BETWEEN 1 AND 5),
-            q1_6 TINYINT NOT NULL CHECK (q1_6 BETWEEN 1 AND 5),
+            q1_1 SMALLINT NOT NULL CHECK (q1_1 BETWEEN 1 AND 5),
+            q1_2 SMALLINT NOT NULL CHECK (q1_2 BETWEEN 1 AND 5),
+            q1_3 SMALLINT NOT NULL CHECK (q1_3 BETWEEN 1 AND 5),
+            q1_4 SMALLINT NOT NULL CHECK (q1_4 BETWEEN 1 AND 5),
+            q1_5 SMALLINT NOT NULL CHECK (q1_5 BETWEEN 1 AND 5),
+            q1_6 SMALLINT NOT NULL CHECK (q1_6 BETWEEN 1 AND 5),
 
             -- Management Skills (4 questions)
-            q2_1 TINYINT NOT NULL CHECK (q2_1 BETWEEN 1 AND 5),
-            q2_2 TINYINT NOT NULL CHECK (q2_2 BETWEEN 1 AND 5),
-            q2_3 TINYINT NOT NULL CHECK (q2_3 BETWEEN 1 AND 5),
-            q2_4 TINYINT NOT NULL CHECK (q2_4 BETWEEN 1 AND 5),
+            q2_1 SMALLINT NOT NULL CHECK (q2_1 BETWEEN 1 AND 5),
+            q2_2 SMALLINT NOT NULL CHECK (q2_2 BETWEEN 1 AND 5),
+            q2_3 SMALLINT NOT NULL CHECK (q2_3 BETWEEN 1 AND 5),
+            q2_4 SMALLINT NOT NULL CHECK (q2_4 BETWEEN 1 AND 5),
 
             -- Guidance Skills (4 questions)
-            q3_1 TINYINT NOT NULL CHECK (q3_1 BETWEEN 1 AND 5),
-            q3_2 TINYINT NOT NULL CHECK (q3_2 BETWEEN 1 AND 5),
-            q3_3 TINYINT NOT NULL CHECK (q3_3 BETWEEN 1 AND 5),
-            q3_4 TINYINT NOT NULL CHECK (q3_4 BETWEEN 1 AND 5),
+            q3_1 SMALLINT NOT NULL CHECK (q3_1 BETWEEN 1 AND 5),
+            q3_2 SMALLINT NOT NULL CHECK (q3_2 BETWEEN 1 AND 5),
+            q3_3 SMALLINT NOT NULL CHECK (q3_3 BETWEEN 1 AND 5),
+            q3_4 SMALLINT NOT NULL CHECK (q3_4 BETWEEN 1 AND 5),
 
             -- Personal & Social (6 questions)
-            q4_1 TINYINT NOT NULL CHECK (q4_1 BETWEEN 1 AND 5),
-            q4_2 TINYINT NOT NULL CHECK (q4_2 BETWEEN 1 AND 5),
-            q4_3 TINYINT NOT NULL CHECK (q4_3 BETWEEN 1 AND 5),
-            q4_4 TINYINT NOT NULL CHECK (q4_4 BETWEEN 1 AND 5),
-            q4_5 TINYINT NOT NULL CHECK (q4_5 BETWEEN 1 AND 5),
-            q4_6 TINYINT NOT NULL CHECK (q4_6 BETWEEN 1 AND 5),
+            q4_1 SMALLINT NOT NULL CHECK (q4_1 BETWEEN 1 AND 5),
+            q4_2 SMALLINT NOT NULL CHECK (q4_2 BETWEEN 1 AND 5),
+            q4_3 SMALLINT NOT NULL CHECK (q4_3 BETWEEN 1 AND 5),
+            q4_4 SMALLINT NOT NULL CHECK (q4_4 BETWEEN 1 AND 5),
+            q4_5 SMALLINT NOT NULL CHECK (q4_5 BETWEEN 1 AND 5),
+            q4_6 SMALLINT NOT NULL CHECK (q4_6 BETWEEN 1 AND 5),
 
             comments TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             submitted_at TIMESTAMP NULL,
-
-            FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_eval (student_id, teacher_id),
-
-            INDEX idx_student (student_id),
-            INDEX idx_teacher (teacher_id),
-            INDEX idx_section (section),
-            INDEX idx_program (program),
-            INDEX idx_created (created_at)
-        )
+            UNIQUE (student_id, teacher_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_student ON evaluations(student_id);
+        CREATE INDEX IF NOT EXISTS idx_teacher_eval ON evaluations(teacher_id);
+        CREATE INDEX IF NOT EXISTS idx_section_eval ON evaluations(section);
+        CREATE INDEX IF NOT EXISTS idx_program_eval ON evaluations(program);
+        CREATE INDEX IF NOT EXISTS idx_created_eval ON evaluations(created_at);
     ");
     echo "✓ Evaluations table ready\n";
 
     // Admin Users
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             username VARCHAR(50) NOT NULL UNIQUE,
             password VARCHAR(255) NOT NULL,
-            user_type ENUM('admin') DEFAULT 'admin',
+            user_type VARCHAR(20) DEFAULT 'admin' CHECK (user_type IN ('admin')),
             full_name VARCHAR(100),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_login TIMESTAMP NULL,
-            INDEX idx_username (username),
-            INDEX idx_user_type (user_type)
-        )
+            last_login TIMESTAMP NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_username ON users(username);
+        CREATE INDEX IF NOT EXISTS idx_user_type ON users(user_type);
     ");
     echo "✓ Admin users table ready\n";
 
     // Activity Log
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS activity_log (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             action VARCHAR(100) NOT NULL,
             description TEXT,
-            status ENUM('success', 'error', 'warning') DEFAULT 'success',
+            status VARCHAR(10) DEFAULT 'success' CHECK (status IN ('success','error','warning')),
             user_id VARCHAR(50),
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_timestamp (timestamp),
-            INDEX idx_user (user_id),
-            INDEX idx_status (status)
-        )
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_timestamp ON activity_log(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_user ON activity_log(user_id);
+        CREATE INDEX IF NOT EXISTS idx_status ON activity_log(status);
     ");
     echo "✓ Activity log table ready\n";
 
@@ -240,7 +233,7 @@ try {
     // ==============================
 
     echo "\n=== ✅ Hybrid Database Setup Complete ===\n\n";
-    echo "📊 Database holds: Teachers, Sections, Evaluations, Admins\n";
+    echo "📊 PostgreSQL holds: Teachers, Sections, Evaluations, Admins\n";
     echo "📑 Google Sheets holds: Student authentication & enrollment\n\n";
     echo "📝 Student Login (via Google Sheets):\n";
     echo "• Username: LASTNAMEFIRSTNAME (uppercase, no spaces)\n";
