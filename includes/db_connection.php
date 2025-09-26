@@ -56,7 +56,10 @@ class HybridDataManager {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
-            return ['id' => $user['id'], 'type' => $user['type']];
+            return [
+                'id'   => $user['id'],
+                'type' => $user['type'] ?? 'admin' // ✅ fallback if missing
+            ];
         }
 
         // 2. Try Google Sheets (students + teachers)
@@ -113,7 +116,7 @@ class HybridDataManager {
     }
 }
 
-// Helper function
+// ✅ Helper function
 function getDataManager() {
     static $manager = null;
     if (!$manager) {
