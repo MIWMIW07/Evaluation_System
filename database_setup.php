@@ -264,12 +264,16 @@ try {
     echo "3. Test student login with Google Sheets data\n\n";
     
     echo "📝 Google Sheets Format (Students sheet):\n";
-    echo "Column A: Student_ID\n";
-    echo "Column B: Full_Name\n";
-    echo "Column C: Section\n";
-    echo "Column D: Program (SHS/COLLEGE)\n";
-    echo "Column E: Username\n";
-    echo "Column F: Password (hashed)\n\n";
+    echo "Column A: Student_ID (e.g., 2025001)\n";
+    echo "Column B: Last_Name (e.g., Dela Cruz)\n";
+    echo "Column C: First_Name (e.g., Juan)\n";
+    echo "Column D: Section (e.g., SHS-11A)\n";
+    echo "Column E: Program (SHS or COLLEGE)\n\n";
+    
+    echo "🔐 Student Login System:\n";
+    echo "• Username: LASTNAME + FIRSTNAME (all caps, no spaces)\n";
+    echo "• Password: pass123 (for all students)\n";
+    echo "• Example: 'Dela Cruz, Juan' → Username: DELACRUZJUAN, Password: pass123\n\n";
 
     // Log setup completion
     $pdo->prepare("INSERT INTO activity_log (action, description, status, user_id) VALUES (?, ?, ?, ?)")
