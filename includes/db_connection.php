@@ -87,41 +87,38 @@ function getTeachers() {
 // ================================
 // DATABASE CONNECTION (Railway)
 // ================================
+
+
+$dsn = getenv("DATABASE_URL");
 $pdo = null;
 
-if (getenv('DATABASE_URL')) {
-    $dbUrl = getenv('DATABASE_URL');
-    $dbParts = parse_url($dbUrl);
+if ($dsn) {
+    $db = parse_url($dsn);
 
-    $scheme = $dbParts['scheme'];
-    $host = $dbParts['host'];
-    $user = $dbParts['user'];
-    $pass = $dbParts['pass'];
-    $port = $dbParts['port'];
-    $dbName = ltrim($dbParts['path'], '/');
+    $scheme = $db["scheme"] ?? "";
+    $user = $db["user"] ?? "";
+    $pass = $db["pass"] ?? "";
+    $host = $db["host"] ?? "localhost";
+    $port = $db["port"] ?? "";
+    $dbname = ltrim($db["path"], "/");
 
-    if ($scheme === 'postgres') {
-        $dsn = "pgsql:host=$host;port=$port;dbname=$dbName";
-    } elseif ($scheme === 'mysql') {
-        $dsn = "mysql:host=$host;port=$port;dbname=$dbName;charset=utf8mb4";
-    } else {
-        throw new Exception("Unsupported database scheme: $scheme");
-    }
-
-    try {
-        $pdo = new PDO($dsn, $user, $pass, [
+    if ($scheme === "mysql") {
+        // ✅ MySQL
+        $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
         ]);
-    } catch (Exception $e) {
-        $pdo = null;
+    } elseif ($scheme === "postgres" || $scheme === "postgresql") {
+        // ✅ PostgreSQL
+        $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
+    } else {
+        throw new Exception("Unsupported database scheme: $scheme");
     }
 }
 
-function isDatabaseAvailable() {
-    global $pdo;
-    return $pdo !== null;
-}
 
 // ================================
 // AUTHENTICATION
@@ -151,3 +148,4 @@ function authenticateUser($username, $password) {
 
     return null;
 }
+
