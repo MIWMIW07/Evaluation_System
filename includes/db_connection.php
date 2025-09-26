@@ -58,7 +58,7 @@ class HybridDataManager {
         if ($user && password_verify($password, $user['password'])) {
             return [
                 'id'   => $user['id'],
-                'type' => $user['type'] ?? 'admin' // ✅ fallback if missing
+                'type' => $user['type'] ?? 'admin'
             ];
         }
 
@@ -80,12 +80,12 @@ class HybridDataManager {
 
     /** ------------------ STUDENTS ------------------- */
     private function findStudent($username, $password) {
-        $range = "Students!A:C"; // Students
+        $range = "Students!A:C";
         $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
         $rows = $response->getValues();
 
         foreach ($rows as $i => $row) {
-            if ($i === 0) continue; // skip header
+            if ($i === 0) continue;
             if (isset($row[0]) && $row[0] === $username && isset($row[1]) && $row[1] === $password) {
                 return ['id' => $i, 'name' => $row[0]];
             }
@@ -95,14 +95,19 @@ class HybridDataManager {
 
     /** ------------------ TEACHERS ------------------- */
     private function findTeacher($username, $password) {
-        $range = "Teachers!A:C"; // Teachers
+        $range = "Teachers!A:C";
         $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
         $rows = $response->getValues();
 
         foreach ($rows as $i => $row) {
-            if ($i === 0) continue; // skip header
+            if ($i === 0) continue;
             if (isset($row[0]) && $row[0] === $username && isset($row[1]) && $row[1] === $password) {
-                return ['id' => $i, 'name' => $row[0], 'department' => $row[1], 'subject' => $row[2]];
+                return [
+                    'id' => $i,
+                    'name' => $row[0],
+                    'department' => $row[1] ?? null,
+                    'subject' => $row[2] ?? null
+                ];
             }
         }
         return null;
@@ -112,7 +117,7 @@ class HybridDataManager {
         $range = "Teachers!A:C";
         $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
         $rows = $response->getValues();
-        return array_slice($rows, 1); // skip header
+        return array_slice($rows, 1);
     }
 }
 
@@ -124,5 +129,3 @@ function getDataManager() {
     }
     return $manager;
 }
-?>
-
