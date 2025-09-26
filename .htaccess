@@ -3,6 +3,8 @@
 
 RewriteEngine On
 
+ServerName localhost
+
 # Prevent infinite loops by checking if we're already processing a redirect
 RewriteCond %{ENV:REDIRECT_STATUS} 200
 RewriteRule ^.*$ - [L]
@@ -81,3 +83,4 @@ php_value memory_limit 256M
 
 # Custom 403 page for reports access denied
 ErrorDocument 403 "Access to this file is restricted."
+
