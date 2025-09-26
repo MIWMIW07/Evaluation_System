@@ -58,7 +58,13 @@ try {
  * Test connection to Google APIs
  */
 function testConnection() {
-    $credentialsPath = 'credentials/service-account-key.json';
+    // Railway way - use environment variables
+    $credentialsJson = $_ENV['GOOGLE_CREDENTIALS_JSON'] ?? '';
+    $sheetId = $_POST['sheet_id'] ?? $_ENV['GOOGLE_SHEETS_ID'] ?? '';
+    
+    if (empty($credentialsJson)) {
+        return ['success' => false, 'error' => 'Google credentials not configured in Railway environment variables'];
+    }
     $sheetId = $_POST['sheet_id'] ?? '';
     
     if (!file_exists($credentialsPath)) {
