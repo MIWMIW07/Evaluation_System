@@ -80,7 +80,7 @@ class HybridDataManager {
 
     /** ------------------ STUDENTS ------------------- */
     private function findStudent($username, $password) {
-        $range = "Sheet1!A:C"; // Students
+        $range = "Students!A:C"; // Students
         $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
         $rows = $response->getValues();
 
@@ -95,7 +95,7 @@ class HybridDataManager {
 
     /** ------------------ TEACHERS ------------------- */
     private function findTeacher($username, $password) {
-        $range = "Sheet2!A:C"; // Teachers
+        $range = "Teachers!A:C"; // Teachers
         $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
         $rows = $response->getValues();
 
@@ -109,7 +109,7 @@ class HybridDataManager {
     }
 
     public function getTeachers() {
-        $range = "Sheet2!A:C";
+        $range = "Teachers!A:C";
         $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
         $rows = $response->getValues();
         return array_slice($rows, 1); // skip header
@@ -125,3 +125,4 @@ function getDataManager() {
     return $manager;
 }
 ?>
+
