@@ -456,7 +456,7 @@ try {
         <div class="actions-container">
             <a href="database_setup.php" class="btn btn-secondary">🔧 Database Setup</a>
             <a href="#" onclick="location.reload();" class="btn btn-secondary">🔄 Refresh Data</a>
-            <a href="google_integration_dashboard.php" class="btn btn-secondary">🔗 Google Integration</a>
+            echo '<a href="google_integration_dashboard.php" class="btn btn-secondary">🔗 Google Integration</a>';
         </div>
 
         <div class="report-generation-section">
