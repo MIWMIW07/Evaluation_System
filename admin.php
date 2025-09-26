@@ -113,9 +113,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
   </header>
 
   <nav>
-    <button onclick="location.href='setup.php'">⚙ Database Setup</button>
+    <button onclick="location.href='database_setup.php'">⚙ Database Setup</button>
     <button onclick="location.href='refresh.php'">🔄 Refresh Data</button>
-    <button onclick="location.href='google.php'">🔗 Google Integration</button>
+    <button onclick="location.href='google_integration_dashboard.php'">🔗 Google Integration</button>
     <button class="logout-btn" onclick="location.href='logout.php'">🚪 Logout</button>
   </nav>
 
