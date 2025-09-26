@@ -1,45 +1,38 @@
-# Dependencies
+# Composer
 vendor/
-node_modules/
+composer.lock
 
-# Environment variables
+# Environment files  
 .env
 .env.local
 .env.production
 
-# Credentials and sensitive files
-credentials/
-*.json
-*.key
-*.pem
+# Google credentials - use env vars instead
+credentials/*.json
+credentials/*.key
+credentials/*.pem
 
 # Generated files
-reports/
-backups/
-*.log
-logs/
+reports/*.html
+reports/*.csv
+reports/*.pdf
+reports/*.sql
 
 # System files
 .DS_Store
 Thumbs.db
+*.log
+logs/
+tmp/
+temp/
+*.tmp
 
 # IDE files
 .vscode/
 .idea/
 *.swp
-*.swo
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Cache
 .cache/
 
-# Docker
-docker-compose.override.yml
-
-# OS generated files
-ehthumbs.db
-Icon?
+# Keep directories but ignore contents
+!credentials/.gitkeep
+!reports/.gitkeep
