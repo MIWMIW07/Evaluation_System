@@ -25,10 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         } else {
-            $error = "Invalid username or password.";
+            $error = "❌ Invalid username or password.";
         }
     } catch (Exception $e) {
-        $error = "Login failed: " . $e->getMessage();
+        $error = "❌ Login failed: " . $e->getMessage();
     }
 }
 ?>
