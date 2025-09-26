@@ -24,7 +24,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN a2enmod rewrite \
     && echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# Configure Apache for Railway
+# Configure Apache for Railway with dynamic port
 RUN echo "<Directory /var/www/html>" > /etc/apache2/conf-available/railway.conf \
     && echo "    AllowOverride All" >> /etc/apache2/conf-available/railway.conf \
     && echo "    Require all granted" >> /etc/apache2/conf-available/railway.conf \
@@ -52,8 +52,16 @@ RUN chown -R www-data:www-data /var/www/html \
     && mkdir -p /var/www/html/reports \
     && chown www-data:www-data /var/www/html/reports
 
-# Expose port 80
+# Create a startup script to handle dynamic port
+RUN echo '#!/bin/bash' > /start.sh \
+    && echo 'PORT=${PORT:-80}' >> /start.sh \
+    && echo 'sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf' >> /start.sh \
+    && echo 'sed -i "s/<VirtualHost \\*:80>/<VirtualHost *:$PORT>/" /etc/apache2/sites-available/000-default.conf' >> /start.sh \
+    && echo 'apache2-foreground' >> /start.sh \
+    && chmod +x /start.sh
+
+# Expose port (will be overridden by Railway)
 EXPOSE 80
 
-# Start Apache
-CMD ["apache2-foreground"]
+# Start with our custom script
+CMD ["/start.sh"]
