@@ -2,10 +2,21 @@
 // google_sheets_integration.php - Google Sheets API Integration
 
 require_once 'vendor/autoload.php'; // Composer autoload for Google Client
+require_once 'includes/db_connection.php'; // make sure your PDO $pdo is available
 
-// Check if service account file exists
-if (!file_exists(__DIR__ . '/credentials/service-account-key.json')) {
-    // Return error response instead of crashing
+// Path to default credentials file
+$credentialsPath = __DIR__ . '/credentials/service-account-key.json';
+
+// Try environment variable first
+$googleCredentials = getenv('GOOGLE_CREDENTIALS_JSON');
+
+if ($googleCredentials) {
+    // Write JSON to a temporary file so Google Client can use it
+    $tempPath = sys_get_temp_dir() . '/google-credentials.json';
+    file_put_contents($tempPath, $googleCredentials);
+    $credentialsPath = $tempPath;
+} elseif (!file_exists($credentialsPath)) {
+    // Neither env var nor file found → return error
     header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
@@ -13,7 +24,6 @@ if (!file_exists(__DIR__ . '/credentials/service-account-key.json')) {
     ]);
     exit;
 }
-
 
 class GoogleSheetsIntegration {
     private $client;
@@ -389,4 +399,3 @@ class GoogleSheetsIntegration {
         ];
     }
 }
-?>
