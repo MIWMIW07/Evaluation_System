@@ -5,10 +5,6 @@
 
 require_once 'includes/db_connection.php';
 
-// Initialize PDO connection
-$pdo = getPDO();
-
-
 // ✅ If database is not available, show info page
 if (!isDatabaseAvailable()) {
     ?>
@@ -56,10 +52,21 @@ try {
     echo "🔧 Setting up hybrid database system...\n\n";
 
     // ==============================
+    // Drop old tables (clean slate)
+    // ==============================
+    $pdo->exec("
+        DROP TABLE IF EXISTS activity_logs CASCADE;
+        DROP TABLE IF EXISTS evaluations CASCADE;
+        DROP TABLE IF EXISTS teacher_assignments CASCADE;
+        DROP TABLE IF EXISTS sections CASCADE;
+        DROP TABLE IF EXISTS users CASCADE;
+    ");
+
+    // ==============================
     // Sections
     // ==============================
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS sections (
+        CREATE TABLE sections (
             id SERIAL PRIMARY KEY,
             section_code VARCHAR(20) NOT NULL UNIQUE,
             section_name VARCHAR(100) NOT NULL,
@@ -67,8 +74,8 @@ try {
             year_level VARCHAR(20),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-        CREATE INDEX IF NOT EXISTS idx_section_code ON sections(section_code);
-        CREATE INDEX IF NOT EXISTS idx_program ON sections(program);
+        CREATE INDEX idx_section_code ON sections(section_code);
+        CREATE INDEX idx_program ON sections(program);
     ");
     echo "✓ Sections table ready\n";
 
@@ -76,7 +83,7 @@ try {
     // Teacher Assignments
     // ==============================
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS teacher_assignments (
+        CREATE TABLE teacher_assignments (
             id SERIAL PRIMARY KEY,
             teacher_name VARCHAR(100) NOT NULL,
             section_id INT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
@@ -87,8 +94,8 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE (teacher_name, section_id, subject, school_year, semester)
         );
-        CREATE INDEX IF NOT EXISTS idx_teacher_assign ON teacher_assignments(teacher_name);
-        CREATE INDEX IF NOT EXISTS idx_section_assign ON teacher_assignments(section_id);
+        CREATE INDEX idx_teacher_assign ON teacher_assignments(teacher_name);
+        CREATE INDEX idx_section_assign ON teacher_assignments(section_id);
     ");
     echo "✓ Teacher assignments table ready\n";
 
@@ -96,7 +103,7 @@ try {
     // Evaluations
     // ==============================
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS evaluations (
+        CREATE TABLE evaluations (
             id SERIAL PRIMARY KEY,
             student_id VARCHAR(20) NOT NULL,
             student_name VARCHAR(100) NOT NULL,
@@ -129,9 +136,9 @@ try {
             submitted_at TIMESTAMP NULL,
             UNIQUE (student_id, teacher_name, subject)
         );
-        CREATE INDEX IF NOT EXISTS idx_student_eval ON evaluations(student_id);
-        CREATE INDEX IF NOT EXISTS idx_teacher_eval ON evaluations(teacher_name);
-        CREATE INDEX IF NOT EXISTS idx_section_eval ON evaluations(section);
+        CREATE INDEX idx_student_eval ON evaluations(student_id);
+        CREATE INDEX idx_teacher_eval ON evaluations(teacher_name);
+        CREATE INDEX idx_section_eval ON evaluations(section);
     ");
     echo "✓ Evaluations table ready\n";
 
@@ -139,7 +146,7 @@ try {
     // Admin Users
     // ==============================
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE users (
             id SERIAL PRIMARY KEY,
             username VARCHAR(50) NOT NULL UNIQUE,
             password VARCHAR(255) NOT NULL,
@@ -155,7 +162,7 @@ try {
     // Activity Logs
     // ==============================
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS activity_logs (
+        CREATE TABLE activity_logs (
             id SERIAL PRIMARY KEY,
             user_id INT NULL,
             action VARCHAR(100) NOT NULL,
@@ -211,4 +218,3 @@ try {
     exit(1);
 }
 ?>
-
