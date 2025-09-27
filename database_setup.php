@@ -1,11 +1,11 @@
 <?php
 // database_setup.php
-// Hybrid setup: PostgreSQL for teacher assignments, evaluations, admins
-// Google Sheets for student + teacher lists
+// Minimal database setup: Only evaluations and teacher_assignments tables
+// Students and teachers data stored in Google Sheets
 
 require_once __DIR__ . '/includes/db_connection.php';
 
-// ✅ If database is not available, show info page
+// Check if database is available
 if (!isDatabaseAvailable()) {
     ?>
     <!DOCTYPE html>
@@ -27,9 +27,9 @@ if (!isDatabaseAvailable()) {
             <div class="info">
                 <h3>Hybrid System Information:</h3>
                 <ul>
-                    <li><strong>Students Data:</strong> Stored in Google Sheets</li>
+                    <li><strong>Students Data:</strong> Stored in Google Sheets (Student_ID, Last_Name, First_Name, Section, Program, Username, Password)</li>
                     <li><strong>Teachers List:</strong> Stored in Google Sheets</li>
-                    <li><strong>Teacher Assignments, Evaluations, Admins:</strong> Stored in PostgreSQL</li>
+                    <li><strong>Evaluations & Teacher Assignments:</strong> Stored in PostgreSQL</li>
                 </ul>
                 
                 <p><strong>Next Steps:</strong></p>
@@ -49,172 +49,178 @@ if (!isDatabaseAvailable()) {
 }
 
 try {
-    $pdo = getPDO(); // ✅ use the helper to get PDO
-    echo "🔧 Setting up hybrid database system...<br><br>";
+    $pdo = getPDO();
+    echo "<h2>🔧 Setting up minimal database system...</h2><br>";
 
     // ==============================
-    // Drop old tables (clean slate)
+    // Drop ALL old tables (clean slate)
     // ==============================
+    echo "🗑️ Cleaning up old tables...<br>";
     $pdo->exec("
         DROP TABLE IF EXISTS activity_logs CASCADE;
         DROP TABLE IF EXISTS evaluations CASCADE;
         DROP TABLE IF EXISTS teacher_assignments CASCADE;
         DROP TABLE IF EXISTS sections CASCADE;
         DROP TABLE IF EXISTS users CASCADE;
+        DROP TABLE IF EXISTS students CASCADE;
+        DROP TABLE IF EXISTS teachers CASCADE;
+        DROP TABLE IF EXISTS login_attempts CASCADE;
+        DROP TABLE IF EXISTS section_teachers CASCADE;
     ");
+    echo "✓ Old tables removed<br><br>";
 
     // ==============================
-    // Sections
+    // Teacher Assignments Table
     // ==============================
-    $pdo->exec("
-        CREATE TABLE sections (
-            id SERIAL PRIMARY KEY,
-            section_code VARCHAR(20) NOT NULL UNIQUE,
-            section_name VARCHAR(100) NOT NULL,
-            program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
-            year_level VARCHAR(20),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        CREATE INDEX idx_section_code ON sections(section_code);
-        CREATE INDEX idx_program ON sections(program);
-    ");
-    echo "✓ Sections table ready<br>";
-
-    // ==============================
-    // Teacher Assignments
-    // ==============================
+    echo "📋 Creating teacher_assignments table...<br>";
     $pdo->exec("
         CREATE TABLE teacher_assignments (
             id SERIAL PRIMARY KEY,
             teacher_name VARCHAR(100) NOT NULL,
-            section_id INT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
+            section VARCHAR(50) NOT NULL,
             subject VARCHAR(100) NOT NULL,
             program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
             school_year VARCHAR(20) DEFAULT '2025-2026',
             semester VARCHAR(10) DEFAULT '1st' CHECK (semester IN ('1st','2nd')),
+            is_active BOOLEAN DEFAULT true,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE (teacher_name, section_id, subject, school_year, semester)
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (teacher_name, section, subject, school_year, semester)
         );
-        CREATE INDEX idx_teacher_assign ON teacher_assignments(teacher_name);
-        CREATE INDEX idx_section_assign ON teacher_assignments(section_id);
+        
+        CREATE INDEX idx_teacher_name ON teacher_assignments(teacher_name);
+        CREATE INDEX idx_section ON teacher_assignments(section);
+        CREATE INDEX idx_program ON teacher_assignments(program);
+        CREATE INDEX idx_active ON teacher_assignments(is_active);
     ");
-    echo "✓ Teacher assignments table ready<br>";
+    echo "✓ Teacher assignments table created<br>";
 
     // ==============================
-    // Evaluations
+    // Evaluations Table
     // ==============================
+    echo "📊 Creating evaluations table...<br>";
     $pdo->exec("
         CREATE TABLE evaluations (
             id SERIAL PRIMARY KEY,
-            student_id VARCHAR(20) NOT NULL,
+            student_username VARCHAR(50) NOT NULL,
             student_name VARCHAR(100) NOT NULL,
             teacher_name VARCHAR(100) NOT NULL,
             section VARCHAR(50) NOT NULL,
             program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
             subject VARCHAR(100),
+            
+            -- Section 1: Teaching Ability (6 questions)
             q1_1 SMALLINT CHECK (q1_1 BETWEEN 1 AND 5),
             q1_2 SMALLINT CHECK (q1_2 BETWEEN 1 AND 5),
             q1_3 SMALLINT CHECK (q1_3 BETWEEN 1 AND 5),
             q1_4 SMALLINT CHECK (q1_4 BETWEEN 1 AND 5),
             q1_5 SMALLINT CHECK (q1_5 BETWEEN 1 AND 5),
             q1_6 SMALLINT CHECK (q1_6 BETWEEN 1 AND 5),
+            
+            -- Section 2: Management Skills (4 questions)
             q2_1 SMALLINT CHECK (q2_1 BETWEEN 1 AND 5),
             q2_2 SMALLINT CHECK (q2_2 BETWEEN 1 AND 5),
             q2_3 SMALLINT CHECK (q2_3 BETWEEN 1 AND 5),
             q2_4 SMALLINT CHECK (q2_4 BETWEEN 1 AND 5),
+            
+            -- Section 3: Guidance Skills (4 questions)
             q3_1 SMALLINT CHECK (q3_1 BETWEEN 1 AND 5),
             q3_2 SMALLINT CHECK (q3_2 BETWEEN 1 AND 5),
             q3_3 SMALLINT CHECK (q3_3 BETWEEN 1 AND 5),
             q3_4 SMALLINT CHECK (q3_4 BETWEEN 1 AND 5),
+            
+            -- Section 4: Personal and Social Characteristics (6 questions)
             q4_1 SMALLINT CHECK (q4_1 BETWEEN 1 AND 5),
             q4_2 SMALLINT CHECK (q4_2 BETWEEN 1 AND 5),
             q4_3 SMALLINT CHECK (q4_3 BETWEEN 1 AND 5),
             q4_4 SMALLINT CHECK (q4_4 BETWEEN 1 AND 5),
             q4_5 SMALLINT CHECK (q4_5 BETWEEN 1 AND 5),
             q4_6 SMALLINT CHECK (q4_6 BETWEEN 1 AND 5),
+            
+            -- Comments and timestamps
             comments TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            submitted_at TIMESTAMP NULL,
-            UNIQUE (student_id, teacher_name, subject)
+            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            
+            -- Prevent duplicate evaluations
+            UNIQUE (student_username, teacher_name, subject, section)
         );
-        CREATE INDEX idx_student_eval ON evaluations(student_id);
+        
+        CREATE INDEX idx_student_username ON evaluations(student_username);
         CREATE INDEX idx_teacher_eval ON evaluations(teacher_name);
         CREATE INDEX idx_section_eval ON evaluations(section);
+        CREATE INDEX idx_program_eval ON evaluations(program);
     ");
-    echo "✓ Evaluations table ready<br>";
+    echo "✓ Evaluations table created<br>";
 
     // ==============================
-    // Admin Users
+    // Insert Sample Teacher Assignments
     // ==============================
-    $pdo->exec("
-        CREATE TABLE users (
-            id SERIAL PRIMARY KEY,
-            username VARCHAR(50) NOT NULL UNIQUE,
-            password VARCHAR(255) NOT NULL,
-            user_type VARCHAR(20) DEFAULT 'admin' CHECK (user_type IN ('admin')),
-            full_name VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_login TIMESTAMP NULL
-        );
+    echo "<br>📝 Adding sample teacher assignments...<br>";
+    $sample_assignments = [
+        // SHS Teachers
+        ['Ms. Rodriguez', 'SHS-11A', 'Mathematics', 'SHS', '2025-2026', '1st'],
+        ['Mr. Santos', 'SHS-11A', 'English', 'SHS', '2025-2026', '1st'],
+        ['Mrs. Cruz', 'SHS-11A', 'Science', 'SHS', '2025-2026', '1st'],
+        ['Ms. Garcia', 'SHS-12A', 'Mathematics', 'SHS', '2025-2026', '1st'],
+        ['Mr. Lopez', 'SHS-12A', 'Filipino', 'SHS', '2025-2026', '1st'],
+        
+        // College Teachers
+        ['Prof. Johnson', 'BSCS-1A', 'Programming Fundamentals', 'COLLEGE', '2025-2026', '1st'],
+        ['Dr. Williams', 'BSCS-1A', 'Computer Science Fundamentals', 'COLLEGE', '2025-2026', '1st'],
+        ['Prof. Brown', 'BSCS-2A', 'Data Structures', 'COLLEGE', '2025-2026', '1st'],
+        ['Dr. Davis', 'BSCS-2A', 'Database Systems', 'COLLEGE', '2025-2026', '1st'],
+    ];
+    
+    $stmt = $pdo->prepare("
+        INSERT INTO teacher_assignments (teacher_name, section, subject, program, school_year, semester) 
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT (teacher_name, section, subject, school_year, semester) DO NOTHING
     ");
-    echo "✓ Admin users table ready<br>";
-
-    // ==============================
-    // Activity Logs
-    // ==============================
-    $pdo->exec("
-        CREATE TABLE activity_logs (
-            id SERIAL PRIMARY KEY,
-            user_id INT NULL,
-            action VARCHAR(100) NOT NULL,
-            details TEXT,
-            status VARCHAR(20),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    ");
-    echo "✓ Activity logs table ready<br>";
-
-    // ==============================
-    // Default Data
-    // ==============================
-    $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE user_type = 'admin'");
-    if ($stmt->fetchColumn() == 0) {
-        $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
-        $pdo->prepare("INSERT INTO users (username, password, user_type, full_name) VALUES (?, ?, 'admin', 'System Administrator')")
-            ->execute(['admin', $adminPass]);
-        echo "✓ Default admin created (username: admin, password: admin123)<br>";
-    }
-
-    $stmt = $pdo->query("SELECT COUNT(*) FROM sections");
-    if ($stmt->fetchColumn() == 0) {
-        $sections = [
-            ['SHS-11A', 'Grade 11 Section A', 'SHS', 'Grade 11'],
-            ['SHS-12A', 'Grade 12 Section A', 'SHS', 'Grade 12'],
-            ['COL-IT1A', 'IT 1st Year A', 'COLLEGE', '1st Year'],
-            ['COL-IT2A', 'IT 2nd Year A', 'COLLEGE', '2nd Year']
-        ];
-        foreach ($sections as $s) {
-            $pdo->prepare("INSERT INTO sections (section_code, section_name, program, year_level) VALUES (?, ?, ?, ?)")
-                ->execute($s);
+    
+    $added_count = 0;
+    foreach ($sample_assignments as $assignment) {
+        $stmt->execute($assignment);
+        if ($stmt->rowCount() > 0) {
+            $added_count++;
         }
-        echo "✓ Sample sections created<br>";
     }
+    echo "✓ Added {$added_count} teacher assignments<br>";
 
     // ==============================
-    // Summary + Activity Log
+    // Summary
     // ==============================
-    echo "<br>=== ✅ Hybrid Database Setup Complete ===<br><br>";
-    echo "📊 PostgreSQL holds: Sections, Teacher Assignments, Evaluations, Admins<br>";
-    echo "📑 Google Sheets holds: Student list + Teacher list<br><br>";
-    echo "📝 Student Login (via Google Sheets):<br>";
-    echo "• Username: LASTNAMEFIRSTNAME (uppercase, no spaces)<br>";
-    echo "• Password: pass123<br><br>";
-
-    // Log setup completion
-    logActivity("setup", "Hybrid DB setup completed", "success", null);
+    echo "<br><div style='background: #d4edda; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745;'>";
+    echo "<h3>✅ Database Setup Complete!</h3>";
+    echo "<p><strong>Tables Created:</strong></p>";
+    echo "<ul>";
+    echo "<li>📋 <code>teacher_assignments</code> - Links teachers to sections and subjects</li>";
+    echo "<li>📊 <code>evaluations</code> - Stores student evaluation responses</li>";
+    echo "</ul>";
+    
+    echo "<p><strong>Data Source:</strong></p>";
+    echo "<ul>";
+    echo "<li>📑 <strong>Students:</strong> Google Sheets (Columns: Student_ID, Last_Name, First_Name, Section, Program, Username, Password)</li>";
+    echo "<li>👨‍🏫 <strong>Teachers:</strong> Database teacher_assignments table</li>";
+    echo "</ul>";
+    
+    echo "<p><strong>Next Steps:</strong></p>";
+    echo "<ol>";
+    echo "<li>Ensure your Google Sheets has the correct student data</li>";
+    echo "<li>Students will login using their Username from Google Sheets</li>";
+    echo "<li>Student info will be automatically displayed from Google Sheets</li>";
+    echo "<li>Add more teacher assignments as needed</li>";
+    echo "</ol>";
+    echo "</div>";
+    
+    echo "<br><p><a href='index.php' style='background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;'>← Go to Login Page</a></p>";
 
 } catch (PDOException $e) {
-    logActivity("setup", "Database setup failed: " . $e->getMessage(), "error", null);
-    echo "❌ Error: " . $e->getMessage();
+    echo "<div style='background: #f8d7da; padding: 20px; border-radius: 8px; border-left: 4px solid #dc3545; margin: 20px 0;'>";
+    echo "<h3>❌ Database Setup Failed</h3>";
+    echo "<p><strong>Error:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
+    echo "<p>Please check your database connection and try again.</p>";
+    echo "</div>";
     exit(1);
 }
+?>
