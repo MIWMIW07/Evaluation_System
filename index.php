@@ -1,154 +1,182 @@
 <?php
-// index.php – Login Page (UI Only)
 session_start();
+
+// Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
-    // Already logged in → go to dashboard
-    if ($_SESSION['user_type'] === 'student') {
-        header("Location: student_dashboard.php");
+    if ($_SESSION['user_type'] === 'admin') {
+        header('Location: admin.php');
+    } elseif ($_SESSION['user_type'] === 'student') {
+        header('Location: student_dashboard.php');
     } else {
-        header("Location: admin.php");
+        header('Location: login.php');
     }
     exit();
-}
-
-// Error handling
-$errorMessage = '';
-if (isset($_GET['error'])) {
-    if ($_GET['error'] === 'required') {
-        $errorMessage = 'Please enter both username and password.';
-    } elseif ($_GET['error'] === 'invalid') {
-        $errorMessage = 'Invalid username or password.';
-    }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TES Evaluation System – Login</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, #6A0DAD, #FFD700); /* Maroon/Gold theme */
-      animation: gradientBG 10s ease infinite;
-    }
-
-    @keyframes gradientBG {
-      0% { background: linear-gradient(135deg, #6A0DAD, #FFD700); }
-      50% { background: linear-gradient(135deg, #FFD700, #6A0DAD); }
-      100% { background: linear-gradient(135deg, #6A0DAD, #FFD700); }
-    }
-
-    .login-container {
-      background: rgba(255, 255, 255, 0.95);
-      padding: 40px;
-      border-radius: 20px;
-      width: 400px;
-      box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.3);
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .login-container h2 {
-      color: #6A0DAD;
-      font-size: 28px;
-      margin-bottom: 25px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-      text-align: left;
-    }
-
-    .form-group label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 8px;
-      color: #333;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-      transition: 0.3s;
-    }
-
-    .form-group input:focus {
-      border-color: #6A0DAD;
-      outline: none;
-      box-shadow: 0px 0px 8px rgba(106, 13, 173, 0.5);
-    }
-
-    .btn {
-      width: 100%;
-      padding: 14px;
-      background: #6A0DAD;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 18px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    .btn:hover {
-      background: #FFD700;
-      color: #6A0DAD;
-      transform: scale(1.05);
-    }
-
-    .error-message {
-      color: red;
-      margin-bottom: 15px;
-      font-weight: bold;
-    }
-
-    /* Floating shapes */
-    .shape {
-      position: absolute;
-      border-radius: 50%;
-      opacity: 0.3;
-      animation: float 6s ease-in-out infinite;
-    }
-
-    .shape1 { width: 100px; height: 100px; background: #FFD700; top: -50px; left: -50px; }
-    .shape2 { width: 120px; height: 120px; background: #6A0DAD; bottom: -60px; right: -60px; }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-20px); }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Evaluation System - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #800000 0%, #500000 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo img {
+            height: 80px;
+            width: auto;
+        }
+        
+        h1 {
+            color: #800000;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #800000;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #D4AF37;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #800000;
+            box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #800000 0%, #A52A2A 100%);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: linear-gradient(135deg, #A52A2A 0%, #800000 100%);
+            transform: translateY(-2px);
+        }
+        
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-  <div class="login-container">
-    <div class="shape shape1"></div>
-    <div class="shape shape2"></div>
-    <h2>TES Evaluation System</h2>
-    <?php if (!empty($errorMessage)): ?>
-      <p class="error-message"><?= htmlspecialchars($errorMessage) ?></p>
-    <?php endif; ?>
-    <form action="login.php" method="POST">
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" id="username" name="username" required>
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
-      </div>
-      <button type="submit" class="btn">Sign In</button>
-    </form>
-  </div>
+    <div class="login-container">
+        <div class="logo">
+            <img src="logo.png" alt="School Logo" onerror="this.style.display='none'">
+        </div>
+        
+        <h1>Teacher Evaluation System</h1>
+        
+        <?php if (isset($_SESSION['logout_message'])): ?>
+            <div class="alert alert-success">
+                <?php 
+                echo htmlspecialchars($_SESSION['logout_message']); 
+                unset($_SESSION['logout_message']);
+                ?>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-error">
+                <?php 
+                echo htmlspecialchars($_SESSION['error']); 
+                unset($_SESSION['error']);
+                ?>
+            </div>
+        <?php endif; ?>
+        
+        <form method="POST" action="login.php">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <button type="submit" class="btn">Login</button>
+        </form>
+        
+        <div class="footer">
+            <p>&copy; 2025 Philippine Technological Institute</p>
+            <p>of Science Arts and Trade, Inc.</p>
+        </div>
+    </div>
 </body>
 </html>
