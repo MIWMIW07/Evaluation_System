@@ -1,9 +1,9 @@
 <?php
 // database_setup.php
-// Hybrid setup: PostgreSQL for teachers assignments, evaluations, admins
+// Hybrid setup: PostgreSQL for teacher assignments, evaluations, admins
 // Google Sheets for student + teacher lists
 
-require_once 'includes/db_connection.php';
+require_once __DIR__ . '/includes/db_connection.php';
 
 // ✅ If database is not available, show info page
 if (!isDatabaseAvailable()) {
@@ -49,7 +49,8 @@ if (!isDatabaseAvailable()) {
 }
 
 try {
-    echo "🔧 Setting up hybrid database system...\n\n";
+    $pdo = getPDO(); // ✅ use the helper to get PDO
+    echo "🔧 Setting up hybrid database system...<br><br>";
 
     // ==============================
     // Drop old tables (clean slate)
@@ -77,7 +78,7 @@ try {
         CREATE INDEX idx_section_code ON sections(section_code);
         CREATE INDEX idx_program ON sections(program);
     ");
-    echo "✓ Sections table ready\n";
+    echo "✓ Sections table ready<br>";
 
     // ==============================
     // Teacher Assignments
@@ -97,7 +98,7 @@ try {
         CREATE INDEX idx_teacher_assign ON teacher_assignments(teacher_name);
         CREATE INDEX idx_section_assign ON teacher_assignments(section_id);
     ");
-    echo "✓ Teacher assignments table ready\n";
+    echo "✓ Teacher assignments table ready<br>";
 
     // ==============================
     // Evaluations
@@ -140,7 +141,7 @@ try {
         CREATE INDEX idx_teacher_eval ON evaluations(teacher_name);
         CREATE INDEX idx_section_eval ON evaluations(section);
     ");
-    echo "✓ Evaluations table ready\n";
+    echo "✓ Evaluations table ready<br>";
 
     // ==============================
     // Admin Users
@@ -156,7 +157,7 @@ try {
             last_login TIMESTAMP NULL
         );
     ");
-    echo "✓ Admin users table ready\n";
+    echo "✓ Admin users table ready<br>";
 
     // ==============================
     // Activity Logs
@@ -171,7 +172,7 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     ");
-    echo "✓ Activity logs table ready\n";
+    echo "✓ Activity logs table ready<br>";
 
     // ==============================
     // Default Data
@@ -181,7 +182,7 @@ try {
         $adminPass = password_hash('admin123', PASSWORD_DEFAULT);
         $pdo->prepare("INSERT INTO users (username, password, user_type, full_name) VALUES (?, ?, 'admin', 'System Administrator')")
             ->execute(['admin', $adminPass]);
-        echo "✓ Default admin created (username: admin, password: admin123)\n";
+        echo "✓ Default admin created (username: admin, password: admin123)<br>";
     }
 
     $stmt = $pdo->query("SELECT COUNT(*) FROM sections");
@@ -196,18 +197,18 @@ try {
             $pdo->prepare("INSERT INTO sections (section_code, section_name, program, year_level) VALUES (?, ?, ?, ?)")
                 ->execute($s);
         }
-        echo "✓ Sample sections created\n";
+        echo "✓ Sample sections created<br>";
     }
 
     // ==============================
     // Summary + Activity Log
     // ==============================
-    echo "\n=== ✅ Hybrid Database Setup Complete ===\n\n";
-    echo "📊 PostgreSQL holds: Sections, Teacher Assignments, Evaluations, Admins\n";
-    echo "📑 Google Sheets holds: Student list + Teacher list\n\n";
-    echo "📝 Student Login (via Google Sheets):\n";
-    echo "• Username: LASTNAMEFIRSTNAME (uppercase, no spaces)\n";
-    echo "• Password: pass123\n\n";
+    echo "<br>=== ✅ Hybrid Database Setup Complete ===<br><br>";
+    echo "📊 PostgreSQL holds: Sections, Teacher Assignments, Evaluations, Admins<br>";
+    echo "📑 Google Sheets holds: Student list + Teacher list<br><br>";
+    echo "📝 Student Login (via Google Sheets):<br>";
+    echo "• Username: LASTNAMEFIRSTNAME (uppercase, no spaces)<br>";
+    echo "• Password: pass123<br><br>";
 
     // Log setup completion
     logActivity("setup", "Hybrid DB setup completed", "success", null);
@@ -217,4 +218,3 @@ try {
     echo "❌ Error: " . $e->getMessage();
     exit(1);
 }
-?>
