@@ -58,7 +58,7 @@ class HybridDataManager {
         if ($user && password_verify($password, $user['password'])) {
             return [
                 'id'   => $user['id'],
-                'type' => $user['type'] ?? 'admin'
+                'type' => $user['user_type'] ?? 'admin'
             ];
         }
 
@@ -178,6 +178,7 @@ function isDatabaseAvailable() {
         return false;
     }
 }
+
 
 
 
