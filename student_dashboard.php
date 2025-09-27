@@ -1,5 +1,5 @@
 <?php
-// student_dashboard.php - Fixed for HybridDataManager
+// student_dashboard.php - Updated to work with Google Sheets data
 session_start();
 
 // Check if user is logged in and is a student
@@ -14,110 +14,65 @@ require_once 'includes/db_connection.php';
 $success = '';
 $error = '';
 
-// Get data manager
+// Get database connection
 try {
-    $dataManager = getDataManager();
-    $pdo = $dataManager->getPDO();
+    $pdo = getPDO();
 } catch (Exception $e) {
     die('Database connection failed: ' . $e->getMessage());
 }
 
-// Handle program/section update
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
-    try {
-        $program = trim($_POST['program']);
-        $section = trim($_POST['section']);
-        
-        if (empty($program) || empty($section)) {
-            throw new Exception("Program and section are required.");
-        }
-        
-        // Update user information using PDO directly
-        $stmt = $pdo->prepare("UPDATE users SET program = ?, section = ? WHERE id = ?");
-        $stmt->execute([$program, $section, $_SESSION['user_id']]);
-        
-        // Update session variables
-        $_SESSION['program'] = $program;
-        $_SESSION['section'] = $section;
-        
-        $success = "✅ Your program and section have been updated successfully!";
-        
-    } catch (Exception $e) {
-        $error = "❌ " . $e->getMessage();
-    }
-}
+// Get student information from session (already loaded from Google Sheets during login)
+$student_username = $_SESSION['username'];
+$student_full_name = $_SESSION['full_name'];
+$student_program = $_SESSION['program'] ?? 'Not Set';
+$student_section = $_SESSION['section'] ?? 'Not Set';
+$student_id = $_SESSION['student_id'];
 
-// Get student's current program and section
-$current_section = $_SESSION['section'] ?? '';
-$current_program = $_SESSION['program'] ?? '';
-
-// Get all sections and group them by program for the dynamic dropdown
-try {
-    $stmt = $pdo->prepare("SELECT section_code, program FROM sections WHERE is_active = true ORDER BY section_code");
-    $stmt->execute();
-    $all_sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    $sections_by_program = [];
-    foreach ($all_sections as $section) {
-        $sections_by_program[$section['program']][] = $section['section_code'];
-    }
-} catch (Exception $e) {
-    // If sections table doesn't exist, create default sections
-    $sections_by_program = [
-        'SHS' => ['SHS-11A', 'SHS-11B', 'SHS-12A', 'SHS-12B'],
-        'COLLEGE' => ['BSCS-1A', 'BSCS-2A', 'BSCS-3A', 'BSCS-4A', 'BSOA-1A', 'BSOA-2A']
-    ];
-}
-
-// Get teachers based on student's program (simplified for now)
+// Get teachers assigned to this student's section from database
 $teachers_result = [];
 $evaluated_teachers = [];
 
-// Get evaluated teachers for this student
+// Get already evaluated teachers for this student
 try {
-    $stmt = $pdo->prepare("SELECT teacher_id FROM evaluations WHERE student_id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    $evaluated_teachers_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $evaluated_teachers = array_column($evaluated_teachers_result, 'teacher_id');
+    $stmt = $pdo->prepare("
+        SELECT teacher_name, subject 
+        FROM evaluations 
+        WHERE student_username = ? AND section = ?
+    ");
+    $stmt->execute([$student_username, $student_section]);
+    $evaluated_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Create a unique key for each teacher-subject combination
+    foreach ($evaluated_result as $eval) {
+        $evaluated_teachers[] = $eval['teacher_name'] . '|' . $eval['subject'];
+    }
 } catch (Exception $e) {
-    // Table might not exist yet
+    // Table might not exist yet or other error
     $evaluated_teachers = [];
 }
 
-// Get teachers from Google Sheets
-if (!empty($current_program)) {
+// Get available teachers from teacher_assignments table
+if ($student_section !== 'Not Set' && $student_program !== 'Not Set') {
     try {
-        $all_teachers = $dataManager->getTeachers();
-        
-        // Filter teachers by program
-        foreach ($all_teachers as $index => $teacher) {
-            $teacher_program = $teacher[1] ?? ''; // Column B is department
-            
-            // Check if teacher's department matches student's program
-            if ($teacher_program === $current_program || $teacher_program === 'BOTH') {
-                $teachers_result[] = [
-                    'id' => $index + 1, // Use index as ID
-                    'name' => $teacher[0] ?? '',
-                    'department' => $teacher_program,
-                    'subject' => $teacher[2] ?? ''
-                ];
-            }
-        }
+        $stmt = $pdo->prepare("
+            SELECT teacher_name, subject, program, section
+            FROM teacher_assignments 
+            WHERE section = ? AND program = ? AND is_active = true
+            ORDER BY teacher_name, subject
+        ");
+        $stmt->execute([$student_section, $student_program]);
+        $teachers_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         $error = "Could not load teachers: " . $e->getMessage();
         $teachers_result = [];
     }
 }
 
-// Get evaluation statistics
+// Calculate statistics
 $total_teachers = count($teachers_result);
 $completed_evaluations = count($evaluated_teachers);
 $remaining_evaluations = $total_teachers - $completed_evaluations;
 $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $total_teachers) * 100, 1) : 0;
-
-// Set default values for session variables if not set
-$_SESSION['full_name'] = $_SESSION['full_name'] ?? 'Student';
-$_SESSION['username'] = $_SESSION['username'] ?? 'student';
 ?>
 
 <!DOCTYPE html>
@@ -452,81 +407,6 @@ $_SESSION['username'] = $_SESSION['username'] ?? 'student';
             margin-bottom: 15px;
             color: #800000;
         }
-
-        /* FORM STYLES */
-        .program-section-form {
-            background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            border-left: 5px solid #D4AF37;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-
-        .program-section-form h3 {
-            color: #800000;
-            margin-bottom: 10px;
-            font-size: 1.4em;
-            border-bottom: 2px solid #D4AF37;
-            padding-bottom: 10px;
-        }
-
-        .form-description {
-            color: #500000;
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto;
-            gap: 20px;
-            align-items: end;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            color: #800000;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 0.95em;
-        }
-
-        .form-group select {
-            padding: 12px 15px;
-            border: 2px solid #D4AF37;
-            border-radius: 8px;
-            background-color: #fff;
-            color: #500000;
-            font-size: 1em;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            height: 46px;
-        }
-
-        .form-group select:focus {
-            outline: none;
-            border-color: #800000;
-            box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.2);
-        }
-
-        .form-button-container {
-            display: flex;
-            align-items: end;
-            min-width: 140px;
-        }
-
-        .form-btn {
-            width: 100%;
-            padding: 12px 16px;
-            font-size: 0.95em;
-            height: 46px;
-            white-space: nowrap;
-        }
         
         @media (max-width: 768px) {
             .container {
@@ -550,36 +430,6 @@ $_SESSION['username'] = $_SESSION['username'] ?? 'student';
                 flex-direction: column;
                 text-align: center;
             }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            
-            .form-button-container {
-                margin-top: 10px;
-                min-width: auto;
-            }
-            
-            .program-section-form {
-                padding: 20px;
-            }
-
-            .form-btn {
-                min-width: 120px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .form-grid {
-                gap: 12px;
-            }
-            
-            .form-group select,
-            .form-btn {
-                padding: 10px 12px;
-                height: 42px;
-            }
         }
     </style>
 </head>
@@ -596,19 +446,23 @@ $_SESSION['username'] = $_SESSION['username'] ?? 'student';
         </div>
         
         <div class="user-info">
-            <h3>👤 Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?>!</h3>
+            <h3>👤 Welcome, <?php echo htmlspecialchars($student_full_name); ?>!</h3>
             <div class="info-grid">
                 <div class="info-item">
                     <label>Username:</label>
-                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                    <span><?php echo htmlspecialchars($student_username); ?></span>
+                </div>
+                <div class="info-item">
+                    <label>Student ID:</label>
+                    <span><?php echo htmlspecialchars($student_id); ?></span>
                 </div>
                 <div class="info-item">
                     <label>Current Program:</label>
-                    <span><?php echo htmlspecialchars($current_program ?: 'Not Set'); ?></span>
+                    <span><?php echo htmlspecialchars($student_program); ?></span>
                 </div>
                 <div class="info-item">
                     <label>Current Section:</label>
-                    <span><?php echo htmlspecialchars($current_section ?: 'Not Set'); ?></span>
+                    <span><?php echo htmlspecialchars($student_section); ?></span>
                 </div>
             </div>
         </div>
@@ -621,49 +475,7 @@ $_SESSION['username'] = $_SESSION['username'] ?? 'student';
             <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
-        <div class="program-section-form">
-            <h3>📚 Update Your Program & Section</h3>
-            <p class="form-description">Please select your program and section to view available teachers for evaluation.</p>
-            
-            <form method="POST" action="">
-                <input type="hidden" name="update_info" value="1">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="program">Program *</label>
-                        <select id="program" name="program" required>
-                            <option value="">Select Program</option>
-                            <option value="SHS" <?php echo ($current_program === 'SHS') ? 'selected' : ''; ?>>
-                                Senior High School (SHS)
-                            </option>
-                            <option value="COLLEGE" <?php echo ($current_program === 'COLLEGE') ? 'selected' : ''; ?>>
-                                College
-                            </option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="section">Section *</label>
-                        <select id="section" name="section" required>
-                            <option value="">Select Section</option>
-                            <?php if (!empty($current_program) && isset($sections_by_program[$current_program])): ?>
-                                <?php foreach ($sections_by_program[$current_program] as $section_code): ?>
-                                    <option value="<?php echo htmlspecialchars($section_code); ?>" 
-                                        <?php echo ($current_section === $section_code) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($section_code); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="form-button-container">
-                        <button type="submit" class="btn form-btn">🔄 Update Info</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-        
-        <?php if (!empty($current_program) && !empty($current_section)): ?>
+        <?php if ($student_program !== 'Not Set' && $student_section !== 'Not Set'): ?>
             <div class="stats-container">
                 <div class="stat-card">
                     <h3><?php echo $total_teachers; ?></h3>
@@ -699,22 +511,26 @@ $_SESSION['username'] = $_SESSION['username'] ?? 'student';
                 <?php if (!empty($teachers_result)): ?>
                     <div class="teachers-grid">
                         <?php foreach($teachers_result as $teacher): ?>
-                            <?php $is_evaluated = in_array($teacher['id'], $evaluated_teachers); ?>
+                            <?php 
+                                $teacher_key = $teacher['teacher_name'] . '|' . $teacher['subject'];
+                                $is_evaluated = in_array($teacher_key, $evaluated_teachers); 
+                            ?>
                             <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
-                                <h4><?php echo htmlspecialchars($teacher['name']); ?></h4>
-                                <p><strong>Department:</strong> <?php echo htmlspecialchars($teacher['department']); ?></p>
+                                <h4><?php echo htmlspecialchars($teacher['teacher_name']); ?></h4>
                                 <p><strong>Subject:</strong> <?php echo htmlspecialchars($teacher['subject']); ?></p>
+                                <p><strong>Section:</strong> <?php echo htmlspecialchars($teacher['section']); ?></p>
+                                <p><strong>Program:</strong> <?php echo htmlspecialchars($teacher['program']); ?></p>
                                 
                                 <div class="evaluation-status">
                                     <?php if ($is_evaluated): ?>
                                         <span class="status-badge status-completed">✅ Evaluated</span>
-                                        <a href="evaluation_form.php?teacher_id=<?php echo $teacher['id']; ?>" 
+                                        <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
                                            class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
                                             👁️ View Evaluation
                                         </a>
                                     <?php else: ?>
                                         <span class="status-badge status-pending">⏳ Pending</span>
-                                        <a href="evaluation_form.php?teacher_id=<?php echo $teacher['id']; ?>" 
+                                        <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
                                            class="btn" style="padding: 8px 15px; font-size: 0.9em;">
                                             📝 Evaluate Teacher
                                         </a>
@@ -726,15 +542,19 @@ $_SESSION['username'] = $_SESSION['username'] ?? 'student';
                 <?php else: ?>
                     <div class="empty-state">
                         <h3>📭 No Teachers Found</h3>
-                        <p>No teachers are available for your selected program.</p>
+                        <p>No teachers are assigned to your section (<?php echo htmlspecialchars($student_section); ?>).</p>
                         <p>Please contact your administrator if this seems incorrect.</p>
                     </div>
                 <?php endif; ?>
             </div>
         <?php else: ?>
             <div class="no-program-message">
-                <h3>🔧 Setup Required</h3>
-                <p>Please select your program and section above to see your teachers.</p>
+                <h3>⚠️ Incomplete Student Information</h3>
+                <p>Your program or section information is missing from the system.</p>
+                <p>Please contact your administrator to update your information in Google Sheets.</p>
+                <p><strong>Current Info:</strong></p>
+                <p>Program: <?php echo htmlspecialchars($student_program); ?></p>
+                <p>Section: <?php echo htmlspecialchars($student_section); ?></p>
             </div>
         <?php endif; ?>
         
@@ -749,49 +569,28 @@ $_SESSION['username'] = $_SESSION['username'] ?? 'student';
     </div>
 
     <script>
-        // Dynamic section loading based on program selection
         document.addEventListener('DOMContentLoaded', function() {
-            const programSelect = document.getElementById('program');
-            const sectionSelect = document.getElementById('section');
-            
-            // Pass PHP sections data to JavaScript
-            const sectionsByProgram = <?php echo json_encode($sections_by_program); ?>;
-            
-            programSelect.addEventListener('change', function() {
-                const selectedProgram = this.value;
-                
-                // Clear current section options
-                sectionSelect.innerHTML = '<option value="">Select Section</option>';
-                
-                // Add sections for selected program
-                if (selectedProgram && sectionsByProgram[selectedProgram]) {
-                    sectionsByProgram[selectedProgram].forEach(function(sectionCode) {
-                        const option = document.createElement('option');
-                        option.value = sectionCode;
-                        option.textContent = sectionCode;
-                        sectionSelect.appendChild(option);
-                    });
-                }
-                
-                // Reset section selection
-                sectionSelect.value = '';
-            });
-
-            // Initialize sections based on current program
-            if (programSelect.value) {
-                programSelect.dispatchEvent(new Event('change'));
-                // Restore the current section if it exists
-                const currentSection = '<?php echo htmlspecialchars($current_section); ?>';
-                if (currentSection) {
-                    sectionSelect.value = currentSection;
-                }
-            }
-
             // Add confirmation for logout
             document.querySelector('.logout-btn').addEventListener('click', function(e) {
                 if (!confirm('Are you sure you want to logout?')) {
                     e.preventDefault();
                 }
+            });
+
+            // Add loading state for evaluation buttons
+            const evalButtons = document.querySelectorAll('.btn');
+            evalButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const originalText = this.textContent;
+                    this.textContent = 'Loading...';
+                    this.style.pointerEvents = 'none';
+                    
+                    // Reset after 3 seconds if page doesn't navigate
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                        this.style.pointerEvents = 'auto';
+                    }, 3000);
+                });
             });
         });
     </script>
