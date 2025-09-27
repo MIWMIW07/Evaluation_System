@@ -79,19 +79,36 @@ class HybridDataManager {
     }
 
     /** ------------------ STUDENTS ------------------- */
-    private function findStudent($username, $password) {
-        $range = "Students!A:C";
-        $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
-        $rows = $response->getValues();
+private function findStudent($username, $password) {
+    // Updated range to include username (F) and password (G) columns
+    $range = "Students!A:G";
+    $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
+    $rows = $response->getValues();
 
-        foreach ($rows as $i => $row) {
-            if ($i === 0) continue;
-            if (isset($row[0]) && $row[0] === $username && isset($row[1]) && $row[1] === $password) {
-                return ['id' => $i, 'name' => $row[0]];
+    foreach ($rows as $i => $row) {
+        if ($i === 0) continue; // Skip header row
+        
+        // Check if we have enough columns and the username/password match
+        if (count($row) >= 7) { // Now we need 7 columns (A-G)
+            $stored_username = isset($row[5]) ? trim($row[5]) : ''; // Column F (Username)
+            $stored_password = isset($row[6]) ? trim($row[6]) : ''; // Column G (Password)
+            
+            if ($stored_username === $username && $stored_password === $password) {
+                return [
+                    'id' => $i,
+                    'student_id' => $row[0] ?? '', // Column A
+                    'last_name' => $row[1] ?? '',  // Column B
+                    'first_name' => $row[2] ?? '', // Column C
+                    'section' => $row[3] ?? '',    // Column D
+                    'program' => $row[4] ?? '',    // Column E
+                    'username' => $stored_username,
+                    'full_name' => trim(($row[2] ?? '') . ' ' . ($row[1] ?? ''))
+                ];
             }
         }
-        return null;
     }
+    return null;
+}
 
     /** ------------------ TEACHERS ------------------- */
     private function findTeacher($username, $password) {
@@ -178,6 +195,7 @@ function isDatabaseAvailable() {
         return false;
     }
 }
+
 
 
 
