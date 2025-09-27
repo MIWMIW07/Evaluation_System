@@ -17,11 +17,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         // ✅ Redirect based on role
         if ($auth['type'] === 'admin') {
-            header("Location: admin/dashboard.php");
-        } elseif ($auth['type'] === 'teacher') {
-            header("Location: teacher/dashboard.php");
+            header("Location: admin.php");
         } elseif ($auth['type'] === 'student') {
-            header("Location: student/dashboard.php");
+            header("Location: student_dashboard.php");
         } else {
             header("Location: index.php"); // fallback
         }
