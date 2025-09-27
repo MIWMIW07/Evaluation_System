@@ -188,34 +188,41 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
         }
         
         async function testConnection() {
-            const resultDiv = document.getElementById('syncResult');
-            resultDiv.innerHTML = '<p class="log-warning">Testing connection...</p>';
-            
-            try {
-                const response = await fetch('google_integration_api.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'action=test_connection'
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    resultDiv.innerHTML = `
-                        <p class="log-success">✅ Connection successful!</p>
-                        <p>Sheets Accessible: ${data.sheets_accessible ? 'Yes' : 'No'}</p>
-                        <p>Drive Accessible: ${data.drive_accessible ? 'Yes' : 'No'}</p>
-                        <p>User: ${data.user_email}</p>
-                    `;
-                } else {
-                    resultDiv.innerHTML = `<p class="log-error">❌ Connection failed: ${data.error}</p>`;
-                }
-            } catch (error) {
-                resultDiv.innerHTML = `<p class="log-error">❌ Error: ${error.message}</p>`;
-            }
-        }
+    const resultDiv = document.getElementById('syncResult');
+    resultDiv.innerHTML = '<p class="log-warning">Testing connection...</p>';
+    
+    try {
+        const response = await fetch('debug_google_api.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'action=test_connection'
+        });
         
+        // Log the raw response
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+        
+        try {
+            const data = JSON.parse(responseText);
+            console.log('Parsed JSON:', data);
+            
+            if (data.success) {
+                resultDiv.innerHTML = `<p class="log-success">✅ Connection successful!</p>`;
+            } else {
+                resultDiv.innerHTML = `<p class="log-error">❌ Connection failed: ${data.error}</p>`;
+            }
+        } catch (parseError) {
+            resultDiv.innerHTML = `
+                <p class="log-error">❌ JSON Parse Error: ${parseError.message}</p>
+                <pre style="background:#f5f5f5;padding:10px;font-size:12px;overflow:auto;">${responseText}</pre>
+            `;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<p class="log-error">❌ Network Error: ${error.message}</p>`;
+    }
+}
         async function syncData() {
             const resultDiv = document.getElementById('syncResult');
             resultDiv.innerHTML = '<p class="log-warning">Synchronizing data...</p>';
