@@ -47,12 +47,16 @@ try {
         echo "</table>";
         
         // Test a specific login
-        echo "<h3>Testing Login for First Student:</h3>";
-        if (count($rows) > 1 && isset($rows[1])) {
-            $testRow = $rows[1];
+        echo "<h3>Testing Login for First Real Student (Row 2):</h3>";
+        if (count($rows) > 2 && isset($rows[2])) {
+            $testRow = $rows[2]; // Row 2 is the first actual student (after headers)
             $testUsername = $testRow[5] ?? '';
             $testPassword = $testRow[6] ?? '';
             
+            echo "<p><strong>Student ID:</strong> " . htmlspecialchars($testRow[0] ?? '') . "</p>";
+            echo "<p><strong>Name:</strong> " . htmlspecialchars(($testRow[2] ?? '') . ' ' . ($testRow[1] ?? '')) . "</p>";
+            echo "<p><strong>Section:</strong> " . htmlspecialchars($testRow[3] ?? '') . "</p>";
+            echo "<p><strong>Program:</strong> " . htmlspecialchars($testRow[4] ?? '') . "</p>";
             echo "<p><strong>Test Username:</strong> " . htmlspecialchars($testUsername) . "</p>";
             echo "<p><strong>Test Password:</strong> " . htmlspecialchars($testPassword) . "</p>";
             
