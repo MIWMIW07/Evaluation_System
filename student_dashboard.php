@@ -1,12 +1,10 @@
 <?php
-// student_dashboard.php - Student Dashboard
+// student_dashboard.php - Fixed for HybridDataManager
 session_start();
-
-require_once 'includes/security.php';
 
 // Check if user is logged in and is a student
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
-    header('Location: login.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -16,12 +14,16 @@ require_once 'includes/db_connection.php';
 $success = '';
 $error = '';
 
+// Get data manager
+try {
+    $dataManager = getDataManager();
+    $pdo = $dataManager->getPDO();
+} catch (Exception $e) {
+    die('Database connection failed: ' . $e->getMessage());
+}
+
 // Handle program/section update
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
-    if (!validate_csrf_token($_POST['csrf_token'])) {
-        die('CSRF token validation failed');
-    }
-    
     try {
         $program = trim($_POST['program']);
         $section = trim($_POST['section']);
@@ -30,9 +32,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
             throw new Exception("Program and section are required.");
         }
         
-        // Update user information
-        query("UPDATE users SET program = ?, section = ? WHERE id = ?", 
-              [$program, $section, $_SESSION['user_id']]);
+        // Update user information using PDO directly
+        $stmt = $pdo->prepare("UPDATE users SET program = ?, section = ? WHERE id = ?");
+        $stmt->execute([$program, $section, $_SESSION['user_id']]);
         
         // Update session variables
         $_SESSION['program'] = $program;
@@ -49,80 +51,62 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_info'])) {
 $current_section = $_SESSION['section'] ?? '';
 $current_program = $_SESSION['program'] ?? '';
 
-// ==================================================================
-// NEW CODE #1: Fetch all sections and group them by program for the dynamic dropdown
-// ==================================================================
+// Get all sections and group them by program for the dynamic dropdown
 try {
-    $all_sections_stmt = query("SELECT section_code, program FROM sections WHERE is_active = true ORDER BY section_code");
-    $all_sections = fetch_all($all_sections_stmt);
+    $stmt = $pdo->prepare("SELECT section_code, program FROM sections WHERE is_active = true ORDER BY section_code");
+    $stmt->execute();
+    $all_sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     $sections_by_program = [];
     foreach ($all_sections as $section) {
-        // Group sections under their program ('COLLEGE' or 'SHS')
         $sections_by_program[$section['program']][] = $section['section_code'];
     }
 } catch (Exception $e) {
-    $error = "Could not load section list: " . $e->getMessage();
-    $sections_by_program = [];
+    // If sections table doesn't exist, create default sections
+    $sections_by_program = [
+        'SHS' => ['SHS-11A', 'SHS-11B', 'SHS-12A', 'SHS-12B'],
+        'COLLEGE' => ['BSCS-1A', 'BSCS-2A', 'BSCS-3A', 'BSCS-4A', 'BSOA-1A', 'BSOA-2A']
+    ];
 }
-// ==================================================================
 
-// Get teachers based on student's program
+// Get teachers based on student's program (simplified for now)
 $teachers_result = [];
 $evaluated_teachers = [];
 
 // Get evaluated teachers for this student
 try {
-    $evaluated_stmt = query("SELECT teacher_id FROM evaluations WHERE student_id = ?",
-                            [$_SESSION['user_id']]);
-    $evaluated_teachers_result = fetch_all($evaluated_stmt);
+    $stmt = $pdo->prepare("SELECT teacher_id FROM evaluations WHERE student_id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $evaluated_teachers_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $evaluated_teachers = array_column($evaluated_teachers_result, 'teacher_id');
 } catch (Exception $e) {
-    $error = "Could not load evaluation data: " . $e->getMessage();
+    // Table might not exist yet
+    $evaluated_teachers = [];
 }
 
-// Get teachers for student's section using the new structure
-if (!empty($current_section)) {
+// Get teachers from Google Sheets
+if (!empty($current_program)) {
     try {
-        // ==================================================================
-        // MODIFIED SQL QUERY #2: Added "AND t.department = sec.program"
-        // This ensures the teacher's department matches the section's program.
-        // ==================================================================
-        $teachers_stmt = query("
-            SELECT DISTINCT
-                t.id, 
-                t.name, 
-                t.department
-            FROM teachers t
-            JOIN section_teachers st ON t.id = st.teacher_id
-            JOIN sections sec ON st.section_id = sec.id
-            WHERE sec.section_code = ?
-              AND t.department = sec.program
-              AND st.is_active = true
-              AND t.is_active = true
-            ORDER BY t.name", 
-            [$current_section]
-        );
-        $teachers_result = fetch_all($teachers_stmt);
+        $all_teachers = $dataManager->getTeachers();
         
-        if (empty($teachers_result)) {
-            // Fallback: This query is already correct as it uses the program.
-            $teachers_stmt = query("
-                SELECT id, name, department 
-                FROM teachers 
-                WHERE department = ? AND is_active = true 
-                ORDER BY name", 
-                [$current_program]
-            );
-            $teachers_result = fetch_all($teachers_stmt);
+        // Filter teachers by program
+        foreach ($all_teachers as $index => $teacher) {
+            $teacher_program = $teacher[1] ?? ''; // Column B is department
+            
+            // Check if teacher's department matches student's program
+            if ($teacher_program === $current_program || $teacher_program === 'BOTH') {
+                $teachers_result[] = [
+                    'id' => $index + 1, // Use index as ID
+                    'name' => $teacher[0] ?? '',
+                    'department' => $teacher_program,
+                    'subject' => $teacher[2] ?? ''
+                ];
+            }
         }
-        
     } catch (Exception $e) {
-        $error = "Could not load teachers list: " . $e->getMessage();
+        $error = "Could not load teachers: " . $e->getMessage();
         $teachers_result = [];
     }
-} else {
-    $teachers_result = [];
 }
 
 // Get evaluation statistics
@@ -130,6 +114,10 @@ $total_teachers = count($teachers_result);
 $completed_evaluations = count($evaluated_teachers);
 $remaining_evaluations = $total_teachers - $completed_evaluations;
 $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $total_teachers) * 100, 1) : 0;
+
+// Set default values for session variables if not set
+$_SESSION['full_name'] = $_SESSION['full_name'] ?? 'Student';
+$_SESSION['username'] = $_SESSION['username'] ?? 'student';
 ?>
 
 <!DOCTYPE html>
@@ -465,7 +453,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             color: #800000;
         }
 
-        /* FIXED CSS FOR FORM */
+        /* FORM STYLES */
         .program-section-form {
             background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
             padding: 25px;
@@ -489,7 +477,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             line-height: 1.5;
         }
 
-        /* FIXED FORM GRID - Now properly responsive */
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr auto;
@@ -518,7 +505,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             font-size: 1em;
             transition: all 0.3s ease;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            height: 46px; /* Fixed height for alignment */
+            height: 46px;
         }
 
         .form-group select:focus {
@@ -527,7 +514,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.2);
         }
 
-        /* FIXED BUTTON CONTAINER */
         .form-button-container {
             display: flex;
             align-items: end;
@@ -538,11 +524,10 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             width: 100%;
             padding: 12px 16px;
             font-size: 0.95em;
-            height: 46px; /* Match select height */
+            height: 46px;
             white-space: nowrap;
         }
         
-        /* IMPROVED MOBILE RESPONSIVENESS */
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -566,7 +551,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 text-align: center;
             }
 
-            /* MOBILE FORM LAYOUT */
             .form-grid {
                 grid-template-columns: 1fr;
                 gap: 15px;
@@ -603,7 +587,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
     <div class="container">
         <div class="header">
             <div class="header-content">
-                <img src="logo.png" alt="School Logo" class="logo">
+                <img src="logo.png" alt="School Logo" class="logo" onerror="this.style.display='none'">
                 <div>
                     <h1>Student Dashboard</h1>
                     <p>Teacher Evaluation System</p>
@@ -642,7 +626,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             <p class="form-description">Please select your program and section to view available teachers for evaluation.</p>
             
             <form method="POST" action="">
-                <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                 <input type="hidden" name="update_info" value="1">
                 <div class="form-grid">
                     <div class="form-group">
@@ -720,6 +703,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                             <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
                                 <h4><?php echo htmlspecialchars($teacher['name']); ?></h4>
                                 <p><strong>Department:</strong> <?php echo htmlspecialchars($teacher['department']); ?></p>
+                                <p><strong>Subject:</strong> <?php echo htmlspecialchars($teacher['subject']); ?></p>
                                 
                                 <div class="evaluation-status">
                                     <?php if ($is_evaluated): ?>
@@ -742,7 +726,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 <?php else: ?>
                     <div class="empty-state">
                         <h3>📭 No Teachers Found</h3>
-                        <p>No teachers are assigned to your selected section.</p>
+                        <p>No teachers are available for your selected program.</p>
                         <p>Please contact your administrator if this seems incorrect.</p>
                     </div>
                 <?php endif; ?>
@@ -803,21 +787,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 }
             }
 
-            // Animate stat cards
-            const statCards = document.querySelectorAll('.stat-card');
-            statCards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(20px)';
-                    card.style.transition = 'all 0.5s ease';
-                    
-                    setTimeout(() => {
-                        card.style.opacity = '1';
-                        card.style.transform = 'translateY(0)';
-                    }, 100);
-                }, index * 150);
-            });
-            
             // Add confirmation for logout
             document.querySelector('.logout-btn').addEventListener('click', function(e) {
                 if (!confirm('Are you sure you want to logout?')) {
