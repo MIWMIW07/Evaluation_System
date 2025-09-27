@@ -5,6 +5,10 @@
 
 require_once 'includes/db_connection.php';
 
+// Initialize PDO connection
+$pdo = getPDO();
+
+
 // ✅ If database is not available, show info page
 if (!isDatabaseAvailable()) {
     ?>
@@ -207,3 +211,4 @@ try {
     exit(1);
 }
 ?>
+
