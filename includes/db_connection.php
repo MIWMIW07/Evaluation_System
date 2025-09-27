@@ -78,14 +78,18 @@ class HybridDataManager {
             $rows = $response->getValues();
 
             foreach ($rows as $i => $row) {
-                if ($i === 0) continue; // Skip header row
+                // Skip header rows (first two rows based on your sheet structure)
+                if ($i <= 1) continue; 
                 
                 if (count($row) >= 7) {
                     $stored_username = isset($row[5]) ? trim($row[5]) : '';
                     $stored_password = isset($row[6]) ? trim($row[6]) : '';
                     
+                    // Debug log
+                    error_log("Checking row $i: username='{$stored_username}', password='{$stored_password}' against '{$username}'/'{$password}'");
+                    
                     if ($stored_username === $username && $stored_password === $password) {
-                        return [
+                        $studentData = [
                             'student_id' => $row[0] ?? '',
                             'last_name' => $row[1] ?? '',
                             'first_name' => $row[2] ?? '',
@@ -94,6 +98,9 @@ class HybridDataManager {
                             'username' => $stored_username,
                             'full_name' => trim(($row[2] ?? '') . ' ' . ($row[1] ?? ''))
                         ];
+                        
+                        error_log("Student found: " . print_r($studentData, true));
+                        return $studentData;
                     }
                 }
             }
