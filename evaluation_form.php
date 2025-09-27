@@ -1,13 +1,10 @@
 <?php
-// evaluation_form.php - Enhanced bilingual evaluation form for logged in students
+// evaluation_form.php - Updated to work with teacher_assignments system
 session_start();
-
-// Include security functions for CSRF protection
-require_once 'includes/security.php';
 
 // Check if user is logged in and is a student
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
-    header('Location: login.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -20,81 +17,63 @@ $teacher_info = null;
 $is_view_mode = false;
 $existing_evaluation = null;
 
-// Get teacher ID from URL
-$teacher_id = isset($_GET['teacher_id']) ? intval($_GET['teacher_id']) : 0;
+// Get teacher name and subject from URL parameters
+$teacher_name = isset($_GET['teacher']) ? trim($_GET['teacher']) : '';
+$subject = isset($_GET['subject']) ? trim($_GET['subject']) : '';
 
-if ($teacher_id <= 0) {
-    header('Location: student_dashboard.php');
-    exit;
-}
-
-try {
-    // Get student's section information to determine if they're College or SHS
-    $student_section_stmt = query("
-        SELECT s.program, s.section_code, s.year_level 
-        FROM users u 
-        JOIN students st ON u.student_table_id = st.id 
-        JOIN sections s ON st.section_id = s.id 
-        WHERE u.id = ?", [$_SESSION['user_id']]);
-    
-    $student_section = fetch_assoc($student_section_stmt);
-    $student_department = $student_section['program'] ?? 'COLLEGE'; // Default to COLLEGE if not found
-    
-    // Store student program info in session if not already there
-    if (!isset($_SESSION['program'])) {
-        $_SESSION['program'] = $student_section['program'] ?? 'Not Specified';
-        $_SESSION['section'] = $student_section['section_code'] ?? 'Not Specified';
-    }
-
-    // Get teacher information - match teacher's department with student's level
-    $teacher_stmt = query("
-        SELECT t.id, t.name, t.department, 
-               CASE 
-                   WHEN t.department = 'COLLEGE' THEN 'College Department'
-                   WHEN t.department = 'SHS' THEN 'Senior High School Department'
-                   ELSE t.department 
-               END as display_department
-        FROM teachers t 
-        WHERE t.id = ? AND t.department = ?", 
-        [$teacher_id, $student_department]);
-    
-    $teacher_info = fetch_assoc($teacher_stmt);
-
-    if (!$teacher_info) {
-        // If no match found, try to get teacher info without department restriction for error message
-        $teacher_fallback_stmt = query("SELECT name, department FROM teachers WHERE id = ?", [$teacher_id]);
-        $teacher_fallback = fetch_assoc($teacher_fallback_stmt);
+// Validate parameters
+if (empty($teacher_name) || empty($subject)) {
+    $error = "Missing teacher information. Please select a teacher from your dashboard.";
+} else {
+    try {
+        $pdo = getPDO();
         
-        if ($teacher_fallback) {
-            throw new Exception("This teacher (" . $teacher_fallback['name'] . ") is assigned to " . 
-                              $teacher_fallback['department'] . " department, but you are a " . 
-                              $student_department . " student. You can only evaluate teachers from your department.");
+        // Get student information from session
+        $student_username = $_SESSION['username'];
+        $student_program = $_SESSION['program'] ?? 'COLLEGE';
+        $student_section = $_SESSION['section'] ?? '';
+
+        // Verify this teacher assignment exists for this student's section
+        $stmt = $pdo->prepare("
+            SELECT teacher_name, subject, section, program 
+            FROM teacher_assignments 
+            WHERE teacher_name = ? AND subject = ? AND section = ? AND program = ? AND is_active = true
+        ");
+        $stmt->execute([$teacher_name, $subject, $student_section, $student_program]);
+        $teacher_assignment = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$teacher_assignment) {
+            $error = "This teacher assignment was not found for your section. Please contact your administrator.";
         } else {
-            throw new Exception("Teacher not found.");
+            // Create teacher_info structure for compatibility with existing code
+            $teacher_info = [
+                'name' => $teacher_name,
+                'subject' => $subject,
+                'department' => $student_program,
+                'display_department' => $student_program === 'COLLEGE' ? 'College Department' : 'Senior High School Department'
+            ];
+
+            // Check if student has already evaluated this teacher for this subject
+            $check_stmt = $pdo->prepare("
+                SELECT * FROM evaluations 
+                WHERE student_username = ? AND teacher_name = ? AND subject = ? AND section = ?
+            ");
+            $check_stmt->execute([$student_username, $teacher_name, $subject, $student_section]);
+            $existing_evaluation = $check_stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing_evaluation) {
+                $is_view_mode = true;
+            }
         }
+
+    } catch (Exception $e) {
+        $error = "Database error: " . $e->getMessage();
     }
-
-    // Check if student has already evaluated this teacher
-    $check_stmt = query("SELECT * FROM evaluations WHERE user_id = ? AND teacher_id = ?",
-        [$_SESSION['user_id'], $teacher_id]);
-    $existing_evaluation = fetch_assoc($check_stmt);
-
-    if ($existing_evaluation) {
-        $is_view_mode = true;
-    }
-
-} catch (Exception $e) {
-    $error = $e->getMessage();
 }
 
 // Handle form submission (only if not in view mode)
-if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode && $teacher_info) {
     try {
-        // Validate CSRF token first
-        if (!validate_csrf_token($_POST['csrf_token'])) {
-            die('CSRF token validation failed');
-        }
-
         // Validate all required fields
         $ratings = [];
 
@@ -134,27 +113,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             $ratings["q4_$i"] = $rating;
         }
 
+        // Get comments
         $positive = trim($_POST['q5-positive-en'] ?? $_POST['q5-positive-tl'] ?? '');
         $negative = trim($_POST['q5-negative-en'] ?? $_POST['q5-negative-tl'] ?? '');
         $comments = "Positive: $positive\nNegative: $negative";
 
-        // FIXED INSERT STATEMENT - Match exact column count (27 columns + auto-increment id)
+        // Insert evaluation using the updated table structure
         $insert_sql = "INSERT INTO evaluations (
-            user_id, student_id, student_name, section, program, teacher_id, 
+            student_username, student_name, teacher_name, section, program, subject,
             q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
             q2_1, q2_2, q2_3, q2_4,
             q3_1, q3_2, q3_3, q3_4,
             q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
-            comments
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            comments, created_at, submitted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
 
         $params = [
-            $_SESSION['user_id'], 
-            $_SESSION['student_id'] ?? '', 
-            $_SESSION['full_name'] ?? '', 
-            $_SESSION['section'] ?? '', 
-            $_SESSION['program'] ?? '', 
-            $teacher_id,
+            $_SESSION['username'],
+            $_SESSION['full_name'] ?? '',
+            $teacher_name,
+            $_SESSION['section'] ?? '',
+            $_SESSION['program'] ?? '',
+            $subject,
             $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
             $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
             $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
@@ -162,22 +142,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
             $comments
         ];
 
-        // Debug: Check counts match
-        $placeholders = substr_count($insert_sql, '?');
-        $param_count = count($params);
-        
-        if ($placeholders !== $param_count) {
-            throw new Exception("Parameter count mismatch: $placeholders placeholders vs $param_count parameters");
-        }
+        $stmt = $pdo->prepare($insert_sql);
+        $result = $stmt->execute($params);
 
-        $stmt = query($insert_sql, $params);
-
-        if ($stmt) {
+        if ($result) {
             $success = "Evaluation submitted successfully! Thank you for your feedback.";
             // Reload to show in view mode
-            $check_stmt = query("SELECT * FROM evaluations WHERE user_id = ? AND teacher_id = ?",
-                [$_SESSION['user_id'], $teacher_id]);
-            $existing_evaluation = fetch_assoc($check_stmt);
+            $check_stmt = $pdo->prepare("
+                SELECT * FROM evaluations 
+                WHERE student_username = ? AND teacher_name = ? AND subject = ? AND section = ?
+            ");
+            $check_stmt->execute([$student_username, $teacher_name, $subject, $student_section]);
+            $existing_evaluation = $check_stmt->fetch(PDO::FETCH_ASSOC);
             $is_view_mode = true;
         } else {
             throw new Exception("Database error occurred while saving your evaluation.");
@@ -188,14 +164,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode) {
     }
 }
 
-// ... REST OF THE CODE REMAINS THE SAME ...
-
 // Helper function to safely display values
 function safe_display($value, $default = 'Not Available') {
     return !empty($value) && $value !== null ? htmlspecialchars($value) : $default;
 }
 
-// Define questions for both languages (keeping your existing arrays)
+// Define questions for both languages (same as your existing arrays)
 $section1_questions = [
     '1.1' => 'Analyses and elaborates lesson without reading textbook in class.',
     '1.2' => 'Uses audio visual and devices to support and facilitate instructions.',
@@ -228,7 +202,7 @@ $section4_questions = [
     '4.6' => 'Has good diction, clear and modulated voice.'
 ];
 
-// Tagalog questions (keeping your existing arrays)
+// Tagalog questions (same as your existing arrays)
 $section1_tagalog = [
     '1.1' => 'Nasuri at-naipaliwanag ang araling nang hindi binabasa ang aklat sa klase.',
     '1.2' => 'Gumugamit ng audio-visual at mga device upang suportahan at mapadali ang pagtuturo',
@@ -303,6 +277,7 @@ if ($is_view_mode && $existing_evaluation) {
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
