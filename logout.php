@@ -4,7 +4,7 @@
 session_start();
 require_once __DIR__ . '/includes/db_connection.php';
 
-// Store user info before destroying session
+// Capture session info before destroying it
 $user_id   = $_SESSION['user_id']   ?? null;
 $username  = $_SESSION['username']  ?? 'Unknown';
 $full_name = $_SESSION['full_name'] ?? 'User';
@@ -12,17 +12,17 @@ $user_type = $_SESSION['user_type'] ?? '';
 
 // ✅ Log activity if user was logged in
 if ($user_id) {
-    logActivity("logout", "$username logged out", "success", $user_id);
+    logActivity("logout", "User '{$username}' logged out", "success", $user_id);
 }
 
-// Prepare goodbye message
+// Goodbye message
 $logout_message = "👋 Goodbye, " . htmlspecialchars($full_name) . "! You have been logged out successfully.";
 
-// Destroy session
+// Destroy session safely
 session_unset();
 session_destroy();
 
-// Encode message for redirect
+// Encode message for safe redirect
 $logout_message = urlencode($logout_message);
 ?>
 <!DOCTYPE html>
