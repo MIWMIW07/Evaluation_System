@@ -1,6 +1,6 @@
 <?php
 // database_setup.php
-// Minimal database setup: Only evaluations and teacher_assignments tables
+// Updated to include all real teacher assignments from bulk_insert_teachers.php
 // Students and teachers data stored in Google Sheets
 
 require_once __DIR__ . '/includes/db_connection.php';
@@ -48,9 +48,205 @@ if (!isDatabaseAvailable()) {
     exit;
 }
 
+// Function to clean teacher names
+function cleanTeacherName($name) {
+    $name = trim($name);
+    $name = str_replace(['**', '*'], '', $name); // Remove markdown formatting
+    $name = preg_replace('/\s+/', ' ', $name); // Replace multiple spaces with single space
+    return trim($name);
+}
+
+// Function to insert all real teacher assignments
+function insertAllTeacherAssignments($pdo) {
+    echo "📝 Inserting all teacher assignments...<br>";
+    
+    $inserted = 0;
+    $stmt = $pdo->prepare("
+        INSERT INTO teacher_assignments (teacher_name, section, subject, program, school_year, semester, is_active)
+        VALUES (?, ?, ?, ?, '2025-2026', '1st', true)
+        ON CONFLICT (teacher_name, section, subject, school_year, semester) DO NOTHING
+    ");
+    
+    // COLLEGE TEACHERS - All your real data
+    echo "&nbsp;&nbsp;📚 Adding College Teachers...<br>";
+    
+    $collegeTeachers = [
+        // BSCS Programs
+        'BSCS1M1' => ['MR. VELE', 'MR. RODRIGUEZ', 'MR. JIMENEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. LACERNA', 'MS. RENDORA', 'MR. ATIENZA'],
+        'BSCS2N1' => ['MR. RODRIGUEZ', 'MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MR. JIMENEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. GORDON'],
+        'BSCS3M1' => ['MR. PATALEN', 'MS. DIMAPILIS', 'MR. V. GORDON', 'MS. DIMAPILIS', 'MS. DIMAPILIS', 'MR. JIMENEZ'],
+        'BSCS4N1' => ['MS. DIMAPILIS', 'MS. DIMAPILIS', 'MS. DIMAPILIS', 'MR. ELLO', 'MR. V. GORDON', 'MR. PATALEN'],
+        
+        // BSOA Programs  
+        'BSOA1M1' => ['MR. VELE', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. IGHARAS', 'MS. OCTAVO', 'MS. RENDORA', 'MS. RENDORA', 'MR. ATIENZA'],
+        'BSOA2N1' => ['MR. LACERNA', 'MS. RENDORA', 'MS. VELE', 'MR. CALCEÑA', 'MS. CARMONA', 'MS. IGHARAS', 'MS. RENDORA', 'MS. RENDORA'],
+        'BSOA3M1' => ['MR. MATILA', 'MR. ELLO', 'MS. IGHARAS', 'MR. CALCEÑA', 'MR. V. GORDON'],
+        'BSOA4N1' => ['MR. CALCEÑA', 'MS. IGHARAS', 'MS. IGHARAS', 'MR. CALCEÑA'],
+        
+        // EDUC Programs
+        'EDUC1M1' => ['MR. VELE', 'MR. MATILA', 'MR. V. GORDON', 'MS. TESORO', 'MR. LACERNA', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. RENDORA', 'MS. RENDORA', 'MR. ATIENZA'],
+        'EDUC2N1' => ['MS. VELE', 'MR. VALENZUELA', 'MR. ICABANDE', 'MR. ELLO', 'MR. VALENZUELA', 'MR. ORNACHO', 'MR. MATILA', 'MS. OCTAVO', 'MS. RENDORA'],
+        'EDUC3M1' => ['MS. OCTAVO', 'MR. VALENZUELA', 'MR. MATILA', 'MR. CALCEÑA', 'MS. MAGNO', 'MS. MAGNO', 'MS. TESORO', 'MS. CARMONA'],
+        'EDUC4M1' => ['MS. TESORO', 'MR. ELLO', 'MS. TESORO', 'MS. TESORO'],
+        'EDUC4N1' => ['MS. TESORO'],
+    ];
+    
+    foreach ($collegeTeachers as $section => $teachers) {
+        $subjectCounter = 1;
+        foreach ($teachers as $teacher) {
+            $teacher = cleanTeacherName($teacher);
+            if (!empty($teacher)) {
+                $subject = "Subject " . $subjectCounter;
+                $stmt->execute([$teacher, $section, $subject, 'COLLEGE']);
+                $inserted++;
+                $subjectCounter++;
+            }
+        }
+        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
+    }
+    
+    // SHS GRADE 11 TEACHERS
+    echo "&nbsp;&nbsp;🎓 Adding SHS Grade 11 Teachers...<br>";
+    
+    $shs11Teachers = [
+        // HE Sections
+        'HE1M1' => ['MS. TINGSON', 'MS. LAGUADOR', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MR. UMALI', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1M2' => ['MS. TINGSON', 'MRS. YABUT', 'MR. SANTOS', 'MR. ORNACHO', 'MR. ALCEDO', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1M3' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MR. ALCEDO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1M4' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1N1' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1N2' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1N3' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MR. LACERNA', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1N4' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MR. LACERNA', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        
+        // ICT Sections
+        'ICT1M1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MR. R. GORDON', 'MS. RENDORA', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
+        'ICT1M2' => ['MS. ROQUIOS', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
+        'ICT1N1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. RODRIGUEZ', 'MS. ANGELES', 'MS. TINGSON', 'MR. R. GORDON', 'MR. UMALI', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
+        'ICT1N2' => ['MS. ROQUIOS', 'MS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MR. ALCEDO', 'MS. RENDORA', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
+        
+        // HUMSS Sections
+        'HUMSS1M1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. ROQUIOS', 'MS. LAGUADOR', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1M2' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. ROQUIOS', 'MR. R. GORDON', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1M3' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. TESORO', 'MR. UMALI', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1M4' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MR. UMALI', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1M5' => ['MS. ROQUIOS', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. TINGSON', 'MR. R. GORDON', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1N1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1N2' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1N3' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MR. R. GORDON', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        
+        // ABM Sections
+        'ABM1M1' => ['MS. TINGSON', 'MS. RIVERA', 'MS. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MR. UMALI', 'MS. LAGUADOR', 'MR. CALCEÑA', 'MS. GAJIRAN'],
+        'ABM1M2' => ['MS. TINGSON', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MR. UMALI', 'MS. LAGUADOR', 'MR. CALCEÑA', 'MS. GAJIRAN'],
+        'ABM1N1' => ['MS. TINGSON', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. CALCEÑA', 'MS. GAJIRAN'],
+    ];
+    
+    foreach ($shs11Teachers as $section => $teachers) {
+        $subjectCounter = 1;
+        foreach ($teachers as $teacher) {
+            $teacher = cleanTeacherName($teacher);
+            if (!empty($teacher)) {
+                $subject = "Subject " . $subjectCounter;
+                $stmt->execute([$teacher, $section, $subject, 'SHS']);
+                $inserted++;
+                $subjectCounter++;
+            }
+        }
+        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
+    }
+    
+    // SHS GRADE 12 TEACHERS
+    echo "&nbsp;&nbsp;🎓 Adding SHS Grade 12 Teachers...<br>";
+    
+    $shs12Teachers = [
+        // HE3 Sections (Grade 12)
+        'HE3M1' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MR. UMALI', 'MS. MAGNO'],
+        'HE3M2' => ['MS. CARMONA', 'MR. BATILES', 'MS. RIVERA', 'MR. PATIAM', 'MR. UMALI', 'MS. MAGNO'],
+        'HE3M3' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MS. RENDORA', 'MS. MAGNO'],
+        'HE3M4' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MS. RENDORA', 'MS. MAGNO'],
+        'HE3N1' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MS. RENDORA', 'MS. MAGNO'],
+        'HE3N2' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MS. MAGNO'],
+        'HE3N3' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MR. UMALI', 'MS. MAGNO'],
+        'HE3N4' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MS. RENDORA', 'MS. MAGNO'],
+        
+        // ICT3 Sections (Grade 12)
+        'ICT3M1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. RENDORA', 'MR. V. GORDON'],
+        'ICT3M2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
+        'ICT3N1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
+        'ICT3N2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
+        
+        // HUMSS3 Sections (Grade 12)
+        'HUMSS3M1' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
+        'HUMSS3M2' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
+        'HUMSS3M3' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
+        'HUMSS3M4' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
+        'HUMSS3N1' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA'],
+        'HUMSS3N2' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MR. GARCIA'],
+        'HUMSS3N3' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA'],
+        'HUMSS3N4' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MR. GARCIA'],
+        
+        // ABM3 Sections (Grade 12)
+        'ABM3M1' => ['MS. CARMONA', 'MR. BATILES', 'MS. RIVERA', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA', 'MR. CALCEÑA'],
+        'ABM3M2' => ['MS. CARMONA', 'MR. BATILES', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. CALCEÑA', 'MR. CALCEÑA'],
+        'ABM3N1' => ['MS. CARMONA', 'MR. BATILES', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA'],
+    ];
+    
+    foreach ($shs12Teachers as $section => $teachers) {
+        $subjectCounter = 1;
+        foreach ($teachers as $teacher) {
+            $teacher = cleanTeacherName($teacher);
+            if (!empty($teacher)) {
+                $subject = "Subject " . $subjectCounter;
+                $stmt->execute([$teacher, $section, $subject, 'SHS']);
+                $inserted++;
+                $subjectCounter++;
+            }
+        }
+        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
+    }
+    
+    // SHS SC (Special Classes) TEACHERS
+    echo "&nbsp;&nbsp;🌟 Adding SHS Special Classes Teachers...<br>";
+    
+    $shsSCTeachers = [
+        // Grade 11 SC
+        'HE-11SC' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. UMALI', 'MS. GENTEROY'],
+        'ICT-11SC' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. JIMENEZ', 'MR. JIMENEZ'],
+        'HUMSS-11SC' => ['MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MS. VELE', 'MR. MATILA'],
+        'ABM-11SC' => ['MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MS. VELE', 'MR. VALENZUELA', 'MR. RODRIGUEZ'],
+        
+        // Grade 12 SC
+        'HE-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MS. GENTEROY'],
+        'ICT-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MR. JIMENEZ', 'MR. JIMENEZ'],
+        'HUMSS-12SC' => ['MR. LACERNA', 'MR. UMALI', 'MR. PATIAM', 'MR. ICABANDE', 'MR. VELE'],
+        'ABM-12SC' => ['MR. LACERNA', 'MR. UMALI', 'MR. PATIAM', 'MS. IGHARAS', 'MS. IGHARAS'],
+    ];
+    
+    foreach ($shsSCTeachers as $section => $teachers) {
+        $subjectCounter = 1;
+        foreach ($teachers as $teacher) {
+            $teacher = cleanTeacherName($teacher);
+            if (!empty($teacher)) {
+                $subject = "Subject " . $subjectCounter;
+                $stmt->execute([$teacher, $section, $subject, 'SHS']);
+                $inserted++;
+                $subjectCounter++;
+            }
+        }
+        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
+    }
+    
+    return $inserted;
+}
+
 try {
     $pdo = getPDO();
-    echo "<h2>🔧 Setting up minimal database system...</h2><br>";
+    echo "<!DOCTYPE html>";
+    echo "<html><head><title>Database Setup</title>";
+    echo "<style>body{font-family:Arial,sans-serif;margin:20px;line-height:1.6;}h2{color:#800000;}h3{color:#A52A2A;}p{margin:5px 0;}.summary{background:#f0f0f0;padding:15px;border-radius:5px;margin:20px 0;}.success{color:green;}.error{color:red;}.highlight{background:#ffffcc;padding:10px;border-radius:5px;border-left:5px solid #ffcc00;}</style>";
+    echo "</head><body>";
+    
+    echo "<h2>🔧 Setting up database system with all real teacher assignments...</h2><br>";
 
     // ==============================
     // Drop ALL old tables (clean slate)
@@ -93,7 +289,7 @@ try {
         CREATE INDEX idx_program ON teacher_assignments(program);
         CREATE INDEX idx_active ON teacher_assignments(is_active);
     ");
-    echo "✓ Teacher assignments table created<br>";
+    echo "✓ Teacher assignments table created<br><br>";
 
     // ==============================
     // Evaluations Table
@@ -151,69 +347,82 @@ try {
         CREATE INDEX idx_section_eval ON evaluations(section);
         CREATE INDEX idx_program_eval ON evaluations(program);
     ");
-    echo "✓ Evaluations table created<br>";
+    echo "✓ Evaluations table created<br><br>";
 
     // ==============================
-    // Insert Sample Teacher Assignments
+    // Insert ALL Real Teacher Assignments
     // ==============================
-    echo "<br>📝 Adding sample teacher assignments...<br>";
-    $sample_assignments = [
-        // SHS Teachers
-        ['Ms. Rodriguez', 'SHS-11A', 'Mathematics', 'SHS', '2025-2026', '1st'],
-        ['Mr. Santos', 'SHS-11A', 'English', 'SHS', '2025-2026', '1st'],
-        ['Mrs. Cruz', 'SHS-11A', 'Science', 'SHS', '2025-2026', '1st'],
-        ['Ms. Garcia', 'SHS-12A', 'Mathematics', 'SHS', '2025-2026', '1st'],
-        ['Mr. Lopez', 'SHS-12A', 'Filipino', 'SHS', '2025-2026', '1st'],
-        
-        // College Teachers
-        ['Prof. Johnson', 'BSCS-1A', 'Programming Fundamentals', 'COLLEGE', '2025-2026', '1st'],
-        ['Dr. Williams', 'BSCS-1A', 'Computer Science Fundamentals', 'COLLEGE', '2025-2026', '1st'],
-        ['Prof. Brown', 'BSCS-2A', 'Data Structures', 'COLLEGE', '2025-2026', '1st'],
-        ['Dr. Davis', 'BSCS-2A', 'Database Systems', 'COLLEGE', '2025-2026', '1st'],
-    ];
-    
-    $stmt = $pdo->prepare("
-        INSERT INTO teacher_assignments (teacher_name, section, subject, program, school_year, semester) 
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT (teacher_name, section, subject, school_year, semester) DO NOTHING
-    ");
-    
-    $added_count = 0;
-    foreach ($sample_assignments as $assignment) {
-        $stmt->execute($assignment);
-        if ($stmt->rowCount() > 0) {
-            $added_count++;
-        }
-    }
-    echo "✓ Added {$added_count} teacher assignments<br>";
+    $totalInserted = insertAllTeacherAssignments($pdo);
 
     // ==============================
-    // Summary
+    // Summary and Statistics
     // ==============================
-    echo "<br><div style='background: #d4edda; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745;'>";
+    echo "<div class='summary'>";
     echo "<h3>✅ Database Setup Complete!</h3>";
+    echo "<p class='success'><strong>Total teacher assignments inserted: {$totalInserted}</strong></p>";
+    echo "</div>";
+    
+    // Show detailed statistics
+    echo "<h3>📈 Assignment Statistics by Program</h3>";
+    $stmt = $pdo->query("SELECT program, COUNT(*) as count FROM teacher_assignments GROUP BY program ORDER BY program");
+    $stats = $stmt->fetchAll();
+    
+    foreach ($stats as $stat) {
+        echo "<p>• <strong>{$stat['program']}:</strong> {$stat['count']} assignments</p>";
+    }
+    
+    $stmt = $pdo->query("SELECT COUNT(DISTINCT teacher_name) as unique_teachers FROM teacher_assignments");
+    $uniqueTeachers = $stmt->fetchColumn();
+    echo "<p><strong>Unique teachers:</strong> {$uniqueTeachers}</p>";
+    
+    $stmt = $pdo->query("SELECT COUNT(DISTINCT section) as unique_sections FROM teacher_assignments");
+    $uniqueSections = $stmt->fetchColumn();
+    echo "<p><strong>Sections covered:</strong> {$uniqueSections}</p>";
+    
+    // Show specific BSCS3M1 assignments (your section)
+    echo "<div class='highlight'>";
+    echo "<h3>🎯 Your Section (BSCS3M1) Teachers:</h3>";
+    $stmt = $pdo->prepare("SELECT teacher_name, subject FROM teacher_assignments WHERE section = ? AND program = ? ORDER BY subject");
+    $stmt->execute(['BSCS3M1', 'COLLEGE']);
+    $bscs3m1_teachers = $stmt->fetchAll();
+    
+    if ($bscs3m1_teachers) {
+        foreach ($bscs3m1_teachers as $teacher) {
+            echo "<p>• <strong>{$teacher['teacher_name']}</strong> - {$teacher['subject']}</p>";
+        }
+        echo "<p style='color:green;'><strong>✅ Found " . count($bscs3m1_teachers) . " teachers for your section!</strong></p>";
+    } else {
+        echo "<p style='color:red;'><strong>❌ No teachers found for BSCS3M1</strong></p>";
+    }
+    echo "</div>";
+    
+    echo "<div style='background: #d4edda; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; margin: 20px 0;'>";
+    echo "<h3>🏫 System Information</h3>";
     echo "<p><strong>Tables Created:</strong></p>";
     echo "<ul>";
-    echo "<li>📋 <code>teacher_assignments</code> - Links teachers to sections and subjects</li>";
-    echo "<li>📊 <code>evaluations</code> - Stores student evaluation responses</li>";
+    echo "<li>📋 <code>teacher_assignments</code> - All real teacher-section-subject assignments</li>";
+    echo "<li>📊 <code>evaluations</code> - Student evaluation responses storage</li>";
     echo "</ul>";
     
-    echo "<p><strong>Data Source:</strong></p>";
+    echo "<p><strong>Data Sources:</strong></p>";
     echo "<ul>";
-    echo "<li>📑 <strong>Students:</strong> Google Sheets (Columns: Student_ID, Last_Name, First_Name, Section, Program, Username, Password)</li>";
-    echo "<li>👨‍🏫 <strong>Teachers:</strong> Database teacher_assignments table</li>";
+    echo "<li>📑 <strong>Students:</strong> Google Sheets (Student_ID, Last_Name, First_Name, Section, Program, Username, Password)</li>";
+    echo "<li>👨‍🏫 <strong>Teachers:</strong> Database teacher_assignments table (now populated with all real data)</li>";
+    echo "<li>📊 <strong>Evaluations:</strong> Database evaluations table</li>";
     echo "</ul>";
     
-    echo "<p><strong>Next Steps:</strong></p>";
+    echo "<p><strong>Ready to use:</strong></p>";
     echo "<ol>";
-    echo "<li>Ensure your Google Sheets has the correct student data</li>";
-    echo "<li>Students will login using their Username from Google Sheets</li>";
-    echo "<li>Student info will be automatically displayed from Google Sheets</li>";
-    echo "<li>Add more teacher assignments as needed</li>";
+    echo "<li>✅ All teacher assignments are loaded</li>";
+    echo "<li>✅ Your BSCS3M1 section should now show teachers</li>";
+    echo "<li>✅ Students can now evaluate their assigned teachers</li>";
     echo "</ol>";
     echo "</div>";
     
-    echo "<br><p><a href='index.php' style='background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;'>← Go to Login Page</a></p>";
+    echo "<br><p><a href='index.php' style='background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;'>🏠 Go to Login Page</a></p>";
+    echo "<p><a href='student_dashboard.php' style='background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-left: 10px;'>📱 Test Student Dashboard</a></p>";
+    
+    echo "</body></html>";
 
 } catch (PDOException $e) {
     echo "<div style='background: #f8d7da; padding: 20px; border-radius: 8px; border-left: 4px solid #dc3545; margin: 20px 0;'>";
@@ -221,6 +430,7 @@ try {
     echo "<p><strong>Error:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
     echo "<p>Please check your database connection and try again.</p>";
     echo "</div>";
+    echo "</body></html>";
     exit(1);
 }
 ?>
