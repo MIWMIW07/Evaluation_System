@@ -1,6 +1,6 @@
 <?php
 // includes/db_connection.php
-// Updated hybrid connection for minimal tables approach
+// Clean hybrid connection for minimal tables approach
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Google\Client;
@@ -146,24 +146,18 @@ function isDatabaseAvailable() {
     }
 }
 
-// Simple logging function (optional - won't break if table doesn't exist)
+// Simple logging function (optional - for backwards compatibility)
 function logActivity($action, $details, $status = 'info', $userId = null) {
-    try {
-        $pdo = getPDO();
-        
-        // Check if activity_logs table exists (from old setup)
-        $stmt = $pdo->query("SELECT to_regclass('activity_logs')");
-        if ($stmt->fetchColumn()) {
-            $stmt = $pdo->prepare("
-                INSERT INTO activity_logs (user_id, action, details, status, created_at) 
-                VALUES (?, ?, ?, ?, NOW())
-            ");
-            $stmt->execute([$userId, $action, $details, $status]);
-        }
-    } catch (Exception $e) {
-        // Silently fail - logging is not critical
-        error_log("Logging failed: " . $e->getMessage());
-    }
+    // Just log to error log since we don't have activity_logs table anymore
+    $logMessage = sprintf(
+        "[%s] User: %s, Action: %s, Status: %s, Details: %s",
+        date('Y-m-d H:i:s'),
+        $userId ?? 'unknown',
+        $action,
+        $status,
+        $details
+    );
+    error_log($logMessage);
 }
 
 // Get available teacher assignments (for admin or reporting)
@@ -311,27 +305,6 @@ function addTeacherAssignment($teacherName, $section, $subject, $program) {
     } catch (Exception $e) {
         error_log("Add teacher assignment error: " . $e->getMessage());
         return false;
-    }
-}
-
-// Legacy compatibility - these functions might be called by existing code
-function getDataManager() {
-    return new LegacyDataManager();
-}
-
-class LegacyDataManager {
-    public function getPDO() {
-        return getPDO();
-    }
-    
-    public function authenticateUser($username, $password) {
-        // This is now handled in login.php with Google Sheets integration
-        return false;
-    }
-    
-    public function getTeachers() {
-        // Return empty array - teachers now come from Google Sheets or database assignments
-        return [];
     }
 }
 ?>
