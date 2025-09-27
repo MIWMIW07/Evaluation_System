@@ -1,5 +1,6 @@
 <?php
 // includes/db_connection.php
+// Updated hybrid connection for minimal tables approach
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Google\Client;
@@ -11,10 +12,10 @@ class HybridDataManager {
     private $sheetId;
 
     public function __construct() {
-        // ✅ PostgreSQL connection
+        // PostgreSQL connection
         $dbUrl = getenv("DATABASE_URL") ?: ($_ENV["DATABASE_URL"] ?? $_SERVER["DATABASE_URL"] ?? null);
         if (!$dbUrl) {
-            throw new Exception("❌ DATABASE_URL environment variable not set");
+            throw new Exception("DATABASE_URL environment variable not set");
         }
 
         $dbopts = parse_url($dbUrl);
@@ -30,112 +31,91 @@ class HybridDataManager {
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
 
-        // ✅ Google Sheets
+        // Google Sheets setup
         $this->sheetId = getenv("GOOGLE_SHEETS_ID") ?: ($_ENV["GOOGLE_SHEETS_ID"] ?? $_SERVER["GOOGLE_SHEETS_ID"] ?? null);
         $googleCreds = getenv("GOOGLE_CREDENTIALS_JSON") ?: ($_ENV["GOOGLE_CREDENTIALS_JSON"] ?? $_SERVER["GOOGLE_CREDENTIALS_JSON"] ?? null);
 
-        if (!$this->sheetId) {
-            throw new Exception("❌ GOOGLE_SHEETS_ID environment variable not set");
+        if ($this->sheetId && $googleCreds) {
+            try {
+                $client = new Client();
+                $client->setApplicationName("Evaluation System");
+                $client->setScopes([Sheets::SPREADSHEETS_READONLY]);
+                $client->setAuthConfig(json_decode($googleCreds, true));
+                $this->sheetsService = new Sheets($client);
+            } catch (Exception $e) {
+                error_log("Google Sheets setup failed: " . $e->getMessage());
+                $this->sheetsService = null;
+            }
+        } else {
+            $this->sheetsService = null;
         }
-        if (!$googleCreds) {
-            throw new Exception("❌ GOOGLE_CREDENTIALS_JSON environment variable not set");
-        }
-
-        $client = new Client();
-        $client->setApplicationName("Evaluation System");
-        $client->setScopes([Sheets::SPREADSHEETS_READONLY]);
-        $client->setAuthConfig(json_decode($googleCreds, true));
-        $this->sheetsService = new Sheets($client);
     }
 
-    /** ------------------ AUTH ------------------- */
     public function authenticateUser($username, $password) {
-        // 1. Try Postgres (admins)
-        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE username = :username LIMIT 1");
-        $stmt->execute([':username' => $username]);
-        $user = $stmt->fetch();
-
-        if ($user && password_verify($password, $user['password'])) {
+        // Check for hardcoded admin
+        if ($username === 'admin' && $password === 'admin123') {
             return [
-                'id'   => $user['id'],
-                'type' => $user['user_type'] ?? 'admin'
+                'id' => 'admin',
+                'type' => 'admin'
             ];
         }
 
-        // 2. Try Google Sheets (students + teachers)
-        if ($username && $password) {
+        // Try Google Sheets for students
+        if ($this->sheetsService) {
             $student = $this->findStudent($username, $password);
             if ($student) {
-                return ['id' => $student['id'], 'type' => 'student'];
-            }
-
-            $teacher = $this->findTeacher($username, $password);
-            if ($teacher) {
-                return ['id' => $teacher['id'], 'type' => 'teacher'];
+                return ['id' => $student['student_id'], 'type' => 'student'];
             }
         }
 
         return false;
     }
 
-    /** ------------------ STUDENTS ------------------- */
-private function findStudent($username, $password) {
-    // Updated range to include username (F) and password (G) columns
-    $range = "Students!A:G";
-    $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
-    $rows = $response->getValues();
+    private function findStudent($username, $password) {
+        try {
+            $range = "Students!A:G"; // A=Student_ID, B=Last_Name, C=First_Name, D=Section, E=Program, F=Username, G=Password
+            $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
+            $rows = $response->getValues();
 
-    foreach ($rows as $i => $row) {
-        if ($i === 0) continue; // Skip header row
+            foreach ($rows as $i => $row) {
+                if ($i === 0) continue; // Skip header row
+                
+                if (count($row) >= 7) {
+                    $stored_username = isset($row[5]) ? trim($row[5]) : '';
+                    $stored_password = isset($row[6]) ? trim($row[6]) : '';
+                    
+                    if ($stored_username === $username && $stored_password === $password) {
+                        return [
+                            'student_id' => $row[0] ?? '',
+                            'last_name' => $row[1] ?? '',
+                            'first_name' => $row[2] ?? '',
+                            'section' => $row[3] ?? '',
+                            'program' => $row[4] ?? '',
+                            'username' => $stored_username,
+                            'full_name' => trim(($row[2] ?? '') . ' ' . ($row[1] ?? ''))
+                        ];
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Google Sheets error: " . $e->getMessage());
+        }
         
-        // Check if we have enough columns and the username/password match
-        if (count($row) >= 7) { // Now we need 7 columns (A-G)
-            $stored_username = isset($row[5]) ? trim($row[5]) : ''; // Column F (Username)
-            $stored_password = isset($row[6]) ? trim($row[6]) : ''; // Column G (Password)
-            
-            if ($stored_username === $username && $stored_password === $password) {
-                return [
-                    'id' => $i,
-                    'student_id' => $row[0] ?? '', // Column A
-                    'last_name' => $row[1] ?? '',  // Column B
-                    'first_name' => $row[2] ?? '', // Column C
-                    'section' => $row[3] ?? '',    // Column D
-                    'program' => $row[4] ?? '',    // Column E
-                    'username' => $stored_username,
-                    'full_name' => trim(($row[2] ?? '') . ' ' . ($row[1] ?? ''))
-                ];
-            }
-        }
-    }
-    return null;
-}
-
-    /** ------------------ TEACHERS ------------------- */
-    private function findTeacher($username, $password) {
-        $range = "Teachers!A:C";
-        $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
-        $rows = $response->getValues();
-
-        foreach ($rows as $i => $row) {
-            if ($i === 0) continue;
-            if (isset($row[0]) && $row[0] === $username && isset($row[1]) && $row[1] === $password) {
-                return [
-                    'id' => $i,
-                    'name' => $row[0],
-                    'department' => $row[1] ?? null,
-                    'subject' => $row[2] ?? null
-                ];
-            }
-        }
         return null;
     }
 
-    /** ------------------ PUBLIC GETTERS ------------------- */
     public function getTeachers() {
-        $range = "Teachers!A:C";
-        $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
-        $rows = $response->getValues();
-        return array_slice($rows, 1); // remove header row
+        if (!$this->sheetsService) return [];
+        
+        try {
+            $range = "Teachers!A:C";
+            $response = $this->sheetsService->spreadsheets_values->get($this->sheetId, $range);
+            $rows = $response->getValues();
+            return array_slice($rows, 1); // remove header row
+        } catch (Exception $e) {
+            error_log("Failed to get teachers: " . $e->getMessage());
+            return [];
+        }
     }
 
     public function getPDO() {
@@ -143,7 +123,7 @@ private function findStudent($username, $password) {
     }
 }
 
-// ✅ Helper function for DataManager
+// Helper functions
 function getDataManager() {
     static $manager = null;
     if (!$manager) {
@@ -152,52 +132,206 @@ function getDataManager() {
     return $manager;
 }
 
-// ✅ Helper function for raw PDO (if needed)
 function getPDO() {
     return getDataManager()->getPDO();
 }
 
-// ---------------- Activity Logger ----------------
-function logActivity($action, $details, $status = "info", $userId = null) {
-    try {
-        $manager = getDataManager();
-
-        // Access the private $pdo property inside HybridDataManager
-        $refClass = new ReflectionClass($manager);
-        $pdoProp  = $refClass->getProperty('pdo');
-        $pdoProp->setAccessible(true);
-        $conn = $pdoProp->getValue($manager);
-
-        // Insert into activity_logs table
-        $stmt = $conn->prepare("
-            INSERT INTO activity_logs (user_id, action, details, status, created_at)
-            VALUES (:user_id, :action, :details, :status, NOW())
-        ");
-        $stmt->execute([
-            ':user_id' => $userId,
-            ':action'  => $action,
-            ':details' => $details,
-            ':status'  => $status
-        ]);
-    } catch (Exception $e) {
-        error_log("⚠️ logActivity failed: " . $e->getMessage());
-    }
-}
-
-// ✅ Helper function to check if the database is reachable
+// Check if database is available
 function isDatabaseAvailable() {
     try {
-        $pdo = getPDO();
-        $pdo->query("SELECT 1"); // simple check
+        getPDO();
         return true;
     } catch (Exception $e) {
-        error_log("⚠️ Database unavailable: " . $e->getMessage());
         return false;
     }
 }
 
+// Simple logging function (optional - won't break if table doesn't exist)
+function logActivity($action, $details, $status = 'info', $userId = null) {
+    try {
+        $pdo = getPDO();
+        
+        // Check if activity_logs table exists (from old setup)
+        $stmt = $pdo->query("SELECT to_regclass('activity_logs')");
+        if ($stmt->fetchColumn()) {
+            $stmt = $pdo->prepare("
+                INSERT INTO activity_logs (user_id, action, details, status, created_at) 
+                VALUES (?, ?, ?, ?, NOW())
+            ");
+            $stmt->execute([$userId, $action, $details, $status]);
+        }
+    } catch (Exception $e) {
+        // Silently fail - logging is not critical
+        error_log("Logging failed: " . $e->getMessage());
+    }
+}
 
+// Get available teacher assignments (for admin or reporting)
+function getTeacherAssignments() {
+    try {
+        $pdo = getPDO();
+        $stmt = $pdo->query("
+            SELECT * FROM teacher_assignments 
+            WHERE is_active = true 
+            ORDER BY program, section, teacher_name
+        ");
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        return [];
+    }
+}
 
+// Get student evaluations (for reporting)
+function getStudentEvaluations($studentUsername = null) {
+    try {
+        $pdo = getPDO();
+        
+        if ($studentUsername) {
+            $stmt = $pdo->prepare("
+                SELECT * FROM evaluations 
+                WHERE student_username = ? 
+                ORDER BY submitted_at DESC
+            ");
+            $stmt->execute([$studentUsername]);
+        } else {
+            $stmt = $pdo->query("
+                SELECT * FROM evaluations 
+                ORDER BY submitted_at DESC
+            ");
+        }
+        
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        return [];
+    }
+}
 
+// Check if student has evaluated a specific teacher
+function hasEvaluatedTeacher($studentUsername, $teacherName, $subject = null) {
+    try {
+        $pdo = getPDO();
+        
+        if ($subject) {
+            $stmt = $pdo->prepare("
+                SELECT id FROM evaluations 
+                WHERE student_username = ? AND teacher_name = ? AND subject = ?
+            ");
+            $stmt->execute([$studentUsername, $teacherName, $subject]);
+        } else {
+            $stmt = $pdo->prepare("
+                SELECT id FROM evaluations 
+                WHERE student_username = ? AND teacher_name = ?
+            ");
+            $stmt->execute([$studentUsername, $teacherName]);
+        }
+        
+        return $stmt->fetch() !== false;
+    } catch (Exception $e) {
+        return false;
+    }
+}
 
+// Save evaluation to database
+function saveEvaluation($evaluationData) {
+    try {
+        $pdo = getPDO();
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO evaluations (
+                student_username, student_name, teacher_name, section, program, subject,
+                q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
+                q2_1, q2_2, q2_3, q2_4,
+                q3_1, q3_2, q3_3, q3_4,
+                q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
+                comments, created_at, submitted_at
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?,
+                ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?,
+                ?, NOW(), NOW()
+            )
+            ON CONFLICT (student_username, teacher_name, subject, section) 
+            DO UPDATE SET
+                q1_1 = EXCLUDED.q1_1, q1_2 = EXCLUDED.q1_2, q1_3 = EXCLUDED.q1_3,
+                q1_4 = EXCLUDED.q1_4, q1_5 = EXCLUDED.q1_5, q1_6 = EXCLUDED.q1_6,
+                q2_1 = EXCLUDED.q2_1, q2_2 = EXCLUDED.q2_2, q2_3 = EXCLUDED.q2_3, q2_4 = EXCLUDED.q2_4,
+                q3_1 = EXCLUDED.q3_1, q3_2 = EXCLUDED.q3_2, q3_3 = EXCLUDED.q3_3, q3_4 = EXCLUDED.q3_4,
+                q4_1 = EXCLUDED.q4_1, q4_2 = EXCLUDED.q4_2, q4_3 = EXCLUDED.q4_3,
+                q4_4 = EXCLUDED.q4_4, q4_5 = EXCLUDED.q4_5, q4_6 = EXCLUDED.q4_6,
+                comments = EXCLUDED.comments, submitted_at = NOW()
+        ");
+        
+        $result = $stmt->execute([
+            $evaluationData['student_username'],
+            $evaluationData['student_name'],
+            $evaluationData['teacher_name'],
+            $evaluationData['section'],
+            $evaluationData['program'],
+            $evaluationData['subject'],
+            
+            // Section 1 - Teaching Ability
+            $evaluationData['q1_1'], $evaluationData['q1_2'], $evaluationData['q1_3'],
+            $evaluationData['q1_4'], $evaluationData['q1_5'], $evaluationData['q1_6'],
+            
+            // Section 2 - Management Skills
+            $evaluationData['q2_1'], $evaluationData['q2_2'], $evaluationData['q2_3'], $evaluationData['q2_4'],
+            
+            // Section 3 - Guidance Skills
+            $evaluationData['q3_1'], $evaluationData['q3_2'], $evaluationData['q3_3'], $evaluationData['q3_4'],
+            
+            // Section 4 - Personal and Social Characteristics
+            $evaluationData['q4_1'], $evaluationData['q4_2'], $evaluationData['q4_3'],
+            $evaluationData['q4_4'], $evaluationData['q4_5'], $evaluationData['q4_6'],
+            
+            $evaluationData['comments'] ?? ''
+        ]);
+        
+        return $result;
+    } catch (Exception $e) {
+        error_log("Save evaluation error: " . $e->getMessage());
+        throw $e;
+    }
+}
 
+// Add a new teacher assignment
+function addTeacherAssignment($teacherName, $section, $subject, $program) {
+    try {
+        $pdo = getPDO();
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO teacher_assignments (teacher_name, section, subject, program, created_at, updated_at)
+            VALUES (?, ?, ?, ?, NOW(), NOW())
+            ON CONFLICT (teacher_name, section, subject, school_year, semester) 
+            DO UPDATE SET updated_at = NOW(), is_active = true
+        ");
+        
+        return $stmt->execute([$teacherName, $section, $subject, $program]);
+    } catch (Exception $e) {
+        error_log("Add teacher assignment error: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Legacy compatibility - these functions might be called by existing code
+function getDataManager() {
+    return new LegacyDataManager();
+}
+
+class LegacyDataManager {
+    public function getPDO() {
+        return getPDO();
+    }
+    
+    public function authenticateUser($username, $password) {
+        // This is now handled in login.php with Google Sheets integration
+        return false;
+    }
+    
+    public function getTeachers() {
+        // Return empty array - teachers now come from Google Sheets or database assignments
+        return [];
+    }
+}
+?>
