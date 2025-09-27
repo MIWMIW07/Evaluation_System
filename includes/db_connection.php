@@ -167,4 +167,18 @@ function logActivity($action, $details, $status = "info", $userId = null) {
     }
 }
 
+// ✅ Helper function to check if the database is reachable
+function isDatabaseAvailable() {
+    try {
+        $pdo = getPDO();
+        $pdo->query("SELECT 1"); // simple check
+        return true;
+    } catch (Exception $e) {
+        error_log("⚠️ Database unavailable: " . $e->getMessage());
+        return false;
+    }
+}
+
+
+
 
