@@ -1,54 +1,35 @@
 <?php
 session_start();
-require_once __DIR__ . '/includes/db_connection.php';
+require_once 'includes/db_connection.php';
 
-$error = '';
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $username = trim($_POST["username"]);
+    $password = trim($_POST["password"]);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $manager = getDataManager();
+    $auth = $manager->authenticateUser($username, $password);
 
-    if ($username && $password) {
-        try {
-            $manager = getDataManager(); // ✅ Use HybridDataManager
-            $auth = $manager->authenticateUser($username, $password);
+    if ($auth) {
+        $_SESSION['user_id']   = $auth['id'];
+        $_SESSION['user_type'] = $auth['type'];
 
-            if ($auth) {
-                // ✅ Successful login
-                $_SESSION['user_id']   = $auth['id'];
-                $_SESSION['username']  = $username;
-                $_SESSION['user_type'] = $auth['type'];
+        logActivity("login", "User $username logged in", "success", $auth['id']);
 
-                // Update last login if admin (stored in Postgres)
-                if ($auth['type'] === 'admin') {
-                    $pdo = $manager->getPDO();
-                    $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?")
-                        ->execute([$auth['id']]);
-                }
-
-                // Log success
-                logActivity("login", "User '{$username}' logged in successfully", "success", $auth['id']);
-
-                // Redirect
-                if ($auth['type'] === 'admin') {
-                    header("Location: admin.php");
-                } elseif ($auth['type'] === 'teacher') {
-                    header("Location: teacher_dashboard.php");
-                } else {
-                    header("Location: student_dashboard.php");
-                }
-                exit;
-            } else {
-                // ❌ Failed login
-                logActivity("login", "Failed login attempt for username '{$username}'", "error");
-                $error = "Invalid username or password.";
-            }
-        } catch (Exception $e) {
-            logActivity("login", "Login error: " . $e->getMessage(), "error");
-            $error = "An error occurred. Please try again later.";
+        // ✅ Redirect based on role
+        if ($auth['type'] === 'admin') {
+            header("Location: admin/dashboard.php");
+        } elseif ($auth['type'] === 'teacher') {
+            header("Location: teacher/dashboard.php");
+        } elseif ($auth['type'] === 'student') {
+            header("Location: student/dashboard.php");
+        } else {
+            header("Location: index.php"); // fallback
         }
+        exit;
     } else {
-        $error = "Please enter both username and password.";
+        logActivity("login_failed", "Invalid login attempt for $username", "error", null);
+        $_SESSION['error'] = "Invalid username or password.";
+        header("Location: index.php");
+        exit;
     }
 }
-?>
