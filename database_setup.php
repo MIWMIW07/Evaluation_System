@@ -84,11 +84,11 @@ function insertAllTeacherAssignments($pdo) {
         'BSOA-4N1' => ['MR. CALCEÑA', 'MS. IGHARAS', 'MS. IGHARAS', 'MR. CALCEÑA'],
         
         // EDUC Programs
-        'EDUC1M1' => ['MR. VELE', 'MR. MATILA', 'MR. V. GORDON', 'MS. TESORO', 'MR. LACERNA', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. RENDORA', 'MS. RENDORA', 'MR. ATIENZA'],
-        'EDUC2N1' => ['MS. VELE', 'MR. VALENZUELA', 'MR. ICABANDE', 'MR. ELLO', 'MR. VALENZUELA', 'MR. ORNACHO', 'MR. MATILA', 'MS. OCTAVO', 'MS. RENDORA'],
-        'EDUC3M1' => ['MS. OCTAVO', 'MR. VALENZUELA', 'MR. MATILA', 'MR. CALCEÑA', 'MS. MAGNO', 'MS. MAGNO', 'MS. TESORO', 'MS. CARMONA'],
-        'EDUC4M1' => ['MS. TESORO', 'MR. ELLO', 'MS. TESORO', 'MS. TESORO'],
-        'EDUC4N1' => ['MS. TESORO'],
+        'EDUC-1M1' => ['MR. VELE', 'MR. MATILA', 'MR. V. GORDON', 'MS. TESORO', 'MR. LACERNA', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. RENDORA', 'MS. RENDORA', 'MR. ATIENZA'],
+        'EDUC-2N1' => ['MS. VELE', 'MR. VALENZUELA', 'MR. ICABANDE', 'MR. ELLO', 'MR. VALENZUELA', 'MR. ORNACHO', 'MR. MATILA', 'MS. OCTAVO', 'MS. RENDORA'],
+        'EDUC-3M1' => ['MS. OCTAVO', 'MR. VALENZUELA', 'MR. MATILA', 'MR. CALCEÑA', 'MS. MAGNO', 'MS. MAGNO', 'MS. TESORO', 'MS. CARMONA'],
+        'EDUC-4M1' => ['MS. TESORO', 'MR. ELLO', 'MS. TESORO', 'MS. TESORO'],
+        'EDUC-4N1' => ['MS. TESORO'],
     ];
     
     foreach ($collegeTeachers as $section => $teachers) {
@@ -434,4 +434,5 @@ try {
     exit(1);
 }
 ?>
+
 
