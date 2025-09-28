@@ -121,7 +121,7 @@ function testGoogleConnection() {
         if (!$spreadsheetId) {
             return [
                 'success' => false,
-                'error' => 'GOOGLE_SPREADSHEET_ID environment variable not set'
+                'error' => 'GOOGLE_SHEETS_ID environment variable not set'
             ];
         }
         
@@ -216,7 +216,7 @@ function syncGoogleSheetsData() {
         require_once __DIR__ . '/google_sheets_integration.php';
         
         $credentialsJson = getenv('GOOGLE_CREDENTIALS_JSON');
-        $spreadsheetId = getenv('GOOGLE_SPREADSHEET_ID');
+        $spreadsheetId = getenv('GOOGLE_SHEETS_ID');
         
         if (!$credentialsJson || !$spreadsheetId) {
             return [
