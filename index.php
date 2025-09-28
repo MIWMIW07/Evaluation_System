@@ -21,11 +21,6 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
-            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" fill="%23D4AF37" rx="5"/><text x="16" y="16" font-family="Arial" font-size="14" fill="%23800000" text-anchor="middle" dominant-baseline="middle">PT</text></svg>'), auto;
-        }
-        
-        body.default-cursor {
-            cursor: default;
         }
         
         .login-container {
@@ -243,7 +238,7 @@
             Welcome to the Teacher Evaluation System. Please login to continue.
         </div>
         
-        <form method="POST" action="login.php" id="loginForm">
+        <form method="POST" action="login.php">
             <div class="form-group" data-aos="fade-right" data-aos-delay="800">
                 <label for="username">Username</label>
                 <div class="input-container">
@@ -287,21 +282,6 @@
             // Toggle eye icon
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
-        });
-
-        // Custom cursor functionality
-        const loginForm = document.getElementById('loginForm');
-        const loginContainer = document.querySelector('.login-container');
-        const body = document.body;
-
-        // Change cursor to default when entering form area
-        loginContainer.addEventListener('mouseenter', function() {
-            body.classList.add('default-cursor');
-        });
-
-        // Change cursor back to custom when leaving form area
-        loginContainer.addEventListener('mouseleave', function() {
-            body.classList.remove('default-cursor');
         });
     </script>
 </body>
