@@ -318,6 +318,113 @@ if ($is_view_mode && $existing_evaluation) {
             position: relative;
         }
 
+        /* Skeleton Loading Styles */
+        #skeleton-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f9f5eb;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .skeleton-logo {
+            width: 300px;
+            height: 40px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            animation: loading 1.5s infinite;
+        }
+
+        .skeleton-header {
+            width: 80%;
+            height: 30px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            animation: loading 1.5s infinite;
+        }
+
+        .skeleton-subheader {
+            width: 60%;
+            height: 20px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 5px;
+            margin-bottom: 40px;
+            animation: loading 1.5s infinite;
+        }
+
+        .skeleton-card {
+            width: 90%;
+            height: 100px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            animation: loading 1.5s infinite;
+        }
+
+        .skeleton-row {
+            width: 95%;
+            height: 15px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 3px;
+            margin-bottom: 10px;
+            animation: loading 1.5s infinite;
+        }
+
+        .skeleton-row.short {
+            width: 70%;
+        }
+
+        .skeleton-row.medium {
+            width: 85%;
+        }
+
+        .skeleton-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f0f0f0;
+            border-top: 5px solid #DAA520;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-top: 20px;
+        }
+
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .skeleton-hidden {
+            display: none;
+        }
+
+        .fade-out {
+            opacity: 0;
+        }
+
+        /* Rest of your existing styles remain the same */
         header {
             text-align: center;
             margin-bottom: 30px;
@@ -596,10 +703,37 @@ if ($is_view_mode && $existing_evaluation) {
                 font-size: 14px;
                 margin: 5px 0;
             }
+
+            /* Skeleton responsive */
+            .skeleton-header {
+                width: 90%;
+            }
+            
+            .skeleton-subheader {
+                width: 80%;
+            }
+            
+            .skeleton-card {
+                width: 95%;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Skeleton Loading Screen -->
+    <div id="skeleton-loader">
+        <div class="skeleton-logo"></div>
+        <div class="skeleton-header"></div>
+        <div class="skeleton-subheader"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row medium"></div>
+        <div class="skeleton-row short"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row medium"></div>
+        <div class="skeleton-spinner"></div>
+    </div>
+
     <div class="progress-container">
         <div class="progress-text" id="progress-text">Completion: 0%</div>
         <div class="progress-bar">
@@ -923,7 +1057,21 @@ if ($is_view_mode && $existing_evaluation) {
     </div>
 
     <script>
+        // Skeleton loading functionality
         document.addEventListener('DOMContentLoaded', () => {
+            const skeletonLoader = document.getElementById('skeleton-loader');
+            
+            // Show skeleton for 3 seconds then fade out
+            setTimeout(() => {
+                skeletonLoader.classList.add('fade-out');
+                
+                // Remove skeleton from DOM after fade out completes
+                setTimeout(() => {
+                    skeletonLoader.style.display = 'none';
+                }, 500); // Match the CSS transition duration
+            }, 3000); // 3 seconds loading time
+
+            // Rest of your existing JavaScript code...
             const englishBtn = document.getElementById('english-btn');
             const tagalogBtn = document.getElementById('tagalog-btn');
             const englishContent = document.querySelectorAll('.english');
