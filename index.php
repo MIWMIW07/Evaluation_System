@@ -263,8 +263,7 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        
-        /* Form container for centering the loading */
+
         .form-container {
             position: relative;
         }
@@ -311,7 +310,7 @@
     </style>
 </head>
 <body>
-    <div class="login-container" data-aos="fade-up" data-aos-duration="800">
+    <div class="login-container">
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-content">
                 <div class="spinner"></div>
@@ -328,10 +327,6 @@
                     Philippine Technological Institute of Science Arts and Trade, Inc.
                 </div>
             </div>
-        </div>
-        
-        <div class="alert alert-success" id="alertBox" data-aos="fade-right" data-aos-delay="600">
-            Welcome to the Teacher Evaluation System. Please login to continue.
         </div>
         
         <div class="form-container">
@@ -360,11 +355,11 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1200" id="loginButton">Login</button>
+                <button type="submit" class="btn" id="loginButton">Login</button>
             </form>
         </div>
         
-        <div class="footer" data-aos="fade-up" data-aos-delay="1400">
+        <div class="footer">
             <p>&copy; 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</p>
         </div>
     </div>
