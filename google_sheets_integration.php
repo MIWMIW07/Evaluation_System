@@ -1,5 +1,5 @@
 <?php
-// google_sheets_integration.php - Google Sheets API Integration
+// google_sheets_integration.php - Updated with correct environment variable
 
 require_once 'vendor/autoload.php'; // Composer autoload for Google Client
 require_once 'includes/db_connection.php'; // make sure your PDO $pdo is available
@@ -30,7 +30,7 @@ class GoogleSheetsIntegration {
     private $service;
     private $pdo;
     
-    // Google Sheets configuration
+    // Google Sheets configuration - UPDATED to use GOOGLE_SHEETS_ID
     private $spreadsheetId;
     private $studentsRange = 'Students!A:E'; // Columns: Last Name, First Name, Middle Name, Section, Student ID
     private $teachersRange = 'Teachers!A:C'; // Columns: Name, Department (SHS/COLLEGE/BOTH), Subject
