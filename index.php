@@ -20,6 +20,7 @@ if (isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Evaluation System - Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -145,7 +146,7 @@ if (isset($_SESSION['user_id'])) {
         
         .btn {
             width: 100%;
-            background: linear-gradient(135deg, #800000 0%, #A52A2A 100%);
+            background: linear-gradient(135deg, #D4AF37 0%, #800000 100%);
             color: white;
             padding: 14px;
             border: none;
@@ -153,19 +154,39 @@ if (isset($_SESSION['user_id'])) {
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
             margin-top: 10px;
-            box-shadow: 0 4px 6px rgba(128, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(128, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #800000 0%, #D4AF37 100%);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.4s ease;
         }
         
         .btn:hover {
-            background: linear-gradient(135deg, #A52A2A 0%, #800000 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(128, 0, 0, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(128, 0, 0, 0.4);
+        }
+        
+        .btn:hover::before {
+            opacity: 1;
         }
         
         .btn:active {
-            transform: translateY(0);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(128, 0, 0, 0.4);
         }
         
         .alert {
@@ -216,11 +237,11 @@ if (isset($_SESSION['user_id'])) {
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="header-container">
+    <div class="login-container" data-aos="fade-up" data-aos-duration="800">
+        <div class="header-container" data-aos="fade-down" data-aos-delay="200">
             <h1>Teacher Evaluation</h1>
             <div class="system-subtitle">System</div>
-            <div class="school-name-box">
+            <div class="school-name-box" data-aos="zoom-in" data-aos-delay="400">
                 <div class="school-name">
                     <img src="logo.png" alt="School Logo" class="logo" onerror="this.style.display='none'">
                     Philippine Technological Institute of Science Arts and Trade, Inc.
@@ -228,26 +249,12 @@ if (isset($_SESSION['user_id'])) {
             </div>
         </div>
         
-        <?php if (isset($_SESSION['logout_message'])): ?>
-            <div class="alert alert-success">
-                <?php 
-                echo htmlspecialchars($_SESSION['logout_message']); 
-                unset($_SESSION['logout_message']);
-                ?>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-error">
-                <?php 
-                echo htmlspecialchars($_SESSION['error']); 
-                unset($_SESSION['error']);
-                ?>
-            </div>
-        <?php endif; ?>
+        <div class="alert alert-success" data-aos="fade-right" data-aos-delay="600">
+            Welcome to the Teacher Evaluation System. Please login to continue.
+        </div>
         
         <form method="POST" action="login.php">
-            <div class="form-group">
+            <div class="form-group" data-aos="fade-right" data-aos-delay="800">
                 <label for="username">Username</label>
                 <div class="input-container">
                     <i class="fas fa-user input-icon"></i>
@@ -255,7 +262,7 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
             
-            <div class="form-group">
+            <div class="form-group" data-aos="fade-right" data-aos-delay="1000">
                 <label for="password">Password</label>
                 <div class="input-container">
                     <i class="fas fa-lock input-icon"></i>
@@ -264,15 +271,23 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
             
-            <button type="submit" class="btn">Login</button>
+            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1200">Login</button>
         </form>
         
-        <div class="footer">
+        <div class="footer" data-aos="fade-up" data-aos-delay="1400">
             <p>&copy; 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</p>
         </div>
     </div>
 
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
+        // Initialize AOS
+        AOS.init({
+            once: true,
+            duration: 800,
+            easing: 'ease-out-cubic'
+        });
+
         // Toggle password visibility
         document.getElementById('passwordToggle').addEventListener('click', function() {
             const passwordInput = document.getElementById('password');
