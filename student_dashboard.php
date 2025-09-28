@@ -105,6 +105,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             border-radius: 15px;
             position: relative;
+            min-height: 100vh;
         }
         
         .header {
@@ -367,22 +368,38 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         /* Floating Logout Button Styles */
-        .floating-logout-btn {
-            position: fixed;
+        .floating-logout-container {
+            position: sticky;
             bottom: 30px;
-            right: 30px;
-            z-index: 1000;
+            height: 0;
+            z-index: 100;
+            margin-top: 20px;
+        }
+        
+        .floating-logout-btn {
+            position: absolute;
+            bottom: 0;
+            right: 0;
             background: linear-gradient(135deg, #800000 0%, #500000 100%);
             color: #FFD700;
-            padding: 15px 25px;
+            padding: 12px 20px;
             text-decoration: none;
-            border-radius: 50px;
+            border-radius: 25px;
             font-weight: bold;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
+            transform: translateY(0);
+            opacity: 1;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .floating-logout-btn.hidden {
+            transform: translateY(20px);
+            opacity: 0;
+            pointer-events: none;
         }
         
         .floating-logout-btn:hover {
@@ -531,10 +548,12 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             }
             
             /* Adjust floating button for mobile */
-            .floating-logout-btn {
+            .floating-logout-container {
                 bottom: 20px;
-                right: 20px;
-                padding: 12px 20px;
+            }
+            
+            .floating-logout-btn {
+                padding: 10px 18px;
                 font-size: 0.9em;
             }
         }
@@ -697,10 +716,12 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 </p>
                 <!-- Removed the original logout button from here -->
             </div>
+            
+            <!-- Floating Logout Button Container -->
+            <div class="floating-logout-container">
+                <a href="logout.php" class="floating-logout-btn" id="floatingLogoutBtn">🚪 Logout</a>
+            </div>
         </div>
-        
-        <!-- Floating Logout Button -->
-        <a href="logout.php" class="floating-logout-btn">🚪 Logout</a>
     </div>
 
     <script>
@@ -712,7 +733,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             }, 3000);
 
             // Add confirmation for logout
-            document.querySelector('.floating-logout-btn').addEventListener('click', function(e) {
+            document.getElementById('floatingLogoutBtn').addEventListener('click', function(e) {
                 if (!confirm('Are you sure you want to logout?')) {
                     e.preventDefault();
                 }
@@ -732,6 +753,24 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                         this.style.pointerEvents = 'auto';
                     }, 3000);
                 });
+            });
+            
+            // Scroll behavior for floating logout button
+            let lastScrollTop = 0;
+            const floatingLogoutBtn = document.getElementById('floatingLogoutBtn');
+            
+            window.addEventListener('scroll', function() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                if (scrollTop > lastScrollTop) {
+                    // Scrolling down - hide the button
+                    floatingLogoutBtn.classList.add('hidden');
+                } else {
+                    // Scrolling up - show the button
+                    floatingLogoutBtn.classList.remove('hidden');
+                }
+                
+                lastScrollTop = scrollTop;
             });
         });
     </script>
