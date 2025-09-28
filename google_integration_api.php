@@ -109,7 +109,7 @@ function testGoogleConnection() {
         }
         
         $credentialsJson = getenv('GOOGLE_CREDENTIALS_JSON');
-        $spreadsheetId = getenv('GOOGLE_SPREADSHEET_ID');
+        $spreadsheetId = getenv('GOOGLE_SHEETS_ID');
         
         if (!$credentialsJson) {
             return [
