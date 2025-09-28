@@ -249,10 +249,6 @@ if (isset($_SESSION['user_id'])) {
             </div>
         </div>
         
-        <div class="alert alert-success" data-aos="fade-right" data-aos-delay="600">
-            Welcome to the Teacher Evaluation System. Please login to continue.
-        </div>
-        
         <form method="POST" action="login.php">
             <div class="form-group" data-aos="fade-right" data-aos-delay="800">
                 <label for="username">Username</label>
@@ -274,7 +270,7 @@ if (isset($_SESSION['user_id'])) {
             <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1200">Login</button>
         </form>
         
-        <div class="footer" data-aos="fade-up" data-aos-delay="1400">
+        <div class="footer">
             <p>&copy; 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</p>
         </div>
     </div>
