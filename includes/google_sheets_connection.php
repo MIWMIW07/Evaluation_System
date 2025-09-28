@@ -47,7 +47,7 @@ class GoogleSheetsHelper {
             unlink($tempFile);
             
             // Set your spreadsheet ID (you'll need to add this as an environment variable)
-            $this->spreadsheetId = getenv('GOOGLE_SPREADSHEET_ID') ?: 'your-spreadsheet-id-here';
+            $this->spreadsheetId = getenv('GOOGLE_SHEETS_ID') ?: 'your-spreadsheet-id-here';
             
         } catch (Exception $e) {
             error_log("Google Sheets initialization error: " . $e->getMessage());
