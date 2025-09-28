@@ -355,11 +355,11 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="btn" id="loginButton">Login</button>
+                <button type="submit" class="btn" id="loginButton" data-aos="zoom-in" data-aos-delay="1200">Login</button>
             </form>
         </div>
         
-        <div class="footer">
+        <div class="footer" data-aos="fade-up" data-aos-delay="1400">
             <p>&copy; 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</p>
         </div>
     </div>
