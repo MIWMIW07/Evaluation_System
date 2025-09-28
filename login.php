@@ -167,7 +167,6 @@ if ($show_preloader && $redirect_url) {
         <div class="circle-border">
             <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
         </div>
-        <div class="loading-text">Login Successful! Redirecting...</div>
     </div>
 
     <script>
