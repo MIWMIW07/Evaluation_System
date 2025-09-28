@@ -116,7 +116,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         
         .header h1 {
             color: #800000;
-            font-size: 2.2em;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
             margin-bottom: 10px;
             background: linear-gradient(135deg, #800000, #A52A2A);
             -webkit-background-clip: text;
@@ -133,9 +133,11 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         .logo {
-            height: 50px;
-            width: auto;
-        }
+    max-height: 50px;
+    width: auto;
+    height: auto;
+}
+
         
         .user-info {
             background: linear-gradient(135deg, #F5F5DC 0%, #FFD700 100%);
@@ -491,6 +493,29 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 background-position: -200% 0;
             }
         }
+
+        @media (max-width: 480px) {
+    .container {
+        padding: 15px;
+    }
+
+    .header h1 {
+        font-size: 1.5em;
+    }
+
+    .info-grid,
+    .stats-container,
+    .teachers-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .btn, .logout-btn {
+        width: 100%;
+        font-size: 0.9em;
+        padding: 12px;
+    }
+}
+
         
         @media (max-width: 768px) {
             .container {
@@ -719,4 +744,3 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
     </script>
 </body>
 </html>
-gusto ko naka float lang yung logout button pag binaba ko scroll mawawala tapos inangat ko ulit papakita ulit
