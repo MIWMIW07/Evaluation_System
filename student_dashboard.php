@@ -366,23 +366,30 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             border-top: 2px solid #D4AF37;
         }
         
-        .logout-btn {
-            display: inline-block;
+        /* Floating Logout Button Styles */
+        .floating-logout-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
             background: linear-gradient(135deg, #800000 0%, #500000 100%);
             color: #FFD700;
-            padding: 12px 25px;
+            padding: 15px 25px;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 50px;
             font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
-            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
-        .logout-btn:hover {
+        .floating-logout-btn:hover {
             background: linear-gradient(135deg, #500000 0%, #800000 100%);
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             color: #FFEC8B;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
         }
         
         .no-program-message {
@@ -521,6 +528,14 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             
             .skeleton-teachers {
                 grid-template-columns: 1fr;
+            }
+            
+            /* Adjust floating button for mobile */
+            .floating-logout-btn {
+                bottom: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                font-size: 0.9em;
             }
         }
     </style>
@@ -680,9 +695,12 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 <p style="margin-top: 10px;">
                     Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
                 </p>
-                <a href="logout.php" class="logout-btn">🚪 Logout</a>
+                <!-- Removed the original logout button from here -->
             </div>
         </div>
+        
+        <!-- Floating Logout Button -->
+        <a href="logout.php" class="floating-logout-btn">🚪 Logout</a>
     </div>
 
     <script>
@@ -694,7 +712,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             }, 3000);
 
             // Add confirmation for logout
-            document.querySelector('.logout-btn').addEventListener('click', function(e) {
+            document.querySelector('.floating-logout-btn').addEventListener('click', function(e) {
                 if (!confirm('Are you sure you want to logout?')) {
                     e.preventDefault();
                 }
