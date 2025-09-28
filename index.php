@@ -19,6 +19,7 @@ if (isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Evaluation System - Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -46,46 +47,48 @@ if (isset($_SESSION['user_id'])) {
         }
         
         .header-container {
-            display: flex;
-            align-items: center;
+            text-align: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 2px solid #D4AF37;
         }
         
-        .logo-container {
-            flex-shrink: 0;
-            margin-right: 20px;
-        }
-        
-        .logo-container img {
-            height: 80px;
-            width: auto;
-            border: 2px solid #D4AF37;
+        .school-name-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(212, 175, 55, 0.2);
+            padding: 15px;
             border-radius: 8px;
-            padding: 5px;
-            background: white;
-        }
-        
-        .title-container {
-            flex-grow: 1;
-        }
-        
-        h1 {
-            color: #800000;
-            font-size: 22px;
-            line-height: 1.3;
-            margin-bottom: 5px;
+            border-left: 4px solid #D4AF37;
+            margin-top: 15px;
         }
         
         .school-name {
             color: #800000;
             font-weight: 600;
-            font-size: 14px;
-            background: rgba(212, 175, 55, 0.2);
-            padding: 8px 12px;
-            border-radius: 6px;
-            border-left: 3px solid #D4AF37;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo {
+            height: 60px;
+            width: auto;
+        }
+        
+        h1 {
+            color: #800000;
+            font-size: 28px;
+            line-height: 1.3;
+            margin-bottom: 5px;
+        }
+        
+        .system-subtitle {
+            color: #800000;
+            font-size: 20px;
+            font-weight: 500;
         }
         
         .form-group {
@@ -106,7 +109,7 @@ if (isset($_SESSION['user_id'])) {
         
         input[type="text"], input[type="password"] {
             width: 100%;
-            padding: 12px 15px 12px 40px;
+            padding: 12px 15px 12px 45px;
             border: 2px solid #D4AF37;
             border-radius: 8px;
             font-size: 16px;
@@ -123,10 +126,21 @@ if (isset($_SESSION['user_id'])) {
         
         .input-icon {
             position: absolute;
-            left: 12px;
+            left: 15px;
             top: 50%;
             transform: translateY(-50%);
             color: #800000;
+            font-size: 18px;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #800000;
+            cursor: pointer;
+            font-size: 18px;
         }
         
         .btn {
@@ -183,18 +197,20 @@ if (isset($_SESSION['user_id'])) {
         }
         
         @media (max-width: 480px) {
-            .header-container {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .logo-container {
-                margin-right: 0;
-                margin-bottom: 15px;
-            }
-            
             .login-container {
                 padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .system-subtitle {
+                font-size: 18px;
+            }
+            
+            .school-name {
+                font-size: 14px;
             }
         }
     </style>
@@ -202,12 +218,13 @@ if (isset($_SESSION['user_id'])) {
 <body>
     <div class="login-container">
         <div class="header-container">
-            <div class="logo-container">
-                <img src="logo.png" alt="School Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiByeD0iOCIgZmlsbD0iI0Q0QUYzNyIvPgo8cGF0aCBkPSJNMjYgMzJIMjhWMzRIMjZWMzJaIiBmaWxsPSIjODAwMDAwIi8+CjxwYXRoIGQ9Ik0zMiAzMkgzNFYzNEgzMlYzMloiIGZpbGw9IiM4MDAwMDAiLz4KPHBhdGggZD0iTTM4IDMySDQwVjM0SDM4VjMyWiIgZmlsbD0iIzgwMDAwMCIvPgo8cGF0aCBkPSJNNDQgMzJINDZWMzRINDRWMzJaIiBmaWxsPSIjODAwMDAwIi8+CjxwYXRoIGQ9Ik0yNiAzOEgyOFY0MEgyNlYzOFoiIGZpbGw9IiM4MDAwMDAiLz4KPHBhdGggZD0iTTMyIDM4SDM0VjQwSDMyVjM4WiIgZmlsbD0iIzgwMDAwMCIvPgo8cGF0aCBkPSJNMzggMzhINDBWNDBIMzhWMzhaIiBmaWxsPSIjODAwMDAwIi8+CjxwYXRoIGQ9Ik00NCAzOEg0NlY0MEg0NFYzOFoiIGZpbGw9IiM4MDAwMDAiLz4KPHBhdGggZD0iTTI2IDQ0SDI4VjQ2SDI2VjQ0WiIgZmlsbD0iIzgwMDAwMCIvPgo8cGF0aCBkPSJNMzIgNDRIMzRWNDZIMzJWNDRaIiBmaWxsPSIjODAwMDAwIi8+CjxwYXRoIGQ9Ik0zOCA0NEg0MFY0NkgzOFY0NFoiIGZpbGw9IiM4MDAwMDAiLz4KPHBhdGggZD0iTTQ0IDQ0SDQ2VjQ2SDQ0VjQ0WiIgZmlsbD0iIzgwMDAwMCIvPgo8cGF0aCBkPSJNMjYgNTBIMjhWNTJIMjZWNTBaIiBmaWxsPSIjODAwMDAwIi8+CjxwYXRoIGQ9Ik0zMiA1MEgzNFY1MkgzMlY1MFoiIGZpbGw9IiM4MDAwMDAiLz4KPHBhdGggZD0iTTM4IDUwSDQwVjUySDM4VjUwWiIgZmlsbD0iIzgwMDAwMCIvPgo8cGF0aCBkPSJNNDQgNTBINDZWNTJINDRWNTBaIiBmaWxsPSIjODAwMDAwIi8+CjxwYXRoIGQ9Ik0yNiA1NkgyOFY1OEgyNlY1NloiIGZpbGw9IiM4MDAwMDAiLz4KPHBhdGggZD0iTTMyIDU2SDM0VjU4SDMyVjU2WiIgZmlsbD0iIzgwMDAwMCIvPgo8cGF0aCBkPSJNMzggNTZINDBWNTgzOFY1NloiIGZpbGw9IiM4MDAwMDAiLz4KPHBhdGggZD0iTTQ0IDU2SDQ2VjU4SDQ0VjU2WiIgZmlsbD0iIzgwMDAwMCIvPgo8L3N2Zz4K';">
-            </div>
-            <div class="title-container">
-                <h1>Teacher Evaluation System</h1>
-                <div class="school-name">Philippine Technological Institute of Science Arts and Trade, Inc.</div>
+            <h1>Teacher Evaluation</h1>
+            <div class="system-subtitle">System</div>
+            <div class="school-name-box">
+                <div class="school-name">
+                    <img src="logo.png" alt="School Logo" class="logo" onerror="this.style.display='none'">
+                    Philippine Technological Institute of Science Arts and Trade, Inc.
+                </div>
             </div>
         </div>
         
@@ -233,7 +250,7 @@ if (isset($_SESSION['user_id'])) {
             <div class="form-group">
                 <label for="username">Username</label>
                 <div class="input-container">
-                    <div class="input-icon">👤</div>
+                    <i class="fas fa-user input-icon"></i>
                     <input type="text" id="username" name="username" placeholder="Enter your username" required>
                 </div>
             </div>
@@ -241,8 +258,9 @@ if (isset($_SESSION['user_id'])) {
             <div class="form-group">
                 <label for="password">Password</label>
                 <div class="input-container">
-                    <div class="input-icon">🔒</div>
+                    <i class="fas fa-lock input-icon"></i>
                     <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
                 </div>
             </div>
             
@@ -253,5 +271,18 @@ if (isset($_SESSION['user_id'])) {
             <p>&copy; 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</p>
         </div>
     </div>
+
+    <script>
+        // Toggle password visibility
+        document.getElementById('passwordToggle').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Toggle eye icon
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+    </script>
 </body>
 </html>
