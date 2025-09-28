@@ -12,32 +12,7 @@ if (isset($_SESSION['user_id'])) {
     }
     exit();
 }
-
-// Handle login form submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-    
-    // In a real application, you would validate against a database
-    // For demo purposes, using hardcoded credentials
-    if ($username === 'admin' && $password === 'password') {
-        $_SESSION['user_id'] = 1;
-        $_SESSION['user_type'] = 'admin';
-        $_SESSION['success'] = 'Login successful!';
-        header('Location: admin.php');
-        exit();
-    } elseif ($username === 'student' && $password === 'password') {
-        $_SESSION['user_id'] = 2;
-        $_SESSION['user_type'] = 'student';
-        $_SESSION['success'] = 'Login successful!';
-        header('Location: student_dashboard.php');
-        exit();
-    } else {
-        $_SESSION['error'] = 'Invalid username or password. Please try again.';
-    }
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Evaluation System - Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -70,7 +44,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             width: 100%;
             max-width: 450px;
-            position: relative;
         }
         
         .header-container {
@@ -172,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         .btn {
             width: 100%;
-            background: linear-gradient(135deg, #D4AF37 0%, #800000 100%);
+            background: linear-gradient(135deg, #800000 0%, #A52A2A 100%);
             color: white;
             padding: 14px;
             border: none;
@@ -180,39 +153,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.4s ease;
+            transition: all 0.3s ease;
             margin-top: 10px;
-            box-shadow: 0 4px 15px rgba(128, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-        }
-        
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #800000 0%, #D4AF37 100%);
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.4s ease;
+            box-shadow: 0 4px 6px rgba(128, 0, 0, 0.2);
         }
         
         .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(128, 0, 0, 0.4);
-        }
-        
-        .btn:hover::before {
-            opacity: 1;
+            background: linear-gradient(135deg, #A52A2A 0%, #800000 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(128, 0, 0, 0.3);
         }
         
         .btn:active {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(128, 0, 0, 0.4);
+            transform: translateY(0);
         }
         
         .alert {
@@ -220,19 +173,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             margin-bottom: 20px;
             border-radius: 8px;
             font-weight: 500;
-            transition: all 0.3s ease;
-            opacity: 1;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .alert.hidden {
-            opacity: 0;
-            height: 0;
-            padding: 0;
-            margin: 0;
-            overflow: hidden;
         }
         
         .alert-success {
@@ -256,83 +196,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             padding-top: 20px;
         }
         
-        /* Loading Spinner Styles */
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 15px;
-            z-index: 10;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .loading-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(212, 175, 55, 0.3);
-            border-radius: 50%;
-            border-top-color: #D4AF37;
-            animation: spin 1s ease-in-out infinite;
-        }
-        
-        .loading-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-        
-        .loading-text {
-            margin-top: 15px;
-            color: #800000;
-            font-weight: 600;
-            text-align: center;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .form-container {
-            position: relative;
-        }
-        
-        .form-loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 10px;
-            z-index: 5;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .form-loading-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
         @media (max-width: 480px) {
             .login-container {
                 padding: 30px 20px;
@@ -354,17 +217,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
     <div class="login-container">
-        <div class="loading-overlay" id="loadingOverlay">
-            <div class="loading-content">
-                <div class="spinner"></div>
-                <div class="loading-text" id="loadingText">Processing...</div>
-            </div>
-        </div>
-        
-        <div class="header-container" data-aos="fade-down" data-aos-delay="200">
+        <div class="header-container">
             <h1>Teacher Evaluation</h1>
             <div class="system-subtitle">System</div>
-            <div class="school-name-box" data-aos="zoom-in" data-aos-delay="400">
+            <div class="school-name-box">
                 <div class="school-name">
                     <img src="logo.png" alt="School Logo" class="logo" onerror="this.style.display='none'">
                     Philippine Technological Institute of Science Arts and Trade, Inc.
@@ -372,66 +228,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
         </div>
         
-        <div class="form-container">
-            <div class="form-loading-overlay" id="formLoadingOverlay">
-                <div class="loading-content">
-                    <div class="spinner"></div>
-                    <div class="loading-text">Processing...</div>
-                </div>
+        <?php if (isset($_SESSION['logout_message'])): ?>
+            <div class="alert alert-success">
+                <?php 
+                echo htmlspecialchars($_SESSION['logout_message']); 
+                unset($_SESSION['logout_message']);
+                ?>
             </div>
-            
-            <!-- Alert box for displaying messages -->
-            <div id="alertBox" class="alert <?php echo (isset($_SESSION['error']) || isset($_SESSION['success'])) ? '' : 'hidden'; ?>">
-                <i class="fas <?php echo isset($_SESSION['error']) ? 'fa-exclamation-circle' : 'fa-check-circle'; ?>" id="alertIcon"></i>
-                <span id="alertMessage">
-                    <?php 
-                    if (isset($_SESSION['error'])) {
-                        echo $_SESSION['error'];
-                        unset($_SESSION['error']);
-                    } elseif (isset($_SESSION['success'])) {
-                        echo $_SESSION['success'];
-                        unset($_SESSION['success']);
-                    }
-                    ?>
-                </span>
-            </div>
-            
-            <form method="POST" id="loginForm">
-                <div class="form-group" data-aos="fade-right" data-aos-delay="800">
-                    <label for="username">Username</label>
-                    <div class="input-container">
-                        <i class="fas fa-user input-icon"></i>
-                        <input type="text" id="username" name="username" placeholder="Enter your username" required value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>">
-                    </div>
-                </div>
-                
-                <div class="form-group" data-aos="fade-right" data-aos-delay="1000">
-                    <label for="password">Password</label>
-                    <div class="input-container">
-                        <i class="fas fa-lock input-icon"></i>
-                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                        <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn" id="loginButton" data-aos="zoom-in" data-aos-delay="1200">Login</button>
-            </form>
-        </div>
+        <?php endif; ?>
         
-        <div class="footer" data-aos="fade-up" data-aos-delay="1400">
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-error">
+                <?php 
+                echo htmlspecialchars($_SESSION['error']); 
+                unset($_SESSION['error']);
+                ?>
+            </div>
+        <?php endif; ?>
+        
+        <form method="POST" action="login.php">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <div class="input-container">
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-container">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn">Login</button>
+        </form>
+        
+        <div class="footer">
             <p>&copy; 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</p>
         </div>
     </div>
 
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
-        // Initialize AOS
-        AOS.init({
-            once: true,
-            duration: 800,
-            easing: 'ease-out-cubic'
-        });
-
         // Toggle password visibility
         document.getElementById('passwordToggle').addEventListener('click', function() {
             const passwordInput = document.getElementById('password');
@@ -441,28 +282,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Toggle eye icon
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
-        });
-
-        // Custom cursor functionality
-        const loginForm = document.getElementById('loginForm');
-        const loginContainer = document.querySelector('.login-container');
-        const body = document.body;
-
-        // Change cursor to default when entering form area
-        loginContainer.addEventListener('mouseenter', function() {
-            body.classList.add('default-cursor');
-        });
-
-        // Form submission with loading state
-        document.getElementById('loginForm').addEventListener('submit', function() {
-            const formLoadingOverlay = document.getElementById('formLoadingOverlay');
-            const loginButton = document.getElementById('loginButton');
-            
-            // Show loading state in the form area
-            formLoadingOverlay.classList.add('active');
-            loginButton.disabled = true;
-            
-            // The form will submit normally after this
         });
     </script>
 </body>
