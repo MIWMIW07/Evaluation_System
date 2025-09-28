@@ -2,6 +2,10 @@
 session_start();
 require_once 'includes/db_connection.php';
 
+// Initialize variables
+$redirect_url = null;
+$show_preloader = false;
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $username = trim($_POST["username"]);
     $password = trim($_POST["password"]);
@@ -24,8 +28,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['username'] = 'admin';
                 $_SESSION['full_name'] = 'System Administrator';
                 
-                header("Location: admin.php");
-                exit;
+                $redirect_url = "admin.php";
+                $show_preloader = true;
                 
             } elseif ($auth['type'] === 'student') {
                 // Student login - get detailed student data
@@ -51,8 +55,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         logActivity("login", "Student {$studentData['username']} logged in", "success", $studentData['student_id']);
                     }
 
-                    header("Location: student_dashboard.php");
-                    exit;
+                    $redirect_url = "student_dashboard.php";
+                    $show_preloader = true;
                 } else {
                     $_SESSION['error'] = "Could not retrieve student information.";
                     header("Location: index.php");
@@ -81,12 +85,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     header("Location: index.php");
     exit;
 }
+
+// If we have a redirect URL and should show preloader, display the preloader page
+if ($show_preloader && $redirect_url) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Redirecting...</title>
+    <title>Login Successful - Redirecting...</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body, html {
@@ -98,6 +105,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            font-family: Arial, sans-serif;
         }
         .preloader-overlay {
             position: fixed;
@@ -126,11 +134,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             align-items: center;
             animation: spinBorder 3s linear infinite, glow 2s ease-in-out infinite alternate;
             box-shadow: 0 0 20px goldenrod, 0 0 40px maroon;
+            margin-bottom: 20px;
         }
         .circle-border img {
             width: 100px;
             height: 100px;
             animation: spinLogo 5s linear infinite;
+        }
+        .loading-text {
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            margin-top: 20px;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
         @keyframes spinBorder {
             0% { transform: rotate(0deg); }
@@ -151,6 +167,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <div class="circle-border">
             <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
         </div>
+        <div class="loading-text">Login Successful! Redirecting...</div>
     </div>
 
     <script>
@@ -159,10 +176,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             document.getElementById("preloader").style.opacity = "0";
         }, 2500);
 
-        // Redirect after 3 seconds - CHANGED to index.php
+        // Redirect after 3 seconds
         setTimeout(() => {
-            window.location.href = "index.php?logout_message=<?php echo $logout_message; ?>";
+            window.location.href = "<?php echo $redirect_url; ?>";
         }, 3000);
     </script>
 </body>
 </html>
+<?php
+    exit; // Important: stop further execution
+}
+?>
