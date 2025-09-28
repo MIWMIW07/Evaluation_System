@@ -182,6 +182,9 @@
             font-weight: 500;
             transition: all 0.3s ease;
             opacity: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .alert.hidden {
@@ -337,6 +340,12 @@
                 </div>
             </div>
             
+            <!-- Alert box for displaying messages -->
+            <div id="alertBox" class="alert hidden">
+                <i class="fas" id="alertIcon"></i>
+                <span id="alertMessage"></span>
+            </div>
+            
             <form method="POST" id="loginForm">
                 <div class="form-group" data-aos="fade-right" data-aos-delay="800">
                     <label for="username">Username</label>
@@ -384,6 +393,40 @@
             this.classList.toggle('fa-eye-slash');
         });
 
+        // Function to show alert message
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alertBox');
+            const alertMessage = document.getElementById('alertMessage');
+            const alertIcon = document.getElementById('alertIcon');
+            
+            // Set message and type
+            alertMessage.textContent = message;
+            alertBox.className = `alert alert-${type}`;
+            
+            // Set appropriate icon
+            if (type === 'success') {
+                alertIcon.className = 'fas fa-check-circle';
+            } else {
+                alertIcon.className = 'fas fa-exclamation-circle';
+            }
+            
+            // Show the alert
+            alertBox.classList.remove('hidden');
+            
+            // Auto-hide after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    hideAlert();
+                }, 5000);
+            }
+        }
+
+        // Function to hide alert
+        function hideAlert() {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.classList.add('hidden');
+        }
+
         // Form submission with loading state
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -391,8 +434,10 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const formLoadingOverlay = document.getElementById('formLoadingOverlay');
-            const alertBox = document.getElementById('alertBox');
             const loginButton = document.getElementById('loginButton');
+            
+            // Hide any existing alert
+            hideAlert();
             
             // Show loading state in the form area
             formLoadingOverlay.classList.add('active');
@@ -407,17 +452,13 @@
                 // Check credentials (demo logic)
                 if (username === "admin" && password === "password") {
                     // Success case
-                    alertBox.className = "alert alert-success";
-                    alertBox.textContent = "Login successful! Redirecting to dashboard...";
-                    alertBox.classList.remove('hidden');
+                    showAlert("Login successful! Redirecting to dashboard...", "success");
                     
                     // In a real app, you would redirect to the dashboard here
                     // window.location.href = "dashboard.html";
                 } else {
                     // Error case
-                    alertBox.className = "alert alert-error";
-                    alertBox.textContent = "Invalid username or password. Please try again.";
-                    alertBox.classList.remove('hidden');
+                    showAlert("Invalid username or password. Please try again.", "error");
                 }
             }, 3000);
         });
