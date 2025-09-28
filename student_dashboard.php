@@ -105,7 +105,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             border-radius: 15px;
             position: relative;
-            min-height: 100vh;
         }
         
         .header {
@@ -367,46 +366,23 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             border-top: 2px solid #D4AF37;
         }
         
-        /* Floating Logout Button Styles */
-        .floating-logout-container {
-            position: sticky;
-            bottom: 30px;
-            height: 0;
-            z-index: 100;
-            margin-top: 20px;
-        }
-        
-        .floating-logout-btn {
-            position: absolute;
-            bottom: 0;
-            right: 0;
+        .logout-btn {
+            display: inline-block;
             background: linear-gradient(135deg, #800000 0%, #500000 100%);
             color: #FFD700;
-            padding: 12px 20px;
+            padding: 12px 25px;
             text-decoration: none;
-            border-radius: 25px;
+            border-radius: 5px;
             font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transform: translateY(0);
-            opacity: 1;
-            transition: transform 0.3s ease, opacity 0.3s ease;
+            margin-top: 15px;
         }
         
-        .floating-logout-btn.hidden {
-            transform: translateY(20px);
-            opacity: 0;
-            pointer-events: none;
-        }
-        
-        .floating-logout-btn:hover {
+        .logout-btn:hover {
             background: linear-gradient(135deg, #500000 0%, #800000 100%);
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             color: #FFEC8B;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
         }
         
         .no-program-message {
@@ -545,16 +521,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             
             .skeleton-teachers {
                 grid-template-columns: 1fr;
-            }
-            
-            /* Adjust floating button for mobile */
-            .floating-logout-container {
-                bottom: 20px;
-            }
-            
-            .floating-logout-btn {
-                padding: 10px 18px;
-                font-size: 0.9em;
             }
         }
     </style>
@@ -714,12 +680,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 <p style="margin-top: 10px;">
                     Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
                 </p>
-                <!-- Removed the original logout button from here -->
-            </div>
-            
-            <!-- Floating Logout Button Container -->
-            <div class="floating-logout-container">
-                <a href="logout.php" class="floating-logout-btn" id="floatingLogoutBtn">🚪 Logout</a>
+                <a href="logout.php" class="logout-btn">🚪 Logout</a>
             </div>
         </div>
     </div>
@@ -733,7 +694,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             }, 3000);
 
             // Add confirmation for logout
-            document.getElementById('floatingLogoutBtn').addEventListener('click', function(e) {
+            document.querySelector('.logout-btn').addEventListener('click', function(e) {
                 if (!confirm('Are you sure you want to logout?')) {
                     e.preventDefault();
                 }
@@ -754,25 +715,8 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     }, 3000);
                 });
             });
-            
-            // Scroll behavior for floating logout button
-            let lastScrollTop = 0;
-            const floatingLogoutBtn = document.getElementById('floatingLogoutBtn');
-            
-            window.addEventListener('scroll', function() {
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                
-                if (scrollTop > lastScrollTop) {
-                    // Scrolling down - hide the button
-                    floatingLogoutBtn.classList.add('hidden');
-                } else {
-                    // Scrolling up - show the button
-                    floatingLogoutBtn.classList.remove('hidden');
-                }
-                
-                lastScrollTop = scrollTop;
-            });
         });
     </script>
 </body>
 </html>
+gusto ko naka float lang yung logout button pag binaba ko scroll mawawala tapos inangat ko ulit papakita ulit
