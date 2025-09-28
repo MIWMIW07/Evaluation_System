@@ -1,3 +1,43 @@
+<?php
+session_start();
+
+// Check if user is already logged in
+if (isset($_SESSION['user_id'])) {
+    if ($_SESSION['user_type'] === 'admin') {
+        header('Location: admin.php');
+    } elseif ($_SESSION['user_type'] === 'student') {
+        header('Location: student_dashboard.php');
+    } else {
+        header('Location: login.php');
+    }
+    exit();
+}
+
+// Handle login form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+    
+    // In a real application, you would validate against a database
+    // For demo purposes, using hardcoded credentials
+    if ($username === 'admin' && $password === 'password') {
+        $_SESSION['user_id'] = 1;
+        $_SESSION['user_type'] = 'admin';
+        $_SESSION['success'] = 'Login successful!';
+        header('Location: admin.php');
+        exit();
+    } elseif ($username === 'student' && $password === 'password') {
+        $_SESSION['user_id'] = 2;
+        $_SESSION['user_type'] = 'student';
+        $_SESSION['success'] = 'Login successful!';
+        header('Location: student_dashboard.php');
+        exit();
+    } else {
+        $_SESSION['error'] = 'Invalid username or password. Please try again.';
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -341,9 +381,19 @@
             </div>
             
             <!-- Alert box for displaying messages -->
-            <div id="alertBox" class="alert hidden">
-                <i class="fas" id="alertIcon"></i>
-                <span id="alertMessage"></span>
+            <div id="alertBox" class="alert <?php echo (isset($_SESSION['error']) || isset($_SESSION['success'])) ? '' : 'hidden'; ?>">
+                <i class="fas <?php echo isset($_SESSION['error']) ? 'fa-exclamation-circle' : 'fa-check-circle'; ?>" id="alertIcon"></i>
+                <span id="alertMessage">
+                    <?php 
+                    if (isset($_SESSION['error'])) {
+                        echo $_SESSION['error'];
+                        unset($_SESSION['error']);
+                    } elseif (isset($_SESSION['success'])) {
+                        echo $_SESSION['success'];
+                        unset($_SESSION['success']);
+                    }
+                    ?>
+                </span>
             </div>
             
             <form method="POST" id="loginForm">
@@ -351,7 +401,7 @@
                     <label for="username">Username</label>
                     <div class="input-container">
                         <i class="fas fa-user input-icon"></i>
-                        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>">
                     </div>
                 </div>
                 
@@ -393,74 +443,26 @@
             this.classList.toggle('fa-eye-slash');
         });
 
-        // Function to show alert message
-        function showAlert(message, type) {
-            const alertBox = document.getElementById('alertBox');
-            const alertMessage = document.getElementById('alertMessage');
-            const alertIcon = document.getElementById('alertIcon');
-            
-            // Set message and type
-            alertMessage.textContent = message;
-            alertBox.className = `alert alert-${type}`;
-            
-            // Set appropriate icon
-            if (type === 'success') {
-                alertIcon.className = 'fas fa-check-circle';
-            } else {
-                alertIcon.className = 'fas fa-exclamation-circle';
-            }
-            
-            // Show the alert
-            alertBox.classList.remove('hidden');
-            
-            // Auto-hide after 5 seconds for success messages
-            if (type === 'success') {
-                setTimeout(() => {
-                    hideAlert();
-                }, 5000);
-            }
-        }
+        // Custom cursor functionality
+        const loginForm = document.getElementById('loginForm');
+        const loginContainer = document.querySelector('.login-container');
+        const body = document.body;
 
-        // Function to hide alert
-        function hideAlert() {
-            const alertBox = document.getElementById('alertBox');
-            alertBox.classList.add('hidden');
-        }
+        // Change cursor to default when entering form area
+        loginContainer.addEventListener('mouseenter', function() {
+            body.classList.add('default-cursor');
+        });
 
         // Form submission with loading state
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+        document.getElementById('loginForm').addEventListener('submit', function() {
             const formLoadingOverlay = document.getElementById('formLoadingOverlay');
             const loginButton = document.getElementById('loginButton');
-            
-            // Hide any existing alert
-            hideAlert();
             
             // Show loading state in the form area
             formLoadingOverlay.classList.add('active');
             loginButton.disabled = true;
             
-            // Simulate login process with 3-second delay
-            setTimeout(function() {
-                // Hide loading state
-                formLoadingOverlay.classList.remove('active');
-                loginButton.disabled = false;
-                
-                // Check credentials (demo logic)
-                if (username === "admin" && password === "password") {
-                    // Success case
-                    showAlert("Login successful! Redirecting to dashboard...", "success");
-                    
-                    // In a real app, you would redirect to the dashboard here
-                    // window.location.href = "dashboard.html";
-                } else {
-                    // Error case
-                    showAlert("Invalid username or password. Please try again.", "error");
-                }
-            }, 3000);
+            // The form will submit normally after this
         });
     </script>
 </body>
