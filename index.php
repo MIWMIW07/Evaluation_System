@@ -30,6 +30,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             width: 100%;
             max-width: 450px;
+            position: relative;
         }
         
         .header-container {
@@ -179,6 +180,16 @@
             margin-bottom: 20px;
             border-radius: 8px;
             font-weight: 500;
+            transition: all 0.3s ease;
+            opacity: 1;
+        }
+        
+        .alert.hidden {
+            opacity: 0;
+            height: 0;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
         }
         
         .alert-success {
@@ -202,6 +213,49 @@
             padding-top: 20px;
         }
         
+        /* Loading Spinner Styles */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            z-index: 10;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(212, 175, 55, 0.3);
+            border-radius: 50%;
+            border-top-color: #D4AF37;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        .loading-text {
+            margin-top: 15px;
+            color: #800000;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 480px) {
             .login-container {
                 padding: 30px 20px;
@@ -223,6 +277,13 @@
 </head>
 <body>
     <div class="login-container" data-aos="fade-up" data-aos-duration="800">
+        <div class="loading-overlay" id="loadingOverlay">
+            <div>
+                <div class="spinner"></div>
+                <div class="loading-text" id="loadingText">Processing...</div>
+            </div>
+        </div>
+        
         <div class="header-container" data-aos="fade-down" data-aos-delay="200">
             <h1>Teacher Evaluation</h1>
             <div class="system-subtitle">System</div>
@@ -234,11 +295,11 @@
             </div>
         </div>
         
-        <div class="alert alert-success" data-aos="fade-right" data-aos-delay="600">
+        <div class="alert alert-success" id="alertBox" data-aos="fade-right" data-aos-delay="600">
             Welcome to the Teacher Evaluation System. Please login to continue.
         </div>
         
-        <form method="POST" action="login.php">
+        <form method="POST" id="loginForm">
             <div class="form-group" data-aos="fade-right" data-aos-delay="800">
                 <label for="username">Username</label>
                 <div class="input-container">
@@ -256,7 +317,7 @@
                 </div>
             </div>
             
-            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1200">Login</button>
+            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1200" id="loginButton">Login</button>
         </form>
         
         <div class="footer" data-aos="fade-up" data-aos-delay="1400">
@@ -282,6 +343,45 @@
             // Toggle eye icon
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
+        });
+
+        // Form submission with loading state
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            const alertBox = document.getElementById('alertBox');
+            const loginButton = document.getElementById('loginButton');
+            
+            // Show loading state
+            loadingOverlay.classList.add('active');
+            loginButton.disabled = true;
+            
+            // Simulate login process with 3-second delay
+            setTimeout(function() {
+                // Hide loading state
+                loadingOverlay.classList.remove('active');
+                loginButton.disabled = false;
+                
+                // Check credentials (demo logic)
+                if (username === "admin" && password === "password") {
+                    // Success case
+                    alertBox.className = "alert alert-success";
+                    alertBox.textContent = "Login successful! Redirecting to dashboard...";
+                    alertBox.classList.remove('hidden');
+                    
+                    // In a real app, you would redirect to the dashboard here
+                    // window.location.href = "dashboard.html";
+                } else {
+                    // Error case
+                    alertBox.className = "alert alert-error";
+                    alertBox.textContent = "Invalid username or password. Please try again.";
+                    alertBox.classList.remove('hidden');
+                }
+            }, 3000);
         });
     </script>
 </body>
