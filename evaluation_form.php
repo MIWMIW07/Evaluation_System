@@ -1,5 +1,5 @@
 <?php
-// evaluation_form.php - Updated to work with teacher_assignments system
+// evaluation_form.php - Fixed version
 session_start();
 
 // Check if user is logged in and is a student
@@ -69,6 +69,14 @@ if (empty($teacher_name) || empty($subject)) {
     } catch (Exception $e) {
         $error = "Database error: " . $e->getMessage();
     }
+}
+
+// Simple CSRF token generation
+function generate_csrf_token() {
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
 }
 
 // Handle form submission (only if not in view mode)
@@ -169,7 +177,7 @@ function safe_display($value, $default = 'Not Available') {
     return !empty($value) && $value !== null ? htmlspecialchars($value) : $default;
 }
 
-// Define questions for both languages (same as your existing arrays)
+// Define questions for both languages
 $section1_questions = [
     '1.1' => 'Analyses and elaborates lesson without reading textbook in class.',
     '1.2' => 'Uses audio visual and devices to support and facilitate instructions.',
@@ -202,7 +210,7 @@ $section4_questions = [
     '4.6' => 'Has good diction, clear and modulated voice.'
 ];
 
-// Tagalog questions (same as your existing arrays)
+// Tagalog questions
 $section1_tagalog = [
     '1.1' => 'Nasuri at-naipaliwanag ang araling nang hindi binabasa ang aklat sa klase.',
     '1.2' => 'Gumugamit ng audio-visual at mga device upang suportahan at mapadali ang pagtuturo',
@@ -278,7 +286,6 @@ if ($is_view_mode && $existing_evaluation) {
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -348,37 +355,6 @@ if ($is_view_mode && $existing_evaluation) {
             border-radius: 10px;
             margin-bottom: 25px;
             border-left: 5px solid #DAA520;
-        }
-        
-        .teacher-info h3 {
-            color: #800000;
-            margin-bottom: 15px;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        
-        .info-item {
-            background: #fffaf0;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(94, 12, 12, 0.1);
-        }
-        
-        .info-item label {
-            font-weight: 600;
-            color: #9c6c6c;
-            font-size: 0.9em;
-            display: block;
-            margin-bottom: 5px;
-        }
-        
-        .info-item span {
-            color: #5E0C0C;
-            font-weight: bold;
         }
 
         .language-toggle {
@@ -558,6 +534,15 @@ if ($is_view_mode && $existing_evaluation) {
             border-left: 5px solid #dc3545;
         }
 
+        .evaluation-status {
+            background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #28a745;
+        }
+
         .tagalog {
             display: none;
         }
@@ -567,6 +552,20 @@ if ($is_view_mode && $existing_evaluation) {
             margin-top: 20px;
             color: #9c6c6c;
             font-size: 0.9em;
+        }
+
+        .back-link {
+            background: #4caf50;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            margin-top: 15px;
+        }
+
+        .back-link:hover {
+            background: #45a049;
         }
 
         /* Responsive design */
@@ -617,26 +616,28 @@ if ($is_view_mode && $existing_evaluation) {
             <h1><?php echo $is_view_mode ? 'View Evaluation' : 'TEACHER\'S PERFORMANCE EVALUATION BY THE STUDENTS'; ?></h1>
 
             <?php if ($teacher_info): ?>
-            <div style="background: linear-gradient(135deg, #fff9e6 0%, #f9eeca 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #DAA520;">
+            <div class="teacher-info">
                 <h3 style="color: #800000; margin-bottom: 10px;">👨‍🏫 Evaluating: <?php echo safe_display($teacher_info['name']); ?></h3>
                 <p style="margin: 5px 0;"><strong>Department:</strong> <?php echo safe_display($teacher_info['display_department']); ?></p>
-                <p style="margin: 5px 0;"><strong>Student:</strong> <?php echo safe_display($_SESSION['full_name'] ?? ''); ?> (<?php echo safe_display($_SESSION['student_id'] ?? ''); ?>)</p>
+                <p style="margin: 5px 0;"><strong>Student:</strong> <?php echo safe_display($_SESSION['full_name'] ?? ''); ?> (<?php echo safe_display($_SESSION['student_id'] ?? $_SESSION['username']); ?>)</p>
                 <p style="margin: 5px 0;"><strong>Student Program:</strong> <?php echo safe_display($_SESSION['program'] ?? ''); ?></p>
                 <p style="margin: 5px 0;"><strong>Student Section:</strong> <?php echo safe_display($_SESSION['section'] ?? ''); ?></p>
             </div>
             <?php endif; ?>
 
+            <?php if (!$is_view_mode): ?>
             <div class="language-toggle">
                 <button id="english-btn" class="active">English</button>
                 <button id="tagalog-btn">Tagalog</button>
             </div>
+            <?php endif; ?>
         </header>
 
         <?php if (!empty($success)): ?>
             <div class="success-message">
                 <h3>✅ Success!</h3>
                 <p><?php echo safe_display($success); ?></p>
-                <p style="margin-top: 15px;"><a href="student_dashboard.php" style="background: #DAA520; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashboard</a></p>
+                <a href="student_dashboard.php" class="back-link">← Back to Dashboard</a>
             </div>
         <?php endif; ?>
 
@@ -644,18 +645,18 @@ if ($is_view_mode && $existing_evaluation) {
             <div class="error-message">
                 <h3>❌ Error</h3>
                 <p><?php echo safe_display($error); ?></p>
-                <?php if (strpos($error, 'department') !== false): ?>
-                    <p style="margin-top: 15px;"><a href="student_dashboard.php" style="background: #DAA520; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashboard</a></p>
-                <?php endif; ?>
+                <a href="student_dashboard.php" class="back-link">← Back to Dashboard</a>
             </div>
         <?php endif; ?>
 
         <?php if ($is_view_mode && $existing_evaluation): ?>
             <div class="evaluation-status">
                 <h3>✅ Evaluation Already Submitted</h3>
-                <p>You have already evaluated this teacher on <?php echo date('F j, Y \a\t g:i A', strtotime($existing_evaluation['evaluation_date'] ?? 'now')); ?>.</p>
+                <p>You have already evaluated this teacher on <?php echo date('F j, Y \a\t g:i A', strtotime($existing_evaluation['created_at'] ?? 'now')); ?>.</p>
+                <?php if ($average_rating > 0): ?>
                 <p>Average Rating: <strong><?php echo $average_rating; ?>/5.0</strong> (<?php echo $performance_level; ?>)</p>
-                <p style="margin-top: 15px;"><a href="student_dashboard.php" style="background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashboard</a></p>
+                <?php endif; ?>
+                <a href="student_dashboard.php" class="back-link">← Back to Dashboard</a>
             </div>
         <?php endif; ?>
 
@@ -665,7 +666,7 @@ if ($is_view_mode && $existing_evaluation) {
         </div>
         
         <div class="instructions tagalog">
-            <p>Mga Panuto: Ang mga sumusunod na aytem ay naglalarawan sa mga aspeto ng pag-uugali ng guro sa loob at labas ng silid-aralan. Paki piliin ang numero na nagpapakita ng antas kung saan naramdaman mo ang bawat aytem na naglalarawan sa kanya. Ang iyong rating ay magiging sanggunian na maaaring humantong sa pagpapabuti ng tagapagturo, kaya mangyaring i-rate ang bawat aytem nang maingat at maayos. Ito ay itatago nang kumpidensyal.</p>
+            <p>Mga Panuto: Ang mga sumusunod na aytem ay naglalarawan sa mga aspeto ng pag-uugali ng guro sa loob at labas ng silid-aralan. Paki piliin ang numero na nagpapakita ng antas kung saan naramdaman mo ang bawat aytem na naglalarawan sa kanya. Ang inyong rating ay magiging sanggunian na maaaring humantong sa pagpapabuti ng tagapagturo, kaya mangyaring i-rate ang bawat aytem nang maingat at maayos. Ito ay itatago nang kumpidensyal.</p>
         </div>
         
         <div class="rating-scale">
@@ -691,14 +692,14 @@ if ($is_view_mode && $existing_evaluation) {
                     </thead>
                     <tbody>
                         <?php foreach ($section1_questions as $key => $question): ?>
-                        <tr id="question-<?php echo str_replace('.', '-', $key); ?>">
+                        <tr>
                             <td><?php echo $key . ' ' . htmlspecialchars($question); ?></td>
                             <td>
                                 <div class="rating-options">
                                     <?php 
                                     $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" class="required-rating"> <?php echo $i; ?></label>
+                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" required> <?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -717,14 +718,14 @@ if ($is_view_mode && $existing_evaluation) {
                     </thead>
                     <tbody>
                         <?php foreach ($section2_questions as $key => $question): ?>
-                        <tr id="question-<?php echo str_replace('.', '-', $key); ?>">
+                        <tr>
                             <td><?php echo $key . ' ' . htmlspecialchars($question); ?></td>
                             <td>
                                 <div class="rating-options">
                                     <?php 
                                     $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" class="required-rating"> <?php echo $i; ?></label>
+                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" required> <?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -743,14 +744,14 @@ if ($is_view_mode && $existing_evaluation) {
                     </thead>
                     <tbody>
                         <?php foreach ($section3_questions as $key => $question): ?>
-                        <tr id="question-<?php echo str_replace('.', '-', $key); ?>">
+                        <tr>
                             <td><?php echo $key . ' ' . htmlspecialchars($question); ?></td>
                             <td>
                                 <div class="rating-options">
                                     <?php 
                                     $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" class="required-rating"> <?php echo $i; ?></label>
+                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" required> <?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -769,14 +770,14 @@ if ($is_view_mode && $existing_evaluation) {
                     </thead>
                     <tbody>
                         <?php foreach ($section4_questions as $key => $question): ?>
-                        <tr id="question-<?php echo str_replace('.', '-', $key); ?>">
+                        <tr>
                             <td><?php echo $key . ' ' . htmlspecialchars($question); ?></td>
                             <td>
                                 <div class="rating-options">
                                     <?php 
                                     $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" class="required-rating"> <?php echo $i; ?></label>
+                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" required> <?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -788,10 +789,10 @@ if ($is_view_mode && $existing_evaluation) {
                 <div class="comments-section">
                     <h2>5. Comments</h2>
                     <h3>Positive Comments</h3>
-                    <textarea name="q5-positive-en" class="required-comment" placeholder="What are the positive aspects about this teacher's performance?"></textarea>
+                    <textarea name="q5-positive-en" placeholder="What are the positive aspects about this teacher's performance?" required></textarea>
                     
                     <h3>Negative Comments / Areas for Improvement</h3>
-                    <textarea name="q5-negative-en" class="required-comment" placeholder="What areas could this teacher improve on?"></textarea>
+                    <textarea name="q5-negative-en" placeholder="What areas could this teacher improve on?" required></textarea>
                 </div>
             </div>
             
@@ -807,14 +808,14 @@ if ($is_view_mode && $existing_evaluation) {
                     </thead>
                     <tbody>
                         <?php foreach ($section1_tagalog as $key => $question): ?>
-                        <tr id="question-<?php echo str_replace('.', '-', $key); ?>-t">
+                        <tr>
                             <td><?php echo $key . ' ' . htmlspecialchars($question); ?></td>
                             <td>
                                 <div class="rating-options">
                                     <?php 
-                                    $name = "rating" . str_replace('.', '_', $key) . "_t";
+                                    $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" class="required-rating"> <?php echo $i; ?></label>
+                                        <label><input type="radio" name="<?php echo $name; ?>_tl" value="<?php echo $i; ?>"> <?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -833,14 +834,14 @@ if ($is_view_mode && $existing_evaluation) {
                     </thead>
                     <tbody>
                         <?php foreach ($section2_tagalog as $key => $question): ?>
-                        <tr id="question-<?php echo str_replace('.', '-', $key); ?>-t">
+                        <tr>
                             <td><?php echo $key . ' ' . htmlspecialchars($question); ?></td>
                             <td>
                                 <div class="rating-options">
                                     <?php 
-                                    $name = "rating" . str_replace('.', '_', $key) . "_t";
+                                    $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" class="required-rating"> <?php echo $i; ?></label>
+                                        <label><input type="radio" name="<?php echo $name; ?>_tl" value="<?php echo $i; ?>"> <?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -859,14 +860,14 @@ if ($is_view_mode && $existing_evaluation) {
                     </thead>
                     <tbody>
                         <?php foreach ($section3_tagalog as $key => $question): ?>
-                        <tr id="question-<?php echo str_replace('.', '-', $key); ?>-t">
+                        <tr>
                             <td><?php echo $key . ' ' . htmlspecialchars($question); ?></td>
                             <td>
                                 <div class="rating-options">
                                     <?php 
-                                    $name = "rating" . str_replace('.', '_', $key) . "_t";
+                                    $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" class="required-rating"> <?php echo $i; ?></label>
+                                        <label><input type="radio" name="<?php echo $name; ?>_tl" value="<?php echo $i; ?>"> <?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -885,14 +886,14 @@ if ($is_view_mode && $existing_evaluation) {
                     </thead>
                     <tbody>
                         <?php foreach ($section4_tagalog as $key => $question): ?>
-                        <tr id="question-<?php echo str_replace('.', '-', $key); ?>-t">
+                        <tr>
                             <td><?php echo $key . ' ' . htmlspecialchars($question); ?></td>
                             <td>
                                 <div class="rating-options">
                                     <?php 
-                                    $name = "rating" . str_replace('.', '_', $key) . "_t";
+                                    $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" class="required-rating"> <?php echo $i; ?></label>
+                                        <label><input type="radio" name="<?php echo $name; ?>_tl" value="<?php echo $i; ?>"> <?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -904,14 +905,14 @@ if ($is_view_mode && $existing_evaluation) {
                 <div class="comments-section">
                     <h2>5. Komento</h2>
                     <h3>Positibong Komento</h3>
-                    <textarea name="q5-positive-tl" class="required-comment" placeholder="Ano ang mga positibong aspeto tungkol sa pagganap ng guro na ito?"></textarea>
+                    <textarea name="q5-positive-tl" placeholder="Ano ang mga positibong aspeto tungkol sa pagganap ng guro na ito?"></textarea>
                     
                     <h3>Negatibong Komento / Mga Lugar na Pagbubutihin</h3>
-                    <textarea name="q5-negative-tl" class="required-comment" placeholder="Anong mga lugar ang maaaring pagbutihin ng guro na ito?"></textarea>
+                    <textarea name="q5-negative-tl" placeholder="Anong mga lugar ang maaaring pagbutihin ng guro na ito?"></textarea>
                 </div>
             </div>
             
-            <button type="submit" class="submit-btn" id="submit-btn" disabled>Submit Evaluation</button>
+            <button type="submit" class="submit-btn" id="submit-btn">Submit Evaluation</button>
         </form>
         <?php endif; ?>
 
@@ -935,10 +936,10 @@ if ($is_view_mode && $existing_evaluation) {
             // Helper: sync radio selection and comments from English to Tagalog
             function syncEnglishToTagalog() {
                 // Sync radio buttons
-                const englishRadios = form.querySelectorAll('input[type="radio"]:not([name*="_t"])');
+                const englishRadios = form.querySelectorAll('input[type="radio"]:not([name*="_tl"])');
                 englishRadios.forEach(radio => {
                     if (radio.checked) {
-                        const tagalogName = radio.name + '_t';
+                        const tagalogName = radio.name + '_tl';
                         const tagalogRadio = form.querySelector(`input[name="${tagalogName}"][value="${radio.value}"]`);
                         if (tagalogRadio) tagalogRadio.checked = true;
                     }
@@ -957,10 +958,10 @@ if ($is_view_mode && $existing_evaluation) {
             // Helper: sync radio selection and comments from Tagalog to English
             function syncTagalogToEnglish() {
                 // Sync radio buttons
-                const tagalogRadios = form.querySelectorAll('input[type="radio"][name*="_t"]');
+                const tagalogRadios = form.querySelectorAll('input[type="radio"][name*="_tl"]');
                 tagalogRadios.forEach(radio => {
                     if (radio.checked) {
-                        const englishName = radio.name.replace('_t', '');
+                        const englishName = radio.name.replace('_tl', '');
                         const englishRadio = form.querySelector(`input[name="${englishName}"][value="${radio.value}"]`);
                         if (englishRadio) englishRadio.checked = true;
                     }
@@ -1000,8 +1001,12 @@ if ($is_view_mode && $existing_evaluation) {
             }
 
             // Initialize display
-            englishContent.forEach(el => el.style.display = 'block');
-            tagalogContent.forEach(el => el.style.display = 'none');
+            if (englishContent.length > 0) {
+                englishContent.forEach(el => el.style.display = 'block');
+            }
+            if (tagalogContent.length > 0) {
+                tagalogContent.forEach(el => el.style.display = 'none');
+            }
 
             // Update progress bar
             function updateProgress() {
@@ -1009,7 +1014,7 @@ if ($is_view_mode && $existing_evaluation) {
                 
                 // Get all unique radio group names (English only, since we sync them)
                 const radioNames = new Set();
-                const radioInputs = form.querySelectorAll('input[type="radio"]:not([name*="_t"])');
+                const radioInputs = form.querySelectorAll('input[type="radio"]:not([name*="_tl"])');
                 radioInputs.forEach(input => radioNames.add(input.name));
                 
                 const totalRatings = radioNames.size;
@@ -1031,7 +1036,7 @@ if ($is_view_mode && $existing_evaluation) {
                 if (positiveEn && positiveEn.value.trim()) answeredComments++;
                 if (negativeEn && negativeEn.value.trim()) answeredComments++;
 
-                const progress = ((answeredRatings / totalRatings + answeredComments / totalComments) / 2) * 100;
+                const progress = totalRatings > 0 ? ((answeredRatings / totalRatings + answeredComments / totalComments) / 2) * 100 : 0;
                 
                 if (progressBar) progressBar.style.width = progress + '%';
                 if (progressText) progressText.textContent = `Completion: ${Math.round(progress)}%`;
@@ -1050,7 +1055,7 @@ if ($is_view_mode && $existing_evaluation) {
 
                     // Check all radio groups
                     const radioNames = new Set();
-                    const radioInputs = form.querySelectorAll('input[type="radio"]:not([name*="_t"])');
+                    const radioInputs = form.querySelectorAll('input[type="radio"]:not([name*="_tl"])');
                     radioInputs.forEach(input => radioNames.add(input.name));
 
                     radioNames.forEach(name => {
@@ -1086,18 +1091,24 @@ if ($is_view_mode && $existing_evaluation) {
                         alert('Please complete all required fields:\n\n' + errors.join('\n'));
                         return false;
                     }
+                    
+                    // Show loading state
+                    submitBtn.textContent = 'Submitting...';
+                    submitBtn.disabled = true;
                 });
             }
 
             // Initial progress update
-            updateProgress();
+            setTimeout(updateProgress, 100);
         });
 
         // Set progress to 100% in view mode
         const isViewMode = <?php echo $is_view_mode ? 'true' : 'false'; ?>;
         if (isViewMode) {
-            document.getElementById('progress-bar').style.width = '100%';
-            document.getElementById('progress-text').textContent = 'Completion: 100%';
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressText) progressText.textContent = 'Completion: 100%';
         }
     </script>
 </body>
