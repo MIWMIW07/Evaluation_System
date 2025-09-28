@@ -245,6 +245,14 @@
             animation: spin 1s ease-in-out infinite;
         }
         
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
         .loading-text {
             margin-top: 15px;
             color: #800000;
@@ -254,6 +262,33 @@
         
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+        
+        /* Form container for centering the loading */
+        .form-container {
+            position: relative;
+        }
+        
+        .form-loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            z-index: 5;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .form-loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
         
         @media (max-width: 480px) {
@@ -278,7 +313,7 @@
 <body>
     <div class="login-container" data-aos="fade-up" data-aos-duration="800">
         <div class="loading-overlay" id="loadingOverlay">
-            <div>
+            <div class="loading-content">
                 <div class="spinner"></div>
                 <div class="loading-text" id="loadingText">Processing...</div>
             </div>
@@ -299,26 +334,35 @@
             Welcome to the Teacher Evaluation System. Please login to continue.
         </div>
         
-        <form method="POST" id="loginForm">
-            <div class="form-group" data-aos="fade-right" data-aos-delay="800">
-                <label for="username">Username</label>
-                <div class="input-container">
-                    <i class="fas fa-user input-icon"></i>
-                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+        <div class="form-container">
+            <div class="form-loading-overlay" id="formLoadingOverlay">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Processing...</div>
                 </div>
             </div>
             
-            <div class="form-group" data-aos="fade-right" data-aos-delay="1000">
-                <label for="password">Password</label>
-                <div class="input-container">
-                    <i class="fas fa-lock input-icon"></i>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                    <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
+            <form method="POST" id="loginForm">
+                <div class="form-group" data-aos="fade-right" data-aos-delay="800">
+                    <label for="username">Username</label>
+                    <div class="input-container">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                    </div>
                 </div>
-            </div>
-            
-            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1200" id="loginButton">Login</button>
-        </form>
+                
+                <div class="form-group" data-aos="fade-right" data-aos-delay="1000">
+                    <label for="password">Password</label>
+                    <div class="input-container">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1200" id="loginButton">Login</button>
+            </form>
+        </div>
         
         <div class="footer" data-aos="fade-up" data-aos-delay="1400">
             <p>&copy; 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</p>
@@ -351,19 +395,18 @@
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const loadingText = document.getElementById('loadingText');
+            const formLoadingOverlay = document.getElementById('formLoadingOverlay');
             const alertBox = document.getElementById('alertBox');
             const loginButton = document.getElementById('loginButton');
             
-            // Show loading state
-            loadingOverlay.classList.add('active');
+            // Show loading state in the form area
+            formLoadingOverlay.classList.add('active');
             loginButton.disabled = true;
             
             // Simulate login process with 3-second delay
             setTimeout(function() {
                 // Hide loading state
-                loadingOverlay.classList.remove('active');
+                formLoadingOverlay.classList.remove('active');
                 loginButton.disabled = false;
                 
                 // Check credentials (demo logic)
