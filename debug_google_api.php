@@ -91,7 +91,7 @@ function debugCheckEnvironment() {
         $results['extensions'][$ext] = extension_loaded($ext);
     }
     
-    $env_vars = ['GOOGLE_CREDENTIALS_JSON', 'GOOGLE_SPREADSHEET_ID', 'MYSQL_HOST', 'MYSQL_DATABASE'];
+    $env_vars = ['GOOGLE_CREDENTIALS_JSON', 'GOOGLE_SHEETS_ID', 'MYSQL_HOST', 'MYSQL_DATABASE'];
     foreach ($env_vars as $var) {
         $val = getenv($var);
         $results['environment_vars'][$var] = $val ? 'SET (length: ' . strlen($val) . ')' : 'NOT SET';
@@ -188,8 +188,8 @@ function debugTestConnection() {
         $credentials = json_decode($credentialsJson, true);
         if (!$credentials) return ['success' => false, 'error' => 'Invalid GOOGLE_CREDENTIALS_JSON'];
         
-        $spreadsheetId = getenv('GOOGLE_SPREADSHEET_ID');
-        if (!$spreadsheetId) return ['success' => false, 'error' => 'GOOGLE_SPREADSHEET_ID not set'];
+        $spreadsheetId = getenv('GOOGLE_SHEETS_ID');
+        if (!$spreadsheetId) return ['success' => false, 'error' => 'GOOGLE_SHEETS_ID not set'];
         
         $tempFile = sys_get_temp_dir() . '/google_debug_' . uniqid() . '.json';
         file_put_contents($tempFile, $credentialsJson);
