@@ -408,6 +408,90 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             color: #800000;
         }
         
+        /* Skeleton Loading Styles */
+        .skeleton-loading {
+            display: block;
+        }
+        
+        .content-loaded {
+            display: none;
+        }
+        
+        .skeleton-header {
+            height: 80px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            animation: loading 1.5s infinite;
+        }
+        
+        .skeleton-user-info {
+            height: 120px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            animation: loading 1.5s infinite;
+        }
+        
+        .skeleton-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .skeleton-stat-card {
+            height: 120px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 15px;
+            animation: loading 1.5s infinite;
+        }
+        
+        .skeleton-section {
+            height: 30px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            animation: loading 1.5s infinite;
+        }
+        
+        .skeleton-teachers {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .skeleton-teacher-card {
+            height: 180px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 12px;
+            animation: loading 1.5s infinite;
+        }
+        
+        .skeleton-footer {
+            height: 80px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 8px;
+            margin-top: 40px;
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+        
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -430,146 +514,185 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 flex-direction: column;
                 text-align: center;
             }
+            
+            .skeleton-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .skeleton-teachers {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="header-content">
-                <img src="logo.png" alt="School Logo" class="logo" onerror="this.style.display='none'">
-                <div>
-                    <h1>Student Dashboard</h1>
-                    <p>Teacher Evaluation System</p>
-                </div>
+    <!-- Skeleton Loading Structure -->
+    <div id="skeleton-loading" class="skeleton-loading">
+        <div class="container">
+            <div class="skeleton-header"></div>
+            <div class="skeleton-user-info"></div>
+            <div class="skeleton-stats">
+                <div class="skeleton-stat-card"></div>
+                <div class="skeleton-stat-card"></div>
+                <div class="skeleton-stat-card"></div>
+                <div class="skeleton-stat-card"></div>
             </div>
-        </div>
-        
-        <div class="user-info">
-            <h3>👤 Welcome, <?php echo htmlspecialchars($student_full_name); ?>!</h3>
-            <div class="info-grid">
-                <div class="info-item">
-                    <label>Username:</label>
-                    <span><?php echo htmlspecialchars($student_username); ?></span>
-                </div>
-                <div class="info-item">
-                    <label>Student ID:</label>
-                    <span><?php echo htmlspecialchars($student_id); ?></span>
-                </div>
-                <div class="info-item">
-                    <label>Current Program:</label>
-                    <span><?php echo htmlspecialchars($student_program); ?></span>
-                </div>
-                <div class="info-item">
-                    <label>Current Section:</label>
-                    <span><?php echo htmlspecialchars($student_section); ?></span>
-                </div>
+            <div class="skeleton-section"></div>
+            <div class="skeleton-section" style="width: 70%;"></div>
+            <div class="skeleton-teachers">
+                <div class="skeleton-teacher-card"></div>
+                <div class="skeleton-teacher-card"></div>
+                <div class="skeleton-teacher-card"></div>
             </div>
+            <div class="skeleton-footer"></div>
         </div>
-        
-        <?php if (!empty($success)): ?>
-            <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-        <?php endif; ?>
-        
-        <?php if (!empty($error)): ?>
-            <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-
-        <?php if ($student_program !== 'Not Set' && $student_section !== 'Not Set'): ?>
-            <div class="stats-container">
-                <div class="stat-card">
-                    <h3><?php echo $total_teachers; ?></h3>
-                    <p>Total Teachers</p>
-                </div>
-                <div class="stat-card">
-                    <h3><?php echo $completed_evaluations; ?></h3>
-                    <p>Completed Evaluations</p>
-                </div>
-                <div class="stat-card">
-                    <h3><?php echo $remaining_evaluations; ?></h3>
-                    <p>Remaining Evaluations</p>
-                </div>
-                <div class="stat-card progress-card">
-                    <h3><?php echo $completion_percentage; ?>%</h3>
-                    <p>Completion Progress</p>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: <?php echo $completion_percentage; ?>%;">
-                            <?php if ($completion_percentage > 20): ?>
-                                <?php echo $completion_percentage; ?>%
-                            <?php endif; ?>
-                        </div>
+    </div>
+    
+    <!-- Actual Content -->
+    <div id="main-content" class="content-loaded">
+        <div class="container">
+            <div class="header">
+                <div class="header-content">
+                    <img src="logo.png" alt="School Logo" class="logo" onerror="this.style.display='none'">
+                    <div>
+                        <h1>Student Dashboard</h1>
+                        <p>Teacher Evaluation System</p>
                     </div>
                 </div>
             </div>
             
-            <div class="teachers-section">
-                <h2>👨‍🏫 Teachers Available for Evaluation</h2>
-                <p style="color: #800000; margin-bottom: 20px;">
-                    Click "Evaluate Teacher" to start evaluating a teacher. Already evaluated teachers are marked as completed.
-                </p>
-                
-                <?php if (!empty($teachers_result)): ?>
-                    <div class="teachers-grid">
-                        <?php foreach($teachers_result as $teacher): ?>
-                            <?php 
-                                $teacher_key = $teacher['teacher_name'] . '|' . $teacher['subject'];
-                                $is_evaluated = in_array($teacher_key, $evaluated_teachers); 
-                            ?>
-                            <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
-                                <h4><?php echo htmlspecialchars($teacher['teacher_name']); ?></h4>
-                                <p><strong>Subject:</strong> <?php echo htmlspecialchars($teacher['subject']); ?></p>
-                                <p><strong>Section:</strong> <?php echo htmlspecialchars($teacher['section']); ?></p>
-                                <p><strong>Program:</strong> <?php echo htmlspecialchars($teacher['program']); ?></p>
-                                
-                                <div class="evaluation-status">
-                                    <?php if ($is_evaluated): ?>
-                                        <span class="status-badge status-completed">✅ Evaluated</span>
-                                        <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
-                                           class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
-                                            👁️ View Evaluation
-                                        </a>
-                                    <?php else: ?>
-                                        <span class="status-badge status-pending">⏳ Pending</span>
-                                        <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
-                                           class="btn" style="padding: 8px 15px; font-size: 0.9em;">
-                                            📝 Evaluate Teacher
-                                        </a>
-                                    <?php endif; ?>
-                                </div>
+            <div class="user-info">
+                <h3>👤 Welcome, <?php echo htmlspecialchars($student_full_name); ?>!</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Username:</label>
+                        <span><?php echo htmlspecialchars($student_username); ?></span>
+                    </div>
+                    <div class="info-item">
+                        <label>Student ID:</label>
+                        <span><?php echo htmlspecialchars($student_id); ?></span>
+                    </div>
+                    <div class="info-item">
+                        <label>Current Program:</label>
+                        <span><?php echo htmlspecialchars($student_program); ?></span>
+                    </div>
+                    <div class="info-item">
+                        <label>Current Section:</label>
+                        <span><?php echo htmlspecialchars($student_section); ?></span>
+                    </div>
+                </div>
+            </div>
+            
+            <?php if (!empty($success)): ?>
+                <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+            <?php endif; ?>
+            
+            <?php if (!empty($error)): ?>
+                <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+            <?php endif; ?>
+
+            <?php if ($student_program !== 'Not Set' && $student_section !== 'Not Set'): ?>
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <h3><?php echo $total_teachers; ?></h3>
+                        <p>Total Teachers</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3><?php echo $completed_evaluations; ?></h3>
+                        <p>Completed Evaluations</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3><?php echo $remaining_evaluations; ?></h3>
+                        <p>Remaining Evaluations</p>
+                    </div>
+                    <div class="stat-card progress-card">
+                        <h3><?php echo $completion_percentage; ?>%</h3>
+                        <p>Completion Progress</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: <?php echo $completion_percentage; ?>%;">
+                                <?php if ($completion_percentage > 20): ?>
+                                    <?php echo $completion_percentage; ?>%
+                                <?php endif; ?>
                             </div>
-                        <?php endforeach; ?>
+                        </div>
                     </div>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <h3>📭 No Teachers Found</h3>
-                        <p>No teachers are assigned to your section (<?php echo htmlspecialchars($student_section); ?>).</p>
-                        <p>Please contact your administrator if this seems incorrect.</p>
-                    </div>
-                <?php endif; ?>
+                </div>
+                
+                <div class="teachers-section">
+                    <h2>👨‍🏫 Teachers Available for Evaluation</h2>
+                    <p style="color: #800000; margin-bottom: 20px;">
+                        Click "Evaluate Teacher" to start evaluating a teacher. Already evaluated teachers are marked as completed.
+                    </p>
+                    
+                    <?php if (!empty($teachers_result)): ?>
+                        <div class="teachers-grid">
+                            <?php foreach($teachers_result as $teacher): ?>
+                                <?php 
+                                    $teacher_key = $teacher['teacher_name'] . '|' . $teacher['subject'];
+                                    $is_evaluated = in_array($teacher_key, $evaluated_teachers); 
+                                ?>
+                                <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
+                                    <h4><?php echo htmlspecialchars($teacher['teacher_name']); ?></h4>
+                                    <p><strong>Subject:</strong> <?php echo htmlspecialchars($teacher['subject']); ?></p>
+                                    <p><strong>Section:</strong> <?php echo htmlspecialchars($teacher['section']); ?></p>
+                                    <p><strong>Program:</strong> <?php echo htmlspecialchars($teacher['program']); ?></p>
+                                    
+                                    <div class="evaluation-status">
+                                        <?php if ($is_evaluated): ?>
+                                            <span class="status-badge status-completed">✅ Evaluated</span>
+                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
+                                               class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
+                                                👁️ View Evaluation
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="status-badge status-pending">⏳ Pending</span>
+                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
+                                               class="btn" style="padding: 8px 15px; font-size: 0.9em;">
+                                                📝 Evaluate Teacher
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <h3>📭 No Teachers Found</h3>
+                            <p>No teachers are assigned to your section (<?php echo htmlspecialchars($student_section); ?>).</p>
+                            <p>Please contact your administrator if this seems incorrect.</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <div class="no-program-message">
+                    <h3>⚠️ Incomplete Student Information</h3>
+                    <p>Your program or section information is missing from the system.</p>
+                    <p>Please contact your administrator to update your information in Google Sheets.</p>
+                    <p><strong>Current Info:</strong></p>
+                    <p>Program: <?php echo htmlspecialchars($student_program); ?></p>
+                    <p>Section: <?php echo htmlspecialchars($student_section); ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <div class="logout-container">
+                <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
+                <p>Teacher Evaluation System - Student Dashboard</p>
+                <p style="margin-top: 10px;">
+                    Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
+                </p>
+                <a href="logout.php" class="logout-btn">🚪 Logout</a>
             </div>
-        <?php else: ?>
-            <div class="no-program-message">
-                <h3>⚠️ Incomplete Student Information</h3>
-                <p>Your program or section information is missing from the system.</p>
-                <p>Please contact your administrator to update your information in Google Sheets.</p>
-                <p><strong>Current Info:</strong></p>
-                <p>Program: <?php echo htmlspecialchars($student_program); ?></p>
-                <p>Section: <?php echo htmlspecialchars($student_section); ?></p>
-            </div>
-        <?php endif; ?>
-        
-        <div class="logout-container">
-            <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
-            <p>Teacher Evaluation System - Student Dashboard</p>
-            <p style="margin-top: 10px;">
-                Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
-            </p>
-            <a href="logout.php" class="logout-btn">🚪 Logout</a>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Show skeleton loading for 3 seconds
+            setTimeout(function() {
+                document.getElementById('skeleton-loading').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            }, 3000);
+
             // Add confirmation for logout
             document.querySelector('.logout-btn').addEventListener('click', function(e) {
                 if (!confirm('Are you sure you want to logout?')) {
