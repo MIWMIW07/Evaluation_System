@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Integration Debug</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 3px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Google Integration Debug Tool</h1>
+        <p>Use this tool to diagnose issues with your Google integration.</p>
+
+        <div class="test-section">
+            <h3>1. Environment Check</h3>
+            <p>Check PHP extensions and environment variables:</p>
+            <button class="btn" onclick="runTest('check_environment')">Check Environment</button>
+            <div id="result_environment" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. File System Check</h3>
+            <p>Check if required files and directories exist:</p>
+            <button class="btn" onclick="runTest('check_files')">Check Files</button>
+            <div id="result_files" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Database Check</h3>
+            <p>Test database connection and check data:</p>
+            <button class="btn" onclick="runTest('check_database')">Check Database</button>
+            <div id="result_database" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Google API Connection</h3>
+            <p>Test Google Sheets and Drive API access:</p>
+            <button class="btn" onclick="runTest('test_connection')">Test Connection</button>
+            <div id="result_connection" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Reports Generation Test</h3>
+            <p>Test report generation components:</p>
+            <button class="btn" onclick="runTest('generate_reports')">Test Report Generation</button>
+            <div id="result_reports" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>6. Raw API Response</h3>
+            <p>Test raw API response to check for JSON issues:</p>
+            <button class="btn" onclick="testRawResponse()">Test Raw Response</button>
+            <div id="result_raw" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        async function runTest(action) {
+            const resultDiv = document.getElementById(`result_${action}`);
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Running test...';
+
+            try {
+                const response = await fetch('debug_google_api.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=${action}`
+                });
+
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+
+                try {
+                    const data = JSON.parse(responseText);
+                    
+                    if (data.success) {
+                        resultDiv.className = 'result success';
+                    } else {
+                        resultDiv.className = 'result error';
+                    }
+                    
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                } catch (parseError) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `JSON Parse Error: ${parseError.message}\n\nRaw Response:\n${responseText}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Network Error: ${error.message}`;
+            }
+        }
+
+        async function testRawResponse() {
+            const resultDiv = document.getElementById('result_raw');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Testing raw response...';
+
+            try {
+                const response = await fetch('debug_google_api.php?action=test', {
+                    method: 'GET'
+                });
+
+                const responseText = await response.text();
+                
+                resultDiv.className = 'result info';
+                resultDiv.innerHTML = `
+<strong>Response Status:</strong> ${response.status} ${response.statusText}
+<strong>Response Headers:</strong>
+${[...response.headers.entries()].map(([k, v]) => `${k}: ${v}`).join('\n')}
+
+<strong>Response Body:</strong>
+${responseText}
+
+<strong>Content Length:</strong> ${responseText.length} characters
+<strong>Starts with:</strong> "${responseText.substring(0, 50)}"
+<strong>Ends with:</strong> "${responseText.substring(responseText.length - 50)}"
+                `;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Network Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
