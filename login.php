@@ -5,90 +5,78 @@ require_once 'includes/db_connection.php';
 // Initialize variables
 $redirect_url = null;
 $show_preloader = false;
-$login_message = "";
-$message_type = ""; // success or error
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $username = trim($_POST["username"]);
     $password = trim($_POST["password"]);
 
     if (empty($username) || empty($password)) {
-        $login_message = "Please enter both username and password.";
-        $message_type = "error";
-        $_SESSION['error'] = $login_message;
-    } else {
-        try {
-            $manager = getDataManager();
-            $auth = $manager->authenticateUser($username, $password);
-
-            if ($auth) {
-                if ($auth['type'] === 'admin') {
-                    // Admin login
-                    $_SESSION['user_id'] = 'admin';
-                    $_SESSION['user_type'] = 'admin';
-                    $_SESSION['username'] = 'admin';
-                    $_SESSION['full_name'] = 'System Administrator';
-                    
-                    $login_message = "Admin login successful! Redirecting to admin panel...";
-                    $message_type = "success";
-                    $redirect_url = "admin.php";
-                    $show_preloader = true;
-                    
-                } elseif ($auth['type'] === 'student') {
-                    // Student login - get detailed student data
-                    $reflection = new ReflectionClass($manager);
-                    $method = $reflection->getMethod('findStudent');
-                    $method->setAccessible(true);
-                    $studentData = $method->invoke($manager, $username, $password);
-                    
-                    if ($studentData) {
-                        // Set all session variables
-                        $_SESSION['user_id'] = $studentData['student_id'];
-                        $_SESSION['user_type'] = 'student';
-                        $_SESSION['username'] = $studentData['username'];
-                        $_SESSION['full_name'] = $studentData['full_name'];
-                        $_SESSION['first_name'] = $studentData['first_name'];
-                        $_SESSION['last_name'] = $studentData['last_name'];
-                        $_SESSION['section'] = $studentData['section'];
-                        $_SESSION['program'] = $studentData['program'];
-                        $_SESSION['student_id'] = $studentData['student_id'];
-
-                        // Log successful login
-                        if (function_exists('logActivity')) {
-                            logActivity("login", "Student {$studentData['username']} logged in", "success", $studentData['student_id']);
-                        }
-
-                        $login_message = "Login successful! Welcome back, " . htmlspecialchars($studentData['first_name']) . "!";
-                        $message_type = "success";
-                        $redirect_url = "student_dashboard.php";
-                        $show_preloader = true;
-                    } else {
-                        $login_message = "Could not retrieve student information.";
-                        $message_type = "error";
-                        $_SESSION['error'] = $login_message;
-                    }
-                }
-            } else {
-                // Invalid credentials
-                if (function_exists('logActivity')) {
-                    logActivity("login_failed", "Invalid login attempt for username: $username", "error", null);
-                }
-                $login_message = "Invalid username or password. Please try again.";
-                $message_type = "error";
-                $_SESSION['error'] = $login_message;
-            }
-
-        } catch (Exception $e) {
-            // Handle errors
-            error_log("Login error: " . $e->getMessage());
-            $login_message = "Login system temporarily unavailable. Please try again later.";
-            $message_type = "error";
-            $_SESSION['error'] = $login_message;
-        }
+        $_SESSION['error'] = "Please enter both username and password.";
+        header("Location: index.php");
+        exit;
     }
-    
-    // If there's an error and we're not showing preloader, redirect back to login
-    if ($message_type === "error" && !$show_preloader) {
+
+    try {
+        $manager = getDataManager();
+        $auth = $manager->authenticateUser($username, $password);
+
+        if ($auth) {
+            if ($auth['type'] === 'admin') {
+                // Admin login
+                $_SESSION['user_id'] = 'admin';
+                $_SESSION['user_type'] = 'admin';
+                $_SESSION['username'] = 'admin';
+                $_SESSION['full_name'] = 'System Administrator';
+                
+                $redirect_url = "admin.php";
+                $show_preloader = true;
+                
+            } elseif ($auth['type'] === 'student') {
+                // Student login - get detailed student data
+                $reflection = new ReflectionClass($manager);
+                $method = $reflection->getMethod('findStudent');
+                $method->setAccessible(true);
+                $studentData = $method->invoke($manager, $username, $password);
+                
+                if ($studentData) {
+                    // Set all session variables
+                    $_SESSION['user_id'] = $studentData['student_id'];
+                    $_SESSION['user_type'] = 'student';
+                    $_SESSION['username'] = $studentData['username'];
+                    $_SESSION['full_name'] = $studentData['full_name'];
+                    $_SESSION['first_name'] = $studentData['first_name'];
+                    $_SESSION['last_name'] = $studentData['last_name'];
+                    $_SESSION['section'] = $studentData['section'];
+                    $_SESSION['program'] = $studentData['program'];
+                    $_SESSION['student_id'] = $studentData['student_id'];
+
+                    // Log successful login
+                    if (function_exists('logActivity')) {
+                        logActivity("login", "Student {$studentData['username']} logged in", "success", $studentData['student_id']);
+                    }
+
+                    $redirect_url = "student_dashboard.php";
+                    $show_preloader = true;
+                } else {
+                    $_SESSION['error'] = "Could not retrieve student information.";
+                    header("Location: index.php");
+                    exit;
+                }
+            }
+        } else {
+            // Invalid credentials
+            if (function_exists('logActivity')) {
+                logActivity("login_failed", "Invalid login attempt for username: $username", "error", null);
+            }
+            $_SESSION['error'] = "Invalid username or password.";
+            header("Location: index.php");
+            exit;
+        }
+
+    } catch (Exception $e) {
+        // Handle errors
+        error_log("Login error: " . $e->getMessage());
+        $_SESSION['error'] = "Login system temporarily unavailable. Please try again later.";
         header("Location: index.php");
         exit;
     }
@@ -98,7 +86,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     exit;
 }
 
-// If we have a redirect URL and should show preloader, display the preloader page with message
+// If we have a redirect URL and should show preloader, display the preloader page
 if ($show_preloader && $redirect_url) {
 ?>
 <!DOCTYPE html>
@@ -153,30 +141,12 @@ if ($show_preloader && $redirect_url) {
             height: 100px;
             animation: spinLogo 5s linear infinite;
         }
-        .message-container {
-            text-align: center;
-            max-width: 80%;
-            margin-top: 20px;
-        }
-        .success-message {
-            color: #90EE90;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(0,0,0,0.5);
-            animation: fadeIn 1s ease-in;
-        }
         .loading-text {
             color: white;
-            font-size: 16px;
-            text-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-        .error-message {
-            color: #FFB6C1;
             font-size: 18px;
-            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
             text-shadow: 0 0 10px rgba(0,0,0,0.5);
-            animation: shake 0.5s ease-in-out;
         }
         @keyframes spinBorder {
             0% { transform: rotate(0deg); }
@@ -190,30 +160,12 @@ if ($show_preloader && $redirect_url) {
             0% { box-shadow: 0 0 10px goldenrod, 0 0 20px maroon; }
             100% { box-shadow: 0 0 30px gold, 0 0 60px darkred; }
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
     </style>
 </head>
 <body>
    <div class="preloader-overlay" id="preloader">
         <div class="circle-border">
             <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
-        </div>
-        <div class="message-container">
-            <?php if ($message_type === 'success'): ?>
-                <div class="success-message">✓ <?php echo htmlspecialchars($login_message); ?></div>
-                <div class="loading-text">Redirecting to your dashboard...</div>
-            <?php else: ?>
-                <div class="error-message">✗ <?php echo htmlspecialchars($login_message); ?></div>
-                <div class="loading-text">Redirecting back to login...</div>
-            <?php endif; ?>
         </div>
     </div>
 
@@ -225,7 +177,7 @@ if ($show_preloader && $redirect_url) {
 
         // Redirect after 3 seconds
         setTimeout(() => {
-            window.location.href = "<?php echo $message_type === 'success' ? $redirect_url : 'index.php'; ?>";
+            window.location.href = "<?php echo $redirect_url; ?>";
         }, 3000);
     </script>
 </body>
