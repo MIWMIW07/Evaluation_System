@@ -383,7 +383,7 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
             
-            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1000">
+            <button type="submit" class="btn">
                 <i class="fas fa-sign-in-alt"></i> Login
             </button>
         </form>
@@ -405,6 +405,10 @@ if (isset($_SESSION['user_id'])) {
             const btn = document.querySelector(".btn");
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+
+            setTimeout(function() {
+                form.submit();
+            }, 2000);
         });
 
         document.getElementById('passwordToggle').addEventListener('click', function() {
