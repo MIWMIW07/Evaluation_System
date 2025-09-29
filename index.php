@@ -514,4 +514,3 @@
     </script>
 </body>
 </html>
-lagyan mo ng error message pag mali ang password or username at lagyan mo din ng ng successfull message pag tama tapos dun sa loob ng login button lagyan mo ng loading processing 3sec
