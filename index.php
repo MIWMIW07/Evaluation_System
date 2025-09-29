@@ -13,7 +13,6 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 ?>
-    
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,353 +23,221 @@ if (isset($_SESSION['user_id'])) {
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <style>
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
-        body {
-            background: linear-gradient(135deg, #8B0000 0%, #4A0000 50%, #2B0000 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
+body {
+    background: linear-gradient(135deg, #800000 0%, #500000 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
 
-        body::before {
-            content: '';
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
-            border-radius: 50%;
-            top: -200px;
-            right: -200px;
-            animation: float 20s ease-in-out infinite;
-        }
+.login-container {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 450px;
+}
 
-        body::after {
-            content: '';
-            position: absolute;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
-            border-radius: 50%;
-            bottom: -150px;
-            left: -150px;
-            animation: float 25s ease-in-out infinite reverse;
-        }
+.header-container {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #D4AF37;
+}
 
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            50% { transform: translate(50px, 50px) rotate(180deg); }
-        }
+.school-name-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(212, 175, 55, 0.2);
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #D4AF37;
+    margin-top: 15px;
+}
 
-        .login-container {
-            background: white;
-            padding: 50px 45px;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            width: 100%;
-            max-width: 480px;
-            position: relative;
-            z-index: 1;
-        }
+.school-name {
+    font-family: cursive;
+    background: linear-gradient(135deg, #D4AF37 0%, #800000 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
 
-        .header-container {
-            text-align: center;
-            margin-bottom: 35px;
-            padding-bottom: 25px;
-            position: relative;
-        }
+.logo {
+    height: 60px;
+    width: auto;
+}
 
-        .header-container::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, #D4AF37, transparent);
-            border-radius: 2px;
-        }
+h1 {
+    color: #800000;
+    font-size: 28px;
+    line-height: 1.3;
+    margin-bottom: 5px;
+}
 
-        .school-name-box {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(139, 0, 0, 0.05) 100%);
-            padding: 18px 20px;
-            border-radius: 12px;
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            margin-top: 20px;
-            position: relative;
-            overflow: hidden;
-        }
+.system-subtitle {
+    color: #800000;
+    font-size: 20px;
+    font-weight: 500;
+}
 
-        .school-name-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.15), transparent);
-            transition: left 0.8s ease;
-        }
+.form-group {
+    margin-bottom: 20px;
+}
 
-        .school-name-box:hover::before {
-            left: 100%;
-        }
+label {
+    display: block;
+    color: #800000;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
+}
 
-        .school-name {
-            font-family: 'Georgia', serif;
-            background: linear-gradient(135deg, #D4AF37 0%, #B8941F 50%, #8B0000 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 700;
-            font-size: 15px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            line-height: 1.4;
-        }
+.input-container {
+    position: relative;
+}
 
-        .logo {
-            height: 70px;
-            width: auto;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-            transition: transform 0.3s ease;
-        }
+input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 12px 15px 12px 45px;
+    border: 2px solid #D4AF37;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s;
+    background-color: rgba(212, 175, 55, 0.05);
+}
 
-        .logo:hover {
-            transform: scale(1.05);
-        }
+input[type="text"]:focus, input[type="password"]:focus {
+    outline: none;
+    border-color: #800000;
+    box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.1);
+    background-color: white;
+}
 
-        h1 {
-            background: linear-gradient(135deg, #8B0000 0%, #5A0000 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 32px;
-            font-weight: 700;
-            line-height: 1.2;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
-        }
+.input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #800000;
+    font-size: 18px;
+}
 
-        .system-subtitle {
-            background: linear-gradient(135deg, #D4AF37 0%, #B8941F 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 22px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
+.password-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #800000;
+    cursor: pointer;
+    font-size: 18px;
+}
 
-        .form-group {
-            margin-bottom: 25px;
-        }
+.btn {
+    width: 100%;
+    background: linear-gradient(135deg, #D4AF37 0%, #800000 100%);
+    color: white;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    margin-top: 10px;
+    box-shadow: 0 4px 15px rgba(128, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
 
-        label {
-            display: block;
-            background: linear-gradient(135deg, #8B0000 0%, #5A0000 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-            font-weight: 600;
-            font-size: 14px;
-            letter-spacing: 0.3px;
-        }
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #800000 0%, #D4AF37 100%);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
 
-        .input-container {
-            position: relative;
-        }
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(128, 0, 0, 0.4);
+}
 
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 14px 15px 14px 48px;
-            border: 2px solid rgba(212, 175, 55, 0.3);
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.03) 0%, rgba(255, 255, 255, 1) 100%);
-            color: #2B0000;
-        }
+.btn:hover::before {
+    opacity: 1;
+}
 
-        input[type="text"]:focus, input[type="password"]:focus {
-            outline: none;
-            border-color: #D4AF37;
-            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15),
-                        0 8px 16px rgba(139, 0, 0, 0.1);
-            background: white;
-            transform: translateY(-2px);
-        }
+.btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(128, 0, 0, 0.4);
+}
 
-        input::placeholder {
-            color: rgba(139, 0, 0, 0.4);
-        }
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    font-weight: 500;
+}
 
-        .input-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: linear-gradient(135deg, #D4AF37 0%, #8B0000 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 18px;
-            transition: transform 0.3s ease;
-        }
+.alert-success {
+    background-color: rgba(212, 175, 55, 0.2);
+    color: #800000;
+    border: 1px solid #D4AF37;
+}
 
-        .input-container:focus-within .input-icon {
-            transform: translateY(-50%) scale(1.1);
-        }
+.alert-error {
+    background-color: rgba(128, 0, 0, 0.1);
+    color: #800000;
+    border: 1px solid #800000;
+}
 
-        .password-toggle {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: linear-gradient(135deg, #D4AF37 0%, #8B0000 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            cursor: pointer;
-            font-size: 18px;
-            transition: transform 0.2s ease;
-        }
+.footer {
+    text-align: center;
+    margin-top: 30px;
+    color: #666;
+    font-size: 12px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
 
-        .password-toggle:hover {
-            transform: translateY(-50%) scale(1.15);
-        }
-
-        .btn {
-            width: 100%;
-            background: linear-gradient(135deg, #D4AF37 0%, #B8941F 50%, #8B0000 100%);
-            color: white;
-            padding: 16px;
-            border: none;
-            border-radius: 12px;
-            font-size: 17px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.4s ease;
-            margin-top: 15px;
-            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4),
-                        0 0 0 1px rgba(212, 175, 55, 0.5);
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s ease, height 0.6s ease;
-            z-index: -1;
-        }
-
-        .btn::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #8B0000 0%, #5A0000 50%, #D4AF37 100%);
-            opacity: 0;
-            z-index: -2;
-            transition: opacity 0.6s ease;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 12px 35px rgba(212, 175, 55, 0.6),
-                        0 0 40px rgba(212, 175, 55, 0.3);
-        }
-
-        .btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .btn:hover::after {
-            opacity: 1;
-        }
-
-        .btn:active {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 15px rgba(212, 175, 55, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 35px;
-            color: #666;
-            font-size: 12px;
-            border-top: 1px solid rgba(212, 175, 55, 0.2);
-            padding-top: 25px;
-            line-height: 1.6;
-        }
-
-        .footer p {
-            background: linear-gradient(135deg, #8B0000 0%, #D4AF37 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 500;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: -1000px 0; }
-            100% { background-position: 1000px 0; }
-        }
-
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 40px 30px;
-            }
-            
-            h1 {
-                font-size: 28px;
-            }
-            
-            .system-subtitle {
-                font-size: 20px;
-            }
-            
-            .school-name {
-                font-size: 13px;
-            }
-
-            .logo {
-                height: 60px;
-            }
-        }
+@media (max-width: 480px) {
+    .login-container {
+        padding: 30px 20px;
+    }
+    
+    h1 {
+        font-size: 24px;
+    }
+    
+    .system-subtitle {
+        font-size: 18px;
+    }
+    
+    .school-name {
+        font-size: 14px;
+    }
+}
     </style>
 </head>
 <body>
@@ -387,7 +254,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
         
         <form method="POST" action="login.php">
-            <div class="form-group" data-aos="fade-right" data-aos-delay="600">
+            <div class="form-group" data-aos="fade-right" data-aos-delay="800">
                 <label for="username">Username</label>
                 <div class="input-container">
                     <i class="fas fa-user input-icon"></i>
@@ -395,7 +262,7 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
             
-            <div class="form-group" data-aos="fade-right" data-aos-delay="800">
+            <div class="form-group" data-aos="fade-right" data-aos-delay="1000">
                 <label for="password">Password</label>
                 <div class="input-container">
                     <i class="fas fa-lock input-icon"></i>
@@ -404,9 +271,7 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
             
-            <button type="submit" class="btn">
-                <i class="fas fa-sign-in-alt"></i> Login
-            </button>
+            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1200">Login</button>
         </form>
         
         <div class="footer">
@@ -416,6 +281,7 @@ if (isset($_SESSION['user_id'])) {
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
+        // Initialize AOS
         AOS.init({
             once: true,
             duration: 800,
@@ -423,21 +289,22 @@ if (isset($_SESSION['user_id'])) {
         });
 
         document.querySelector("form").addEventListener("submit", function(e) {
-            e.preventDefault();
-            const btn = document.querySelector(".btn");
-            const form = this;
-            
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+    const btn = document.querySelector(".btn");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+});
 
+
+        // Toggle password visibility
         document.getElementById('passwordToggle').addEventListener('click', function() {
             const passwordInput = document.getElementById('password');
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
             
+            // Toggle eye icon
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
     </script>
 </body>
-</html>
+</html> 
