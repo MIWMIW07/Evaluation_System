@@ -108,4 +108,4 @@ $logout_message = urlencode($logout_message);
         }, 3000);
     </script>
 </body>
-</html> gusto ko yung logout message is nasa center sya tapos message box using the color pallete exist
+</html>
