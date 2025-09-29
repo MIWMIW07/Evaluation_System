@@ -21,7 +21,7 @@ $existing_evaluation = null;
 $teacher_name = isset($_GET['teacher']) ? trim($_GET['teacher']) : '';
 
 // Validate parameters
-if (empty($teacher_name) {
+if (empty($teacher_name)) {
     $error = "Missing teacher information. Please select a teacher from your dashboard.";
 } else {
     try {
