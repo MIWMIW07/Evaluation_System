@@ -1,5 +1,5 @@
 <?php
-// google_integration_api.php - Fixed version with proper error handling
+// google_integration_api.php - Updated to work with your existing database structure
 session_start();
 
 // Prevent any output before headers
@@ -242,16 +242,13 @@ function testGoogleConnection() {
 }
 
 /**
- * Sync data from Google Sheets
+ * Sync data from Google Sheets - UPDATED for your hybrid system
  */
 function syncGoogleSheetsData($pdo) {
     try {
-        if (!file_exists('google_sheets_integration.php')) {
-            return [
-                'success' => false,
-                'error' => 'Google Sheets integration file not found'
-            ];
-        }
+        // In your hybrid system, students and teachers are stored in Google Sheets
+        // Only evaluations and teacher assignments are in the database
+        // So we'll just verify the Google Sheets connection
         
         $googleCredentials = getenv('GOOGLE_CREDENTIALS_JSON');
         $spreadsheetId = getenv('GOOGLE_SHEETS_ID');
@@ -263,22 +260,37 @@ function syncGoogleSheetsData($pdo) {
             ];
         }
         
-        require_once 'google_sheets_integration.php';
+        // Test reading from Google Sheets
+        require_once 'vendor/autoload.php';
         
-        // Create temporary credentials file
         $tempPath = sys_get_temp_dir() . '/sync-credentials-' . uniqid() . '.json';
         file_put_contents($tempPath, $googleCredentials);
         
         try {
-            $integration = new GoogleSheetsIntegration($pdo, $tempPath, $spreadsheetId);
-            $result = $integration->syncAll();
+            $client = new Google\Client();
+            $client->setAuthConfig($tempPath);
+            $client->setScopes([Google\Service\Sheets::SPREADSHEETS_READONLY]);
+            
+            $service = new Google\Service\Sheets($client);
+            
+            // Test reading students
+            $studentsRange = 'Students!A:G';
+            $studentsResponse = $service->spreadsheets_values->get($spreadsheetId, $studentsRange);
+            $students = $studentsResponse->getValues();
+            
+            // Test reading teachers  
+            $teachersRange = 'Teachers!A:C';
+            $teachersResponse = $service->spreadsheets_values->get($spreadsheetId, $teachersRange);
+            $teachers = $teachersResponse->getValues();
             
             unlink($tempPath);
             
             return [
                 'success' => true,
-                'students' => $result['students'],
-                'teachers' => $result['teachers']
+                'message' => 'Google Sheets data verified successfully',
+                'students_count' => count($students) - 1, // Subtract header row
+                'teachers_count' => count($teachers) - 1, // Subtract header row
+                'details' => 'Students and teachers data stored in Google Sheets (hybrid system)'
             ];
             
         } catch (Exception $e) {
@@ -291,13 +303,13 @@ function syncGoogleSheetsData($pdo) {
     } catch (Exception $e) {
         return [
             'success' => false,
-            'error' => 'Sync failed: ' . $e->getMessage()
+            'error' => 'Google Sheets verification failed: ' . $e->getMessage()
         ];
     }
 }
 
 /**
- * Generate reports to Google Drive
+ * Generate reports to Google Drive - UPDATED to accept $pdo parameter
  */
 function generateGoogleDriveReports($pdo) {
     try {
@@ -310,6 +322,7 @@ function generateGoogleDriveReports($pdo) {
         
         require_once 'google_drive_reports.php';
         
+        // Check if function exists and accepts parameters
         if (!function_exists('generateReportsToGoogleDrive')) {
             return [
                 'success' => false,
@@ -317,7 +330,7 @@ function generateGoogleDriveReports($pdo) {
             ];
         }
         
-        // Pass the PDO connection to the function
+        // Pass the PDO connection to avoid undefined variable error
         $result = generateReportsToGoogleDrive($pdo);
         return $result;
         
@@ -330,51 +343,46 @@ function generateGoogleDriveReports($pdo) {
 }
 
 /**
- * Get system statistics
+ * Get system statistics - UPDATED for your database structure
  */
 function getSystemStatistics($pdo) {
     try {
         $stats = [
             'success' => true,
             'evaluations' => 0,
-            'students' => 0,
-            'teachers' => 0,
+            'teacher_assignments' => 0,
             'avg_rating' => '0.00',
-            'completion_rate' => '0.0',
-            'db_size' => 'Unknown'
+            'completion_rate' => '0.0'
         ];
         
-        // Get counts with error handling for missing tables
+        // Get evaluations count
         try {
             $stmt = $pdo->query('SELECT COUNT(*) FROM evaluations');
             $stats['evaluations'] = $stmt->fetchColumn();
         } catch (Exception $e) {
-            // Table doesn't exist yet
             $stats['evaluations'] = 0;
         }
         
+        // Get teacher assignments count
         try {
-            $stmt = $pdo->query('SELECT COUNT(*) FROM students');
-            $stats['students'] = $stmt->fetchColumn();
+            $stmt = $pdo->query('SELECT COUNT(*) FROM teacher_assignments WHERE is_active = true');
+            $stats['teacher_assignments'] = $stmt->fetchColumn();
         } catch (Exception $e) {
-            $stats['students'] = 0;
+            $stats['teacher_assignments'] = 0;
         }
         
-        try {
-            $stmt = $pdo->query('SELECT COUNT(*) FROM teachers');
-            $stats['teachers'] = $stmt->fetchColumn();
-        } catch (Exception $e) {
-            $stats['teachers'] = 0;
-        }
-        
-        // Get average rating
+        // Get average rating from evaluations
         try {
             $stmt = $pdo->query('
-                SELECT AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
-                           q2_1 + q2_2 + q2_3 + q2_4 + 
-                           q3_1 + q3_2 + q3_3 + q3_4 + 
-                           q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) as avg_rating
-                FROM evaluations
+                SELECT AVG(
+                    (COALESCE(q1_1,0) + COALESCE(q1_2,0) + COALESCE(q1_3,0) + COALESCE(q1_4,0) + COALESCE(q1_5,0) + COALESCE(q1_6,0) +
+                     COALESCE(q2_1,0) + COALESCE(q2_2,0) + COALESCE(q2_3,0) + COALESCE(q2_4,0) +
+                     COALESCE(q3_1,0) + COALESCE(q3_2,0) + COALESCE(q3_3,0) + COALESCE(q3_4,0) +
+                     COALESCE(q4_1,0) + COALESCE(q4_2,0) + COALESCE(q4_3,0) + COALESCE(q4_4,0) + COALESCE(q4_5,0) + COALESCE(q4_6,0)
+                    ) / 20.0
+                ) as avg_rating 
+                FROM evaluations 
+                WHERE q1_1 IS NOT NULL
             ');
             $avg = $stmt->fetchColumn();
             $stats['avg_rating'] = $avg ? number_format($avg, 2) : '0.00';
@@ -382,10 +390,9 @@ function getSystemStatistics($pdo) {
             $stats['avg_rating'] = '0.00';
         }
         
-        // Calculate completion rate (simple version)
-        if ($stats['students'] > 0 && $stats['teachers'] > 0) {
-            $expected = $stats['students'] * $stats['teachers'];
-            $completion = ($stats['evaluations'] / $expected) * 100;
+        // Simple completion rate based on available data
+        if ($stats['teacher_assignments'] > 0) {
+            $completion = ($stats['evaluations'] / $stats['teacher_assignments']) * 100;
             $stats['completion_rate'] = number_format(min(100, $completion), 1);
         }
         
@@ -403,7 +410,7 @@ function getSystemStatistics($pdo) {
  * Get activity log
  */
 function getActivityLog() {
-    // Simple static log for now
+    // Simple static log for now - you can enhance this later
     return [
         'success' => true,
         'activities' => [
@@ -418,13 +425,19 @@ function getActivityLog() {
                 'action' => 'system_check',
                 'description' => 'System status verified',
                 'status' => 'success'
+            ],
+            [
+                'timestamp' => date('Y-m-d H:i:s', strtotime('-2 hours')),
+                'action' => 'database_check',
+                'description' => 'Hybrid system running (Google Sheets + PostgreSQL)',
+                'status' => 'info'
             ]
         ]
     ];
 }
 
 /**
- * Create database backup
+ * Create database backup - UPDATED for your table structure
  */
 function createDatabaseBackup($pdo) {
     try {
@@ -438,13 +451,15 @@ function createDatabaseBackup($pdo) {
         
         // Create simple backup file
         $backup_content = "-- Database Backup Created: " . date('Y-m-d H:i:s') . "\n";
-        $backup_content .= "-- Generated by Teacher Evaluation System\n\n";
+        $backup_content .= "-- Generated by Teacher Evaluation System (Hybrid)\n";
+        $backup_content .= "-- Students & Teachers: Google Sheets\n";
+        $backup_content .= "-- Evaluations & Assignments: PostgreSQL\n\n";
         
-        $tables = ['users', 'students', 'teachers', 'sections', 'evaluations'];
+        // Your actual tables
+        $tables = ['teacher_assignments', 'evaluations'];
         
         foreach ($tables as $table) {
             try {
-                // Remove backticks for PostgreSQL compatibility
                 $stmt = $pdo->query("SELECT COUNT(*) FROM $table");
                 $count = $stmt->fetchColumn();
                 $backup_content .= "-- Table: $table ($count records)\n";
@@ -453,6 +468,11 @@ function createDatabaseBackup($pdo) {
             }
         }
         
+        $backup_content .= "\n-- Hybrid System Notes:\n";
+        $backup_content .= "-- Students data: Google Sheets (Students tab)\n";
+        $backup_content .= "-- Teachers data: Google Sheets (Teachers tab)  \n";
+        $backup_content .= "-- Teacher assignments: PostgreSQL teacher_assignments table\n";
+        $backup_content .= "-- Student evaluations: PostgreSQL evaluations table\n";
         $backup_content .= "\n-- End of backup summary\n";
         
         file_put_contents($filepath, $backup_content);
@@ -460,7 +480,8 @@ function createDatabaseBackup($pdo) {
         return [
             'success' => true,
             'backup_file' => $filename,
-            'file_size' => formatBytes(filesize($filepath))
+            'file_size' => formatBytes(filesize($filepath)),
+            'message' => 'Backup created for hybrid system (Google Sheets + PostgreSQL)'
         ];
         
     } catch (Exception $e) {
