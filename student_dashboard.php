@@ -185,7 +185,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         }
         
         .logo {
-            max-height: 50px;
+            max-height: 65px;
             width: auto;
             height: auto;
         }
