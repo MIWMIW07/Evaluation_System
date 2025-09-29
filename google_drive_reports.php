@@ -87,7 +87,7 @@ class GoogleDriveReportsGenerator {
             $results['folder_url'] = $folder->getWebViewLink();
             
             // AUTO-SHARE WITH YOUR EMAIL - Replace with your actual email
-            $yourEmail = 'your-actual-email@gmail.com'; // ← CHANGE THIS TO YOUR REAL EMAIL
+            $yourEmail = 'learsi.gabriel07@gmail.com'; // ← CHANGE THIS TO YOUR REAL EMAIL
             if ($this->shareFolderWithEmail($mainFolder, $yourEmail)) {
                 $results['shared_with'][] = $yourEmail;
                 error_log("Folder shared with: " . $yourEmail);
