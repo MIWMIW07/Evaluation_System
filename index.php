@@ -438,6 +438,34 @@
             font-weight: 500;
         }
 
+        .user-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(212, 175, 55, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .user-type-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: white;
+            color: #800000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .user-type-btn.active {
+            background: linear-gradient(135deg, #D4AF37 0%, #800000 100%);
+            color: white;
+            border-color: #D4AF37;
+        }
+
         @media (max-width: 480px) {
             .login-container {
                 padding: 20px 15px;
@@ -497,16 +525,23 @@
                 <span>Login to Your Account</span>
             </div>
             
+            <div class="user-type-selector">
+                <button type="button" class="user-type-btn active" data-type="student">Student</button>
+                <button type="button" class="user-type-btn" data-type="teacher">Teacher</button>
+            </div>
+            
             <div id="message-container"></div>
             
-            <form id="loginForm" method="POST">
+            <form id="loginForm" method="POST" action="login.php">
+                <input type="hidden" id="user_type" name="user_type" value="student">
+                
                 <div class="form-group" data-aos="fade-right" data-aos-delay="700">
                     <label for="username" class="form-label">
                         <i class="fas fa-user"></i>
                         Username
                     </label>
                     <div class="input-container">
-                        <input type="text" id="username" name="username" placeholder="Enter your username" required value="TOQUECHRISTOPHERGLEN">
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required>
                         <i class="fas fa-user input-icon"></i>
                     </div>
                 </div>
@@ -556,26 +591,72 @@
             this.classList.toggle('fa-eye-slash');
         });
 
+        // User type selector
+        const userTypeButtons = document.querySelectorAll('.user-type-btn');
+        const userTypeInput = document.getElementById('user_type');
+        
+        userTypeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove active class from all buttons
+                userTypeButtons.forEach(btn => btn.classList.remove('active'));
+                // Add active class to clicked button
+                this.classList.add('active');
+                // Update hidden input value
+                userTypeInput.value = this.getAttribute('data-type');
+            });
+        });
+
         // Login form submission
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const userType = document.getElementById('user_type').value;
             const loginButton = document.getElementById('loginButton');
             const messageContainer = document.getElementById('message-container');
             
             // Clear previous messages
             messageContainer.innerHTML = '';
             
+            // Validate inputs
+            if (!username.trim() || !password.trim()) {
+                messageContainer.innerHTML = `
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Please enter both username and password.</span>
+                    </div>
+                `;
+                return;
+            }
+            
             // Show loading state
             loginButton.classList.add('loading');
             
-            // Simulate processing for 3 seconds
-            setTimeout(() => {
-                // Check credentials (for demo purposes)
-                // In a real application, this would be done server-side
-                if (username === 'TOQUECHRISTOPHERGLEN' && password === 'admin123') {
+            // Create form data for submission
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('password', password);
+            formData.append('user_type', userType);
+            
+            // Submit to actual login.php
+            fetch('login.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(data => {
+                // Reset loading state
+                loginButton.classList.remove('loading');
+                
+                // Check if login was successful based on response
+                // This assumes login.php redirects on success or returns an error message
+                if (data.includes('success') || data.includes('dashboard')) {
                     // Success message
                     messageContainer.innerHTML = `
                         <div class="alert alert-success">
@@ -586,8 +667,11 @@
                     
                     // Redirect after a short delay
                     setTimeout(() => {
-                        // In a real application, redirect to the dashboard
-                        window.location.href = 'dashboard.html';
+                        if (userType === 'student') {
+                            window.location.href = 'student_dashboard.php';
+                        } else {
+                            window.location.href = 'teacher_dashboard.php';
+                        }
                     }, 1500);
                 } else {
                     // Error message
@@ -598,9 +682,6 @@
                         </div>
                     `;
                     
-                    // Reset loading state
-                    loginButton.classList.remove('loading');
-                    
                     // Shake animation for error
                     const formContainer = document.querySelector('.form-container');
                     formContainer.style.animation = 'shake 0.5s';
@@ -608,7 +689,20 @@
                         formContainer.style.animation = '';
                     }, 500);
                 }
-            }, 3000);
+            })
+            .catch(error => {
+                // Reset loading state
+                loginButton.classList.remove('loading');
+                
+                // Network or server error
+                messageContainer.innerHTML = `
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Login failed. Please check your connection and try again.</span>
+                    </div>
+                `;
+                console.error('Login error:', error);
+            });
         });
 
         // Add shake animation for error state
