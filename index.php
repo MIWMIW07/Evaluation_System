@@ -481,14 +481,7 @@
                     </div>
                 </div>
                 
-                <div class="form-options" data-aos="fade-up" data-aos-delay="1000">
-                    <label class="remember-me">
-                        <input type="checkbox" name="remember">
-                        Remember me
-                    </label>
-                </div>
-                
-                <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1100">
+                <button type="submit" class="btn">
                     Sign In <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
