@@ -101,11 +101,7 @@ $logout_message = urlencode($logout_message);
         setTimeout(() => {
             document.getElementById("preloader").style.opacity = "0";
         }, 2500);
-
-        // Redirect after 3 seconds - CHANGED to index.php
-        setTimeout(() => {
-            window.location.href = "index.php?logout_message=<?php echo $logout_message; ?>";
-        }, 3000);
+        
     </script>
 </body>
 </html> 
