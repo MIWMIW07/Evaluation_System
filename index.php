@@ -1,18 +1,3 @@
-<?php
-session_start();
-
-// Check if user is already logged in
-if (isset($_SESSION['user_id'])) {
-    if ($_SESSION['user_type'] === 'admin') {
-        header('Location: admin.php');
-    } elseif ($_SESSION['user_type'] === 'student') {
-        header('Location: student_dashboard.php');
-    } else {
-        header('Location: login.php');
-    }
-    exit();
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -277,23 +262,43 @@ if (isset($_SESSION['user_id'])) {
         .btn::before {
             content: '';
             position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+            z-index: -1;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
             top: 0;
-            left: -100%;
+            left: 0;
             width: 100%;
             height: 100%;
             background: linear-gradient(135deg, #8B0000 0%, #5A0000 50%, #D4AF37 100%);
-            z-index: -1;
-            transition: left 0.5s ease;
+            opacity: 0;
+            z-index: -2;
+            transition: opacity 0.6s ease;
         }
 
         .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 30px rgba(212, 175, 55, 0.5),
-                        0 0 0 2px rgba(212, 175, 55, 0.7);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 35px rgba(212, 175, 55, 0.6),
+                        0 0 40px rgba(212, 175, 55, 0.3);
         }
 
         .btn:hover::before {
-            left: 0;
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover::after {
+            opacity: 1;
         }
 
         .btn:active {
@@ -383,7 +388,7 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
             
-            <button type="submit" class="btn">
+            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1000">
                 <i class="fas fa-sign-in-alt"></i> Login
             </button>
         </form>
@@ -402,13 +407,16 @@ if (isset($_SESSION['user_id'])) {
         });
 
         document.querySelector("form").addEventListener("submit", function(e) {
+            e.preventDefault();
             const btn = document.querySelector(".btn");
+            const form = this;
+            
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-
+            
             setTimeout(function() {
                 form.submit();
-            }, 2000);
+            }, 3000);
         });
 
         document.getElementById('passwordToggle').addEventListener('click', function() {
