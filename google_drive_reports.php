@@ -1,6 +1,5 @@
 <?php
-// google_drive_reports.php - Updated for hybrid system (Google Sheets + PostgreSQL)
-// This version works with your actual database structure
+// google_drive_reports.php - Complete implementation for generating reports to Google Drive with auto-sharing
 
 require_once 'vendor/autoload.php';
 require_once 'includes/db_connection.php';
@@ -59,7 +58,9 @@ class GoogleDriveReportsGenerator {
                 'files_uploaded' => 0,
                 'reports_created' => [],
                 'errors' => [],
-                'message' => 'Report generation completed for hybrid system'
+                'shared_with' => [],
+                'folder_url' => null,
+                'message' => 'Report generation completed'
             ];
             
             // Check if we have any evaluations
@@ -77,14 +78,25 @@ class GoogleDriveReportsGenerator {
             $mainFolder = $this->createReportsFolder();
             $results['folders_created']++;
             
-            // Get unique teachers from evaluations (since we don't have teachers table)
+            // Get folder URL for the response
+            $folder = $this->driveService->files->get($mainFolder, ['fields' => 'webViewLink']);
+            $results['folder_url'] = $folder->getWebViewLink();
+            
+            // 🔥 AUTO-SHARE WITH YOUR EMAIL - Replace with your actual email
+            $yourEmail = 'your-actual-email@gmail.com'; // ← CHANGE THIS TO YOUR REAL EMAIL
+            if ($this->shareFolderWithEmail($mainFolder, $yourEmail)) {
+                $results['shared_with'][] = $yourEmail;
+            }
+            
+            // Get unique teachers from evaluations (since we don't have separate teachers table)
             $teachersFromEvaluations = $this->getTeachersFromEvaluations();
             
             if (empty($teachersFromEvaluations)) {
                 return [
                     'success' => true,
                     'message' => 'No teacher evaluation data found',
-                    'details' => 'Evaluations exist but no teacher-specific data available'
+                    'folder_url' => $results['folder_url'],
+                    'shared_with' => $results['shared_with']
                 ];
             }
             
@@ -105,7 +117,7 @@ class GoogleDriveReportsGenerator {
                         $results['reports_created'][] = [
                             'teacher' => $teacherName,
                             'summary_report' => $summaryReport,
-                            'evaluations_count' => $teacherData['evaluation_count']
+                            'evaluations_count' => $teacherData['total_evaluations']
                         ];
                     }
                     
@@ -130,6 +142,35 @@ class GoogleDriveReportsGenerator {
                 'success' => false,
                 'error' => $e->getMessage()
             ];
+        }
+    }
+    
+    /**
+     * Share folder with specific email addresses and get shareable link
+     */
+    private function shareFolderWithEmail($folderId, $email) {
+        try {
+            // Create permission for specific user
+            $userPermission = new Drive\Permission([
+                'type' => 'user',
+                'role' => 'writer',
+                'emailAddress' => $email
+            ]);
+            
+            $this->driveService->permissions->create($folderId, $userPermission);
+            
+            // Also make it accessible to anyone with the link
+            $publicPermission = new Drive\Permission([
+                'type' => 'anyone',
+                'role' => 'writer'
+            ]);
+            
+            $this->driveService->permissions->create($folderId, $publicPermission);
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Sharing failed: " . $e->getMessage());
+            return false;
         }
     }
     
@@ -430,7 +471,7 @@ class GoogleDriveReportsGenerator {
                 'q4_1' => 'Nagpapanatili ng emosyonal na balanse',
                 'q4_2' => 'Malaya sa nakasanayang galaw',
                 'q4_3' => 'Maayos at presentable',
-                'q4_4' => 'Hindi pagpapakita ng paboritismo',
+                'q4_4' => 'Hindi pagpapakita ng pavoritismo',
                 'q4_5' => 'May magandang sense of humor',
                 'q4_6' => 'May magandang diction, malinaw at maayos na timpla ng boses'
             ]
