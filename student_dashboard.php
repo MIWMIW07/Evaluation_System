@@ -1,746 +1,554 @@
 <?php
-// student_dashboard.php - Updated to work with Google Sheets data
+// student_dashboard.php
 session_start();
+require_once __DIR__ . '/includes/db_connection.php';
 
-// Check if user is logged in and is a student
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
+// Check if user is student and logged in
+if (!isset($_SESSION['user_type']) || $_SESSION['user_type'] !== 'student') {
     header('Location: index.php');
     exit;
 }
 
-// Include database connection
-require_once 'includes/db_connection.php';
-
-$success = '';
-$error = '';
-
-// Get database connection
-try {
-    $pdo = getPDO();
-} catch (Exception $e) {
-    die('Database connection failed: ' . $e->getMessage());
+// Check if required student session data exists
+$required_fields = ['student_id', 'username', 'first_name', 'last_name', 'section', 'program'];
+foreach ($required_fields as $field) {
+    if (!isset($_SESSION[$field])) {
+        header('Location: index.php');
+        exit;
+    }
 }
 
-// Get student information from session (already loaded from Google Sheets during login)
-$student_username = $_SESSION['username'];
-$student_full_name = $_SESSION['full_name'];
-$student_program = $_SESSION['program'] ?? 'Not Set';
-$student_section = $_SESSION['section'] ?? 'Not Set';
+// Get student data from session
 $student_id = $_SESSION['student_id'];
+$username = $_SESSION['username'];
+$first_name = $_SESSION['first_name'];
+$last_name = $_SESSION['last_name'];
+$section = $_SESSION['section'];
+$program = $_SESSION['program'];
 
-// Get teachers assigned to this student's section from database
-$teachers_result = [];
-$evaluated_teachers = [];
-
-// Get already evaluated teachers for this student
-try {
-    $stmt = $pdo->prepare("
-        SELECT teacher_name, subject 
-        FROM evaluations 
-        WHERE student_username = ? AND section = ?
-    ");
-    $stmt->execute([$student_username, $student_section]);
-    $evaluated_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Handle section/program change if form submitted
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_section'])) {
+    $new_section = $_POST['section'];
+    $new_program = $_POST['program'];
     
-    // Create a unique key for each teacher-subject combination
-    foreach ($evaluated_result as $eval) {
-        $evaluated_teachers[] = $eval['teacher_name'] . '|' . $eval['subject'];
-    }
-} catch (Exception $e) {
-    // Table might not exist yet or other error
-    $evaluated_teachers = [];
+    // Validate the section exists for this student
+    // (In a real scenario, you'd check against available sections for this student)
+    $_SESSION['section'] = $new_section;
+    $_SESSION['program'] = $new_program;
+    $section = $new_section;
+    $program = $new_program;
+    
+    // Show success message
+    $_SESSION['success_message'] = "Section updated successfully to {$new_section}";
+    header('Location: student_dashboard.php');
+    exit;
 }
 
-// Get available teachers from teacher_assignments table
-if ($student_section !== 'Not Set' && $student_program !== 'Not Set') {
-    try {
-        $stmt = $pdo->prepare("
-            SELECT teacher_name, subject, program, section
-            FROM teacher_assignments 
-            WHERE section = ? AND program = ? AND is_active = true
-            ORDER BY teacher_name, subject
-        ");
-        $stmt->execute([$student_section, $student_program]);
-        $teachers_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Exception $e) {
-        $error = "Could not load teachers: " . $e->getMessage();
-        $teachers_result = [];
-    }
+// Get teachers for current section
+$pdo = getPDO();
+$stmt = $pdo->prepare("
+    SELECT teacher_name, subject 
+    FROM teacher_assignments 
+    WHERE section = ? AND program = ? AND is_active = true
+    ORDER BY subject
+");
+$stmt->execute([$section, $program]);
+$teachers = $stmt->fetchAll();
+
+// Get evaluation status for each teacher
+$evaluation_status = [];
+foreach ($teachers as $teacher) {
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) as evaluated 
+        FROM evaluations 
+        WHERE student_username = ? AND teacher_name = ? AND section = ?
+    ");
+    $stmt->execute([$username, $teacher['teacher_name'], $section]);
+    $result = $stmt->fetch();
+    $evaluation_status[$teacher['teacher_name']] = $result['evaluated'] > 0;
 }
 
-// Calculate statistics
-$total_teachers = count($teachers_result);
-$completed_evaluations = count($evaluated_teachers);
-$remaining_evaluations = $total_teachers - $completed_evaluations;
-$completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $total_teachers) * 100, 1) : 0;
+// Count completed evaluations
+$completed = array_sum($evaluation_status);
+$total = count($teachers);
+$progress = $total > 0 ? round(($completed / $total) * 100) : 0;
 ?>
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>Student Dashboard - Teacher Evaluation</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - Teacher Evaluation System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         body {
-            background: linear-gradient(135deg, #800000 0%, #500000 100%);
-            color: #333;
-            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: #fff;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-            position: relative;
         }
-        
+
         .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 25px;
-            border-bottom: 3px solid #D4AF37;
-        }
-        
-        .header h1 {
-            color: #800000;
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #800000, #A52A2A);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .logo {
-    max-height: 50px;
-    width: auto;
-    height: auto;
-}
-
-        
-        .user-info {
-            background: linear-gradient(135deg, #F5F5DC 0%, #FFD700 100%);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            border-left: 5px solid #D4AF37;
-        }
-        
-        .user-info h3 {
-            color: #800000;
-            margin-bottom: 10px;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .info-item {
-            background: #F5F5DC;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border: 1px solid #D4AF37;
-        }
-        
-        .info-item label {
-            font-weight: 600;
-            color: #800000;
-            font-size: 0.9em;
-            display: block;
-            margin-bottom: 5px;
-        }
-        
-        .info-item span {
-            color: #500000;
-            font-weight: bold;
-        }
-        
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .stat-card {
-            background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
+            background: white;
             padding: 25px;
             border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid #800000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
-        
-        .stat-card h3 {
-            color: #800000;
-            font-size: 2.5em;
+
+        .welcome-section {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .welcome-section h1 {
+            color: #333;
             margin-bottom: 10px;
+            font-size: 2.2em;
         }
-        
-        .stat-card p {
-            color: #500000;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+
+        .welcome-section p {
+            color: #666;
+            font-size: 1.1em;
         }
-        
-        .progress-card {
-            border-left-color: #D4AF37;
+
+        .info-boxes {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
         }
-        
-        .progress-card h3 {
-            color: #800000;
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #667eea;
+            flex: 1;
+            min-width: 200px;
+            position: relative;
         }
-        
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #F5F5DC;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 15px;
-            border: 1px solid #D4AF37;
+
+        .info-box .label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
         }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(135deg, #800000, #A52A2A);
-            border-radius: 10px;
-            transition: width 0.5s ease;
+
+        .info-box .value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: #FFD700;
-            font-size: 0.8em;
+            justify-content: space-between;
+        }
+
+        .change-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+
+        .change-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .progress-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .progress-header h2 {
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #666;
             font-weight: bold;
         }
-        
+
         .teachers-section {
-            margin-top: 30px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
-        
+
+        .section-title {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
         .teachers-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
-            margin-top: 20px;
         }
-        
+
         .teacher-card {
-            background: #F5F5DC;
-            padding: 25px;
+            border: 2px solid #e9ecef;
             border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid #800000;
-            transition: all 0.3s ease;
-        }
-        
-        .teacher-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        }
-        
-        .teacher-card.evaluated {
-            border-left-color: #D4AF37;
-            background: linear-gradient(135deg, #FFEC8B 0%, #FFD700 100%);
-        }
-        
-        .teacher-card h4 {
-            color: #800000;
-            margin-bottom: 10px;
-            font-size: 1.1em;
-        }
-        
-        .teacher-card p {
-            color: #500000;
-            margin-bottom: 15px;
-        }
-        
-        .evaluation-status {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        
-        .status-pending {
-            background: #FFEC8B;
-            color: #800000;
-            border: 1px solid #D4AF37;
-        }
-        
-        .status-completed {
-            background: #D4AF37;
-            color: #800000;
-            border: 1px solid #FFD700;
-        }
-        
-        .alert {
             padding: 20px;
-            margin-bottom: 25px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .alert-success {
-            color: #800000;
-            background: linear-gradient(135deg, #FFEC8B 0%, #FFD700 100%);
-            border-left: 5px solid #D4AF37;
-        }
-        
-        .alert-error {
-            color: #800000;
-            background: linear-gradient(135deg, #FFEC8B 0%, #F5F5DC 100%);
-            border-left: 5px solid #800000;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #800000 0%, #A52A2A 100%);
-            color: #FFD700;
-            text-decoration: none;
-            border-radius: 25px;
-            font-weight: 600;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            text-align: center;
-            font-size: 0.95em;
         }
 
-        .btn:hover {
-            background: linear-gradient(135deg, #A52A2A 0%, #800000 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-            color: #FFEC8B;
+        .teacher-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.1);
         }
 
-        .btn-secondary {
-            background: linear-gradient(135deg, #D4AF37 0%, #FFD700 100%);
-            color: #800000;
+        .teacher-card.completed {
+            border-color: #4CAF50;
+            background: #f8fff8;
         }
 
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
-            color: #500000;
-        }
-        
-        .logout-container {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 25px;
-            border-top: 2px solid #D4AF37;
-        }
-        
-        .logout-btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #800000 0%, #500000 100%);
-            color: #FFD700;
-            padding: 12px 25px;
-            text-decoration: none;
-            border-radius: 5px;
+        .teacher-name {
+            font-size: 1.3em;
             font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-            margin-top: 15px;
+            color: #333;
+            margin-bottom: 8px;
         }
-        
-        .logout-btn:hover {
-            background: linear-gradient(135deg, #500000 0%, #800000 100%);
-            transform: translateY(-2px);
-            color: #FFEC8B;
-        }
-        
-        .no-program-message {
-            text-align: center;
-            padding: 40px;
-            background: linear-gradient(135deg, #FFEC8B 0%, #F5F5DC 100%);
-            border-radius: 10px;
-            margin-top: 30px;
-            border: 1px solid #D4AF37;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #500000;
-            background: #F5F5DC;
-            border-radius: 10px;
-            border: 1px solid #D4AF37;
-        }
-        
-        .empty-state h3 {
+
+        .teacher-subject {
+            color: #666;
             margin-bottom: 15px;
-            color: #800000;
+            font-size: 1em;
         }
-        
-        /* Skeleton Loading Styles */
-        .skeleton-loading {
-            display: block;
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
         }
-        
-        .content-loaded {
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .evaluate-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        .evaluate-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .evaluate-btn.completed {
+            background: #4CAF50;
+        }
+
+        .evaluate-btn.completed:hover {
+            background: #45a049;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        /* Modal Styles */
+        .modal {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
         }
-        
-        .skeleton-header {
-            height: 80px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            animation: loading 1.5s infinite;
-        }
-        
-        .skeleton-user-info {
-            height: 120px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            animation: loading 1.5s infinite;
-        }
-        
-        .skeleton-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .skeleton-stat-card {
-            height: 120px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
+
+        .modal-content {
+            background: white;
+            padding: 30px;
             border-radius: 15px;
-            animation: loading 1.5s infinite;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
-        
-        .skeleton-section {
-            height: 30px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            border-radius: 8px;
+
+        .modal h3 {
             margin-bottom: 20px;
-            animation: loading 1.5s infinite;
+            color: #333;
         }
-        
-        .skeleton-teachers {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+
+        .form-group {
+            margin-bottom: 20px;
         }
-        
-        .skeleton-teacher-card {
-            height: 180px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            border-radius: 12px;
-            animation: loading 1.5s infinite;
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
         }
-        
-        .skeleton-footer {
-            height: 80px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
+
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
             border-radius: 8px;
-            margin-top: 40px;
-            animation: loading 1.5s infinite;
-        }
-        
-        @keyframes loading {
-            0% {
-                background-position: 200% 0;
-            }
-            100% {
-                background-position: -200% 0;
-            }
+            font-size: 1em;
         }
 
-        @media (max-width: 480px) {
-    .container {
-        padding: 15px;
-    }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
 
-    .header h1 {
-        font-size: 1.5em;
-    }
+        .cancel-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
 
-    .info-grid,
-    .stats-container,
-    .teachers-grid {
-        grid-template-columns: 1fr;
-    }
+        .save-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
 
-    .btn, .logout-btn {
-        width: 100%;
-        font-size: 0.9em;
-        padding: 12px;
-    }
-}
-
-        
         @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                padding: 20px;
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
             }
             
-            .stats-container {
-                grid-template-columns: 1fr;
+            .info-boxes {
+                flex-direction: column;
             }
             
             .teachers-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .header h1 {
-                font-size: 1.8em;
-            }
-
-            .header-content {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .skeleton-stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .skeleton-teachers {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Skeleton Loading Structure -->
-    <div id="skeleton-loading" class="skeleton-loading">
-        <div class="container">
-            <div class="skeleton-header"></div>
-            <div class="skeleton-user-info"></div>
-            <div class="skeleton-stats">
-                <div class="skeleton-stat-card"></div>
-                <div class="skeleton-stat-card"></div>
-                <div class="skeleton-stat-card"></div>
-                <div class="skeleton-stat-card"></div>
-            </div>
-            <div class="skeleton-section"></div>
-            <div class="skeleton-section" style="width: 70%;"></div>
-            <div class="skeleton-teachers">
-                <div class="skeleton-teacher-card"></div>
-                <div class="skeleton-teacher-card"></div>
-                <div class="skeleton-teacher-card"></div>
-            </div>
-            <div class="skeleton-footer"></div>
-        </div>
-    </div>
-    
-    <!-- Actual Content -->
-    <div id="main-content" class="content-loaded">
-        <div class="container">
-            <div class="header">
-                <div class="header-content">
-                    <img src="logo.png" alt="School Logo" class="logo" onerror="this.style.display='none'">
-                    <div>
-                        <h1>Student Dashboard</h1>
-                        <p>Teacher Evaluation System</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="user-info">
-                <h3>👤 Welcome, <?php echo htmlspecialchars($student_full_name); ?>!</h3>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label>Username:</label>
-                        <span><?php echo htmlspecialchars($student_username); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Student ID:</label>
-                        <span><?php echo htmlspecialchars($student_id); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Current Program:</label>
-                        <span><?php echo htmlspecialchars($student_program); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Current Section:</label>
-                        <span><?php echo htmlspecialchars($student_section); ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <?php if (!empty($success)): ?>
-                <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-            <?php endif; ?>
-            
-            <?php if (!empty($error)): ?>
-                <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
-            <?php endif; ?>
-
-            <?php if ($student_program !== 'Not Set' && $student_section !== 'Not Set'): ?>
-                <div class="stats-container">
-                    <div class="stat-card">
-                        <h3><?php echo $total_teachers; ?></h3>
-                        <p>Total Teachers</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3><?php echo $completed_evaluations; ?></h3>
-                        <p>Completed Evaluations</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3><?php echo $remaining_evaluations; ?></h3>
-                        <p>Remaining Evaluations</p>
-                    </div>
-                    <div class="stat-card progress-card">
-                        <h3><?php echo $completion_percentage; ?>%</h3>
-                        <p>Completion Progress</p>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: <?php echo $completion_percentage; ?>%;">
-                                <?php if ($completion_percentage > 20): ?>
-                                    <?php echo $completion_percentage; ?>%
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <div class="welcome-section">
+                <h1>Welcome, <?php echo htmlspecialchars($first_name . ' ' . $last_name); ?>!</h1>
+                <p>Teacher Evaluation System - Academic Year 2025-2026</p>
                 
-                <div class="teachers-section">
-                    <h2>👨‍🏫 Teachers Available for Evaluation</h2>
-                    <p style="color: #800000; margin-bottom: 20px;">
-                        Click "Evaluate Teacher" to start evaluating a teacher. Already evaluated teachers are marked as completed.
-                    </p>
+                <div class="info-boxes">
+                    <div class="info-box">
+                        <div class="label">Current Section</div>
+                        <div class="value">
+                            <?php echo htmlspecialchars($section); ?>
+                            <button class="change-btn" onclick="openChangeModal()">
+                                <i class="fas fa-edit"></i> Change
+                            </button>
+                        </div>
+                    </div>
                     
-                    <?php if (!empty($teachers_result)): ?>
-                        <div class="teachers-grid">
-                            <?php foreach($teachers_result as $teacher): ?>
-                                <?php 
-                                    $teacher_key = $teacher['teacher_name'] . '|' . $teacher['subject'];
-                                    $is_evaluated = in_array($teacher_key, $evaluated_teachers); 
-                                ?>
-                                <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
-                                    <h4><?php echo htmlspecialchars($teacher['teacher_name']); ?></h4>
-                                    <p><strong>Subject:</strong> <?php echo htmlspecialchars($teacher['subject']); ?></p>
-                                    <p><strong>Section:</strong> <?php echo htmlspecialchars($teacher['section']); ?></p>
-                                    <p><strong>Program:</strong> <?php echo htmlspecialchars($teacher['program']); ?></p>
-                                    
-                                    <div class="evaluation-status">
-                                        <?php if ($is_evaluated): ?>
-                                            <span class="status-badge status-completed">✅ Evaluated</span>
-                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
-                                               class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
-                                                👁️ View Evaluation
-                                            </a>
-                                        <?php else: ?>
-                                            <span class="status-badge status-pending">⏳ Pending</span>
-                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
-                                               class="btn" style="padding: 8px 15px; font-size: 0.9em;">
-                                                📝 Evaluate Teacher
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
+                    <div class="info-box">
+                        <div class="label">Current Program</div>
+                        <div class="value">
+                            <?php echo htmlspecialchars($program); ?>
+                            <button class="change-btn" onclick="openChangeModal()">
+                                <i class="fas fa-edit"></i> Change
+                            </button>
                         </div>
-                    <?php else: ?>
-                        <div class="empty-state">
-                            <h3>📭 No Teachers Found</h3>
-                            <p>No teachers are assigned to your section (<?php echo htmlspecialchars($student_section); ?>).</p>
-                            <p>Please contact your administrator if this seems incorrect.</p>
-                        </div>
-                    <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="logout-btn" onclick="location.href='logout.php'">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="progress-section">
+            <div class="progress-header">
+                <h2>Evaluation Progress</h2>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: <?php echo $progress; ?>%"></div>
+            </div>
+            
+            <div class="progress-text">
+                <?php echo $completed; ?> out of <?php echo $total; ?> evaluations completed (<?php echo $progress; ?>%)
+            </div>
+        </div>
+
+        <!-- Teachers Section -->
+        <div class="teachers-section">
+            <h2 class="section-title">Your Teachers for Evaluation</h2>
+            
+            <?php if (empty($teachers)): ?>
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <i class="fas fa-info-circle" style="font-size: 3em; margin-bottom: 15px;"></i>
+                    <p>No teachers assigned to your section yet.</p>
+                    <p>Please check back later or contact administration.</p>
                 </div>
             <?php else: ?>
-                <div class="no-program-message">
-                    <h3>⚠️ Incomplete Student Information</h3>
-                    <p>Your program or section information is missing from the system.</p>
-                    <p>Please contact your administrator to update your information in Google Sheets.</p>
-                    <p><strong>Current Info:</strong></p>
-                    <p>Program: <?php echo htmlspecialchars($student_program); ?></p>
-                    <p>Section: <?php echo htmlspecialchars($student_section); ?></p>
+                <div class="teachers-grid">
+                    <?php foreach ($teachers as $teacher): ?>
+                        <?php $isCompleted = $evaluation_status[$teacher['teacher_name']]; ?>
+                        <div class="teacher-card <?php echo $isCompleted ? 'completed' : ''; ?>">
+                            <div class="teacher-name"><?php echo htmlspecialchars($teacher['teacher_name']); ?></div>
+                            <div class="teacher-subject"><?php echo htmlspecialchars($teacher['subject']); ?></div>
+                            
+                            <div class="status-badge <?php echo $isCompleted ? 'status-completed' : 'status-pending'; ?>">
+                                <?php echo $isCompleted ? '✓ Completed' : '⏳ Pending'; ?>
+                            </div>
+                            
+                            <button class="evaluate-btn <?php echo $isCompleted ? 'completed' : ''; ?>" 
+                                    onclick="location.href='evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>'">
+                                <?php echo $isCompleted ? '✓ View Evaluation' : '📝 Evaluate Now'; ?>
+                            </button>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Change Section/Program Modal -->
+    <div class="modal" id="changeModal">
+        <div class="modal-content">
+            <h3>Change Section & Program</h3>
             
-            <div class="logout-container">
-                <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
-                <p>Teacher Evaluation System - Student Dashboard</p>
-                <p style="margin-top: 10px;">
-                    Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
-                </p>
-                <a href="logout.php" class="logout-btn">🚪 Logout</a>
-            </div>
+            <form method="POST" action="">
+                <div class="form-group">
+                    <label for="section">Select Section:</label>
+                    <select id="section" name="section" required>
+                        <option value="">-- Select Section --</option>
+                        <option value="BSCS3M1" <?php echo $section === 'BSCS3M1' ? 'selected' : ''; ?>>BSCS3M1</option>
+                        <option value="BSCS3N1" <?php echo $section === 'BSCS3N1' ? 'selected' : ''; ?>>BSCS3N1</option>
+                        <option value="BSOA3M1" <?php echo $section === 'BSOA3M1' ? 'selected' : ''; ?>>BSOA3M1</option>
+                        <option value="EDUC3M1" <?php echo $section === 'EDUC3M1' ? 'selected' : ''; ?>>EDUC3M1</option>
+                        <!-- Add more sections as needed -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="program">Select Program:</label>
+                    <select id="program" name="program" required>
+                        <option value="">-- Select Program --</option>
+                        <option value="COLLEGE" <?php echo $program === 'COLLEGE' ? 'selected' : ''; ?>>COLLEGE</option>
+                        <option value="SHS" <?php echo $program === 'SHS' ? 'selected' : ''; ?>>SENIOR HIGH SCHOOL</option>
+                    </select>
+                </div>
+                
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeChangeModal()">Cancel</button>
+                    <button type="submit" class="save-btn" name="change_section">Save Changes</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Show skeleton loading for 3 seconds
-            setTimeout(function() {
-                document.getElementById('skeleton-loading').style.display = 'none';
-                document.getElementById('main-content').style.display = 'block';
-            }, 3000);
+        function openChangeModal() {
+            document.getElementById('changeModal').style.display = 'flex';
+        }
 
-            // Add confirmation for logout
-            document.querySelector('.logout-btn').addEventListener('click', function(e) {
-                if (!confirm('Are you sure you want to logout?')) {
-                    e.preventDefault();
-                }
-            });
+        function closeChangeModal() {
+            document.getElementById('changeModal').style.display = 'none';
+        }
 
-            // Add loading state for evaluation buttons
-            const evalButtons = document.querySelectorAll('.btn');
-            evalButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const originalText = this.textContent;
-                    this.textContent = 'Loading...';
-                    this.style.pointerEvents = 'none';
-                    
-                    // Reset after 3 seconds if page doesn't navigate
-                    setTimeout(() => {
-                        this.textContent = originalText;
-                        this.style.pointerEvents = 'auto';
-                    }, 3000);
-                });
-            });
-        });
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('changeModal');
+            if (event.target === modal) {
+                closeChangeModal();
+            }
+        }
+
+        // Show success message if exists
+        <?php if (isset($_SESSION['success_message'])): ?>
+            alert('<?php echo $_SESSION['success_message']; ?>');
+            <?php unset($_SESSION['success_message']); ?>
+        <?php endif; ?>
     </script>
 </body>
 </html>
