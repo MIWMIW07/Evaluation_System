@@ -1,5 +1,5 @@
 <?php
-// student_dashboard.php - Updated with Change Password Feature
+// student_dashboard.php - Updated to work with Google Sheets data
 session_start();
 
 // Check if user is logged in and is a student
@@ -21,7 +21,7 @@ try {
     die('Database connection failed: ' . $e->getMessage());
 }
 
-// Get student information from session
+// Get student information from session (already loaded from Google Sheets during login)
 $student_username = $_SESSION['username'];
 $student_full_name = $_SESSION['full_name'];
 $student_program = $_SESSION['program'] ?? 'Not Set';
@@ -62,99 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_section'])) {
     }
 }
 
-// Handle password change
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
-    $current_password = trim($_POST['current_password']);
-    $new_password = trim($_POST['new_password']);
-    $confirm_password = trim($_POST['confirm_password']);
-    
-    if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
-        $error = "All password fields are required";
-    } elseif ($new_password !== $confirm_password) {
-        $error = "New password and confirm password do not match";
-    } elseif (strlen($new_password) < 6) {
-        $error = "New password must be at least 6 characters long";
-    } else {
-        try {
-            // Verify current password
-            $stmt = $pdo->prepare("SELECT password FROM users WHERE username = ?");
-            $stmt->execute([$student_username]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($user && password_verify($current_password, $user['password'])) {
-                // Update password in database
-                $new_password_hash = password_hash($new_password, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE username = ?");
-                $stmt->execute([$new_password_hash, $student_username]);
-                
-                // Update password in Google Sheets
-                $password_updated_in_sheets = updatePasswordInGoogleSheets($student_id, $new_password);
-                
-                if ($password_updated_in_sheets) {
-                    $success = "Password changed successfully! You can now use your new password to log in.";
-                } else {
-                    $success = "Password changed in system but failed to update in Google Sheets. Please contact administrator.";
-                }
-            } else {
-                $error = "Current password is incorrect";
-            }
-        } catch (Exception $e) {
-            $error = "Error changing password: " . $e->getMessage();
-        }
-    }
-}
-
-// Function to update password in Google Sheets
-function updatePasswordInGoogleSheets($student_id, $new_password) {
-    try {
-        require_once 'vendor/autoload.php';
-        
-        // Initialize Google Client
-        $client = new Google\Client();
-        $client->setApplicationName('Teacher Evaluation System');
-        $client->setScopes([Google\Service\Sheets::SPREADSHEETS]);
-        $client->setAuthConfig('credentials.json');
-        $client->setAccessType('offline');
-        
-        $service = new Google\Service\Sheets($client);
-        $spreadsheetId = 'YOUR_SPREADSHEET_ID'; // Replace with your actual spreadsheet ID
-        
-        // First, find the row with the student ID
-        $range = 'Students!A:E'; // Adjust range based on your sheet structure
-        $response = $service->spreadsheets_values->get($spreadsheetId, $range);
-        $values = $response->getValues();
-        
-        $row_index = -1;
-        foreach ($values as $index => $row) {
-            // Assuming student ID is in column E (index 4)
-            if (isset($row[4]) && $row[4] == $student_id) {
-                $row_index = $index + 1; // +1 because spreadsheet rows start at 1
-                break;
-            }
-        }
-        
-        if ($row_index !== -1) {
-            // Update password in column F (assuming password is in column F)
-            $update_range = "Students!F" . $row_index;
-            $update_body = new Google\Service\Sheets\ValueRange([
-                'values' => [[$new_password]]
-            ]);
-            
-            $params = [
-                'valueInputOption' => 'RAW'
-            ];
-            
-            $service->spreadsheets_values->update($spreadsheetId, $update_range, $update_body, $params);
-            return true;
-        }
-        
-        return false;
-    } catch (Exception $e) {
-        error_log("Google Sheets update error: " . $e->getMessage());
-        return false;
-    }
-}
-
 // Get available sections for this student's program
 $available_sections = [];
 if ($student_program !== 'Not Set') {
@@ -168,6 +75,7 @@ if ($student_program !== 'Not Set') {
         $stmt->execute([$student_program]);
         $available_sections = $stmt->fetchAll(PDO::FETCH_COLUMN);
     } catch (Exception $e) {
+        // Table might not exist yet or other error
         $available_sections = [];
     }
 }
@@ -186,10 +94,12 @@ try {
     $stmt->execute([$student_username, $student_section]);
     $evaluated_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // Create a unique key for each teacher-subject combination
     foreach ($evaluated_result as $eval) {
         $evaluated_teachers[] = $eval['teacher_name'] . '|' . $eval['subject'];
     }
 } catch (Exception $e) {
+    // Table might not exist yet or other error
     $evaluated_teachers = [];
 }
 
@@ -321,51 +231,33 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             font-weight: bold;
         }
         
-        /* Change Password Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
+        /* Change Section Styles */
+        .change-section {
+            background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #800000;
         }
         
-        .modal-content {
-            background-color: #fff;
-            margin: 10% auto;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 500px;
-            position: relative;
-        }
-        
-        .close {
-            position: absolute;
-            right: 20px;
-            top: 15px;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
+        .change-section h3 {
             color: #800000;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .close:hover {
-            color: #500000;
-        }
-        
-        .modal h3 {
-            color: #800000;
-            margin-bottom: 20px;
-            text-align: center;
+        .change-section-form {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
         }
         
         .form-group {
-            margin-bottom: 20px;
+            flex: 1;
+            min-width: 200px;
         }
         
         .form-group label {
@@ -429,57 +321,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         .btn-small {
             padding: 8px 15px;
             font-size: 0.9em;
-        }
-        
-        .btn-full {
-            width: 100%;
-            margin-top: 10px;
-        }
-        
-        /* Loading animation for password change */
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #800000;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Change Section Styles */
-        .change-section {
-            background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            border-left: 5px solid #800000;
-        }
-        
-        .change-section h3 {
-            color: #800000;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .change-section-form {
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
-            flex-wrap: wrap;
         }
         
         .stats-container {
@@ -806,12 +647,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             .skeleton-teachers {
                 grid-template-columns: 1fr;
             }
-            
-            .modal-content {
-                margin: 20% auto;
-                width: 95%;
-                padding: 20px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -891,40 +726,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     <div class="info-item">
                         <label>Current Section:</label>
                         <span><?php echo htmlspecialchars($student_section); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <button class="btn btn-secondary btn-full" onclick="openPasswordModal()">
-                            🔒 Change Password
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Change Password Modal -->
-            <div id="passwordModal" class="modal">
-                <div class="modal-content">
-                    <span class="close" onclick="closePasswordModal()">&times;</span>
-                    <h3>🔒 Change Password</h3>
-                    <form id="passwordForm" method="post" action="">
-                        <div class="form-group">
-                            <label for="current_password">Current Password:</label>
-                            <input type="password" name="current_password" id="current_password" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="new_password">New Password:</label>
-                            <input type="password" name="new_password" id="new_password" class="form-control" required minlength="6">
-                        </div>
-                        <div class="form-group">
-                            <label for="confirm_password">Confirm New Password:</label>
-                            <input type="password" name="confirm_password" id="confirm_password" class="form-control" required minlength="6">
-                        </div>
-                        <button type="submit" name="change_password" class="btn btn-full">
-                            🔄 Change Password
-                        </button>
-                    </form>
-                    <div id="passwordLoading" class="loading">
-                        <div class="loading-spinner"></div>
-                        <p>Updating password...</p>
                     </div>
                 </div>
             </div>
@@ -1102,80 +903,22 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 });
             }
 
-            // Password form handling
-            const passwordForm = document.getElementById('passwordForm');
-            if (passwordForm) {
-                passwordForm.addEventListener('submit', function(e) {
-                    const newPassword = document.getElementById('new_password').value;
-                    const confirmPassword = document.getElementById('confirm_password').value;
-                    
-                    if (newPassword !== confirmPassword) {
-                        e.preventDefault();
-                        alert('New password and confirm password do not match.');
-                        return false;
-                    }
-                    
-                    if (newPassword.length < 6) {
-                        e.preventDefault();
-                        alert('New password must be at least 6 characters long.');
-                        return false;
-                    }
-                    
-                    // Show loading animation
-                    document.getElementById('passwordLoading').style.display = 'block';
-                    passwordForm.style.display = 'none';
-                });
-            }
-
             // Add loading state for evaluation buttons
             const evalButtons = document.querySelectorAll('.btn');
             evalButtons.forEach(button => {
-                if (!button.closest('#passwordForm')) {
-                    button.addEventListener('click', function() {
-                        const originalText = this.textContent;
-                        this.textContent = 'Loading...';
-                        this.style.pointerEvents = 'none';
-                        
-                        // Reset after 3 seconds if page doesn't navigate
-                        setTimeout(() => {
-                            this.textContent = originalText;
-                            this.style.pointerEvents = 'auto';
-                        }, 3000);
-                    });
-                }
+                button.addEventListener('click', function() {
+                    const originalText = this.textContent;
+                    this.textContent = 'Loading...';
+                    this.style.pointerEvents = 'none';
+                    
+                    // Reset after 3 seconds if page doesn't navigate
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                        this.style.pointerEvents = 'auto';
+                    }, 3000);
+                });
             });
         });
-
-        // Modal functions
-        function openPasswordModal() {
-            document.getElementById('passwordModal').style.display = 'block';
-            // Reset form
-            document.getElementById('passwordForm').reset();
-            document.getElementById('passwordForm').style.display = 'block';
-            document.getElementById('passwordLoading').style.display = 'none';
-        }
-
-        function closePasswordModal() {
-            document.getElementById('passwordModal').style.display = 'none';
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('passwordModal');
-            if (event.target === modal) {
-                closePasswordModal();
-            }
-        }
-
-        // Show success message for password change if there's a success message
-        <?php if (!empty($success) && strpos($success, 'Password') !== false): ?>
-            setTimeout(() => {
-                const successAlert = document.querySelector('.alert-success');
-                if (successAlert) {
-                    successAlert.innerHTML += '<br><strong>✅ Password changed successfully!</strong>';
-                }
-            }, 100);
-        <?php endif; ?>
     </script>
 </body>
 </html>
