@@ -855,6 +855,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 <p>Teacher Evaluation System - Student Dashboard</p>
                 <p style="margin-top: 10px;">
                     Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
+                    Developer: ISRAEL GABRIEL, TOQUE CHRISTOPHER GLEN, MERVIN LEO MICOSA
                 </p>
                 <a href="logout.php" class="logout-btn">🚪 Logout</a>
             </div>
