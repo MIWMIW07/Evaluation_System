@@ -37,8 +37,15 @@ try {
     
     require_once 'includes/db_connection.php';
     
-    if (!isset($pdo)) {
-        throw new Exception('Database connection failed');
+    // Get PDO connection using the function from db_connection.php
+    try {
+        $pdo = getPDO();
+        
+        // Test the connection
+        $pdo->query('SELECT 1');
+        
+    } catch (Exception $dbError) {
+        throw new Exception('Database connection failed: ' . $dbError->getMessage());
     }
     
     // Get action from POST or GET
