@@ -1,39 +1,16 @@
 <?php
-// google_sheets_integration.php - Updated with correct environment variable
+// google_sheets_integration.php - PostgreSQL compatible version
 
-require_once 'vendor/autoload.php'; // Composer autoload for Google Client
-require_once 'includes/db_connection.php'; // make sure your PDO $pdo is available
-
-// Path to default credentials file
-$credentialsPath = __DIR__ . '/credentials/service-account-key.json';
-
-// Try environment variable first
-$googleCredentials = getenv('GOOGLE_CREDENTIALS_JSON');
-
-if ($googleCredentials) {
-    // Write JSON to a temporary file so Google Client can use it
-    $tempPath = sys_get_temp_dir() . '/google-credentials.json';
-    file_put_contents($tempPath, $googleCredentials);
-    $credentialsPath = $tempPath;
-} elseif (!file_exists($credentialsPath)) {
-    // Neither env var nor file found → return error
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => false,
-        'error' => 'Google Sheets integration not configured. Missing service account key.'
-    ]);
-    exit;
-}
+require_once 'vendor/autoload.php';
+require_once 'includes/db_connection.php';
 
 class GoogleSheetsIntegration {
     private $client;
     private $service;
     private $pdo;
-    
-    // Google Sheets configuration - UPDATED to use GOOGLE_SHEETS_ID
     private $spreadsheetId;
-    private $studentsRange = 'Students!A:E'; // Columns: Last Name, First Name, Middle Name, Section, Student ID
-    private $teachersRange = 'Teachers!A:C'; // Columns: Name, Department (SHS/COLLEGE/BOTH), Subject
+    private $studentsRange = 'Students!A:E';
+    private $teachersRange = 'Teachers!A:C';
     
     public function __construct($pdo, $credentialsPath, $spreadsheetId) {
         $this->pdo = $pdo;
@@ -44,21 +21,20 @@ class GoogleSheetsIntegration {
         }
         
         // Initialize Google Client
-        $this->client = new Google_Client();
+        $this->client = new Google\Client();
         $this->client->setApplicationName('Teacher Evaluation System');
-        $this->client->setScopes([\Google_Service_Sheets::SPREADSHEETS_READONLY]);
+        $this->client->setScopes([Google\Service\Sheets::SPREADSHEETS_READONLY]);
         $this->client->setAuthConfig($credentialsPath);
         $this->client->setAccessType('offline');
         
-        $this->service = new \Google_Service_Sheets($this->client);
+        $this->service = new Google\Service\Sheets($this->client);
     }
     
     /**
-     * Fetch students from Google Sheets and sync with database
+     * Sync students from Google Sheets - PostgreSQL compatible
      */
     public function syncStudents() {
         try {
-            // Fetch data from Google Sheets
             $response = $this->service->spreadsheets_values->get(
                 $this->spreadsheetId, 
                 $this->studentsRange
@@ -69,7 +45,7 @@ class GoogleSheetsIntegration {
                 throw new Exception('No student data found in Google Sheets');
             }
             
-            // Skip header row if it exists
+            // Skip header row
             if (!empty($values) && $this->isHeaderRow($values[0])) {
                 array_shift($values);
             }
@@ -78,12 +54,11 @@ class GoogleSheetsIntegration {
             $errors = [];
             
             foreach ($values as $rowIndex => $row) {
-                // Skip empty rows
                 if (empty(array_filter($row))) {
                     continue;
                 }
                 
-                if (count($row) >= 4) { // Ensure minimum required columns
+                if (count($row) >= 4) {
                     $last_name = trim($row[0] ?? '');
                     $first_name = trim($row[1] ?? '');
                     $middle_name = trim($row[2] ?? '');
@@ -91,46 +66,37 @@ class GoogleSheetsIntegration {
                     $student_id = trim($row[4] ?? '');
                     
                     if (empty($last_name) || empty($first_name) || empty($section_code)) {
-                        $errors[] = "Row " . ($rowIndex + 2) . ": Missing required data (Last Name, First Name, or Section)";
+                        $errors[] = "Row " . ($rowIndex + 2) . ": Missing required data";
                         continue;
                     }
                     
-                    // Generate student ID if not provided
                     if (empty($student_id)) {
                         $student_id = $this->generateStudentId($last_name, $first_name);
                     }
                     
                     $full_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
-                    
-                    // Get or create section
                     $section_id = $this->getOrCreateSection($section_code);
                     
                     if ($section_id) {
-                        // Insert or update student
+                        // PostgreSQL UPSERT using ON CONFLICT
                         $stmt = $this->pdo->prepare("
                             INSERT INTO students (student_id, last_name, first_name, middle_name, full_name, section_id) 
                             VALUES (?, ?, ?, ?, ?, ?)
-                            ON DUPLICATE KEY UPDATE 
-                                last_name = VALUES(last_name),
-                                first_name = VALUES(first_name),
-                                middle_name = VALUES(middle_name),
-                                full_name = VALUES(full_name),
-                                section_id = VALUES(section_id)
+                            ON CONFLICT (student_id) DO UPDATE SET 
+                                last_name = EXCLUDED.last_name,
+                                first_name = EXCLUDED.first_name,
+                                middle_name = EXCLUDED.middle_name,
+                                full_name = EXCLUDED.full_name,
+                                section_id = EXCLUDED.section_id
                         ");
                         
                         if ($stmt->execute([$student_id, $last_name, $first_name, $middle_name, $full_name, $section_id])) {
                             $synced_count++;
-                            
-                            // Create user account for student if not exists
                             $this->createStudentUserAccount($student_id, $full_name, $last_name, $first_name);
                         } else {
                             $errors[] = "Row " . ($rowIndex + 2) . ": Failed to save student data";
                         }
-                    } else {
-                        $errors[] = "Row " . ($rowIndex + 2) . ": Could not create section for: $section_code";
                     }
-                } else {
-                    $errors[] = "Row " . ($rowIndex + 2) . ": Insufficient columns (need at least 4)";
                 }
             }
             
@@ -150,7 +116,7 @@ class GoogleSheetsIntegration {
     }
     
     /**
-     * Fetch teachers from Google Sheets and sync with database
+     * Sync teachers from Google Sheets - PostgreSQL compatible
      */
     public function syncTeachers() {
         try {
@@ -164,19 +130,17 @@ class GoogleSheetsIntegration {
                 throw new Exception('No teacher data found in Google Sheets');
             }
             
-            // Skip header row if it exists
             if (!empty($values) && $this->isHeaderRow($values[0], 'teacher')) {
                 array_shift($values);
             }
             
-            // Clear existing teachers first to avoid duplicates
+            // Clear existing teachers
             $this->pdo->exec("DELETE FROM teachers");
             
             $synced_count = 0;
             $errors = [];
             
             foreach ($values as $rowIndex => $row) {
-                // Skip empty rows
                 if (empty(array_filter($row))) {
                     continue;
                 }
@@ -191,13 +155,11 @@ class GoogleSheetsIntegration {
                         continue;
                     }
                     
-                    // Validate department
                     if (!in_array($department, ['SHS', 'COLLEGE', 'BOTH'])) {
-                        $errors[] = "Row " . ($rowIndex + 2) . ": Invalid department '$department' (use SHS, COLLEGE, or BOTH)";
+                        $errors[] = "Row " . ($rowIndex + 2) . ": Invalid department '$department'";
                         continue;
                     }
                     
-                    // Handle teachers who teach both SHS and COLLEGE
                     if ($department === 'BOTH') {
                         // Create entry for SHS
                         $stmt = $this->pdo->prepare("INSERT INTO teachers (name, department, subject) VALUES (?, 'SHS', ?)");
@@ -211,14 +173,11 @@ class GoogleSheetsIntegration {
                             $synced_count++;
                         }
                     } else {
-                        // Single department teacher
                         $stmt = $this->pdo->prepare("INSERT INTO teachers (name, department, subject) VALUES (?, ?, ?)");
                         if ($stmt->execute([$name, $department, $subject])) {
                             $synced_count++;
                         }
                     }
-                } else {
-                    $errors[] = "Row " . ($rowIndex + 2) . ": Insufficient columns (need at least 2)";
                 }
             }
             
@@ -237,9 +196,6 @@ class GoogleSheetsIntegration {
         }
     }
     
-    /**
-     * Get or create section by section code
-     */
     private function getOrCreateSection($section_code) {
         // Check if section exists
         $stmt = $this->pdo->prepare("SELECT id FROM sections WHERE section_code = ?");
@@ -250,22 +206,16 @@ class GoogleSheetsIntegration {
             return $section_id;
         }
         
-        // Create new section based on naming convention
+        // Create new section
         $program = $this->determineProgramFromSectionCode($section_code);
         $year_level = $this->determineYearLevelFromSectionCode($section_code);
         $section_name = $this->generateSectionName($section_code, $program, $year_level);
         
-        $stmt = $this->pdo->prepare("INSERT INTO sections (section_code, section_name, program, year_level) VALUES (?, ?, ?, ?)");
-        if ($stmt->execute([$section_code, $section_name, $program, $year_level])) {
-            return $this->pdo->lastInsertId();
-        }
-        
-        return false;
+        $stmt = $this->pdo->prepare("INSERT INTO sections (section_code, section_name, program, year_level) VALUES (?, ?, ?, ?) RETURNING id");
+        $stmt->execute([$section_code, $section_name, $program, $year_level]);
+        return $stmt->fetchColumn();
     }
     
-    /**
-     * Determine program from section code
-     */
     private function determineProgramFromSectionCode($section_code) {
         $section_upper = strtoupper($section_code);
         
@@ -279,9 +229,6 @@ class GoogleSheetsIntegration {
         return 'SHS';
     }
     
-    /**
-     * Determine year level from section code
-     */
     private function determineYearLevelFromSectionCode($section_code) {
         if (preg_match('/(\d+)/', $section_code, $matches)) {
             $num = intval($matches[1]);
@@ -297,22 +244,14 @@ class GoogleSheetsIntegration {
         return 'Unknown';
     }
     
-    /**
-     * Generate section name from code
-     */
     private function generateSectionName($section_code, $program, $year_level) {
         return $section_code . ' - ' . $program . ' ' . $year_level;
     }
     
-    /**
-     * Generate student ID if not provided
-     */
     private function generateStudentId($last_name, $first_name) {
         $year = date('Y');
-        $clean_lastname = preg_replace('/[^a-zA-Z]/', '', $last_name);
-        $clean_firstname = preg_replace('/[^a-zA-Z]/', '', $first_name);
         
-        // Get count of existing students this year
+        // Get count using PostgreSQL syntax
         $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM students WHERE student_id LIKE ?");
         $stmt->execute([$year . '%']);
         $count = $stmt->fetchColumn() + 1;
@@ -320,16 +259,11 @@ class GoogleSheetsIntegration {
         return $year . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
     
-    /**
-     * Create user account for student
-     */
     private function createStudentUserAccount($student_id, $full_name, $last_name, $first_name) {
-        // Generate username (lastname + first letter of firstname + random number)
         $clean_lastname = preg_replace('/[^a-zA-Z0-9]/', '', $last_name);
         $clean_firstname = preg_replace('/[^a-zA-Z0-9]/', '', $first_name);
         $base_username = strtolower($clean_lastname . substr($clean_firstname, 0, 1));
         
-        // Make username unique
         $username = $base_username;
         $counter = 1;
         while ($this->usernameExists($username)) {
@@ -337,7 +271,7 @@ class GoogleSheetsIntegration {
             $counter++;
         }
         
-        // Check if user already exists for this student
+        // Check if user already exists using PostgreSQL JOIN
         $check_stmt = $this->pdo->prepare("
             SELECT u.id FROM users u 
             JOIN students s ON u.student_table_id = s.id 
@@ -345,10 +279,9 @@ class GoogleSheetsIntegration {
         ");
         $check_stmt->execute([$student_id]);
         
-        if ($check_stmt->fetchColumn() == 0) {
+        if (!$check_stmt->fetchColumn()) {
             $default_password = password_hash('pass123', PASSWORD_DEFAULT);
             
-            // Get the student's database ID
             $student_stmt = $this->pdo->prepare("SELECT id FROM students WHERE student_id = ?");
             $student_stmt->execute([$student_id]);
             $student_table_id = $student_stmt->fetchColumn();
@@ -363,18 +296,12 @@ class GoogleSheetsIntegration {
         }
     }
     
-    /**
-     * Check if username exists
-     */
     private function usernameExists($username) {
         $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
         $stmt->execute([$username]);
         return $stmt->fetchColumn() > 0;
     }
     
-    /**
-     * Check if row is a header row
-     */
     private function isHeaderRow($row, $type = 'student') {
         if ($type === 'student') {
             return stripos($row[0] ?? '', 'last') !== false || 
@@ -386,9 +313,6 @@ class GoogleSheetsIntegration {
         }
     }
     
-    /**
-     * Sync both students and teachers
-     */
     public function syncAll() {
         $students_result = $this->syncStudents();
         $teachers_result = $this->syncTeachers();
@@ -399,3 +323,4 @@ class GoogleSheetsIntegration {
         ];
     }
 }
+?>
