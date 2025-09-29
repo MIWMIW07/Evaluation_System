@@ -407,21 +407,20 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
         }
         
         async function loadSystemStats() {
-            const data = await makeApiCall('get_stats');
-            
-            if (data.success) {
-                document.getElementById('systemStats').innerHTML = `
-                    <p>📊 Evaluations: ${data.evaluations}</p>
-                    <p>⭐ Average Rating: ${data.avg_rating}/5.0</p>
-                    <p>👥 Students: ${data.students}</p>
-                    <p>👨‍🏫 Teachers: ${data.teachers}</p>
-                    <p>📈 Completion Rate: ${data.completion_rate}%</p>
-                    <p>💾 Database Size: ${data.db_size}</p>
-                `;
-            } else {
-                showResult('systemStats', data);
-            }
-        }
+    const data = await makeApiCall('get_stats');
+    
+    if (data.success) {
+        document.getElementById('systemStats').innerHTML = `
+            <p>📊 Evaluations: ${data.evaluations}</p>
+            <p>⭐ Average Rating: ${data.avg_rating}/5.0</p>
+            <p>👨‍🏫 Teacher Assignments: ${data.teacher_assignments}</p>
+            <p>📈 Completion Rate: ${data.completion_rate}%</p>
+            <p>🔗 System: Hybrid (Google Sheets + PostgreSQL)</p>
+        `;
+    } else {
+        showResult('systemStats', data);
+    }
+}
         
         async function loadActivityLog() {
             const data = await makeApiCall('get_activity_log');
