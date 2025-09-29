@@ -317,7 +317,8 @@ function generateGoogleDriveReports($pdo) {
             ];
         }
         
-        $result = generateReportsToGoogleDrive();
+        // Pass the PDO connection to the function
+        $result = generateReportsToGoogleDrive($pdo);
         return $result;
         
     } catch (Exception $e) {
@@ -343,26 +344,43 @@ function getSystemStatistics($pdo) {
             'db_size' => 'Unknown'
         ];
         
-        // Get counts
-        $stmt = $pdo->query('SELECT COUNT(*) FROM evaluations');
-        $stats['evaluations'] = $stmt->fetchColumn();
+        // Get counts with error handling for missing tables
+        try {
+            $stmt = $pdo->query('SELECT COUNT(*) FROM evaluations');
+            $stats['evaluations'] = $stmt->fetchColumn();
+        } catch (Exception $e) {
+            // Table doesn't exist yet
+            $stats['evaluations'] = 0;
+        }
         
-        $stmt = $pdo->query('SELECT COUNT(*) FROM students');
-        $stats['students'] = $stmt->fetchColumn();
+        try {
+            $stmt = $pdo->query('SELECT COUNT(*) FROM students');
+            $stats['students'] = $stmt->fetchColumn();
+        } catch (Exception $e) {
+            $stats['students'] = 0;
+        }
         
-        $stmt = $pdo->query('SELECT COUNT(*) FROM teachers');
-        $stats['teachers'] = $stmt->fetchColumn();
+        try {
+            $stmt = $pdo->query('SELECT COUNT(*) FROM teachers');
+            $stats['teachers'] = $stmt->fetchColumn();
+        } catch (Exception $e) {
+            $stats['teachers'] = 0;
+        }
         
         // Get average rating
-        $stmt = $pdo->query('
-            SELECT AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
-                       q2_1 + q2_2 + q2_3 + q2_4 + 
-                       q3_1 + q3_2 + q3_3 + q3_4 + 
-                       q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) as avg_rating
-            FROM evaluations
-        ');
-        $avg = $stmt->fetchColumn();
-        $stats['avg_rating'] = $avg ? number_format($avg, 2) : '0.00';
+        try {
+            $stmt = $pdo->query('
+                SELECT AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
+                           q2_1 + q2_2 + q2_3 + q2_4 + 
+                           q3_1 + q3_2 + q3_3 + q3_4 + 
+                           q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) as avg_rating
+                FROM evaluations
+            ');
+            $avg = $stmt->fetchColumn();
+            $stats['avg_rating'] = $avg ? number_format($avg, 2) : '0.00';
+        } catch (Exception $e) {
+            $stats['avg_rating'] = '0.00';
+        }
         
         // Calculate completion rate (simple version)
         if ($stats['students'] > 0 && $stats['teachers'] > 0) {
@@ -426,7 +444,8 @@ function createDatabaseBackup($pdo) {
         
         foreach ($tables as $table) {
             try {
-                $stmt = $pdo->query("SELECT COUNT(*) FROM `$table`");
+                // Remove backticks for PostgreSQL compatibility
+                $stmt = $pdo->query("SELECT COUNT(*) FROM $table");
                 $count = $stmt->fetchColumn();
                 $backup_content .= "-- Table: $table ($count records)\n";
             } catch (Exception $e) {
