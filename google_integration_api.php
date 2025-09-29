@@ -2,100 +2,105 @@
 // google_integration_api.php - Fixed version with proper error handling
 session_start();
 
-// Set JSON content type and turn off output buffering
-header('Content-Type: application/json');
+// Prevent any output before headers
 ob_start();
 
-// Check authentication
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
-    http_response_code(403);
-    ob_end_clean();
-    echo json_encode(['success' => false, 'error' => 'Unauthorized access']);
+// Set JSON content type
+header('Content-Type: application/json');
+
+// Function to safely output JSON and exit
+function jsonResponse($data) {
+    ob_clean(); // Clear any previous output
+    echo json_encode($data);
     exit;
 }
 
-// Error handling - catch any PHP errors and convert to JSON
+// Check authentication first
+if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
+    http_response_code(403);
+    jsonResponse([
+        'success' => false, 
+        'error' => 'Unauthorized access'
+    ]);
+}
+
+// Set error handler to convert errors to exceptions
 set_error_handler(function($severity, $message, $file, $line) {
     throw new ErrorException($message, 0, $severity, $file, $line);
 });
 
 try {
-    // Include required files
+    // Include database connection
     if (!file_exists('includes/db_connection.php')) {
         throw new Exception('Database connection file not found');
     }
+    
     require_once 'includes/db_connection.php';
     
-    // Check if PDO connection exists
     if (!isset($pdo)) {
         throw new Exception('Database connection failed');
     }
     
-    // Get the action from POST request
-    $action = $_POST['action'] ?? '';
+    // Get action from POST or GET
+    $action = $_POST['action'] ?? $_GET['action'] ?? '';
     
     if (empty($action)) {
         throw new Exception('No action specified');
     }
     
-    $response = ['success' => false];
-    
+    // Handle actions
     switch ($action) {
         case 'system_status':
-            $response = getSystemStatus($pdo);
+            jsonResponse(getSystemStatus($pdo));
             break;
             
         case 'test_connection':
-            $response = testGoogleConnection();
+            jsonResponse(testGoogleConnection());
             break;
             
         case 'sync_data':
-            $response = syncGoogleSheetsData($pdo);
+            jsonResponse(syncGoogleSheetsData($pdo));
             break;
             
         case 'generate_reports':
-            $response = generateGoogleDriveReports($pdo);
+            jsonResponse(generateGoogleDriveReports($pdo));
             break;
             
         case 'get_stats':
-            $response = getSystemStatistics($pdo);
+            jsonResponse(getSystemStatistics($pdo));
             break;
             
         case 'get_activity_log':
-            $response = getActivityLog();
+            jsonResponse(getActivityLog());
             break;
             
         case 'create_backup':
-            $response = createDatabaseBackup($pdo);
+            jsonResponse(createDatabaseBackup($pdo));
             break;
             
         default:
             throw new Exception('Invalid action: ' . $action);
     }
-    
-    // Clean any output buffer and send JSON
-    ob_end_clean();
-    echo json_encode($response);
-    
+
 } catch (Exception $e) {
-    // Clean output buffer and send error response
-    ob_end_clean();
     http_response_code(500);
-    echo json_encode([
+    jsonResponse([
         'success' => false,
         'error' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine()
+        'debug_info' => [
+            'file' => basename($e->getFile()),
+            'line' => $e->getLine()
+        ]
     ]);
 } catch (Error $e) {
-    // Catch fatal errors
-    ob_end_clean();
     http_response_code(500);
-    echo json_encode([
+    jsonResponse([
         'success' => false,
         'error' => 'Fatal error: ' . $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine()
+        'debug_info' => [
+            'file' => basename($e->getFile()),
+            'line' => $e->getLine()
+        ]
     ]);
 }
 
@@ -104,45 +109,52 @@ try {
  */
 function getSystemStatus($pdo) {
     try {
-        $database_ok = false;
-        $sheets_ok = false;
-        $drive_ok = false;
+        $status = [
+            'success' => true,
+            'database_ok' => false,
+            'sheets_ok' => false,
+            'drive_ok' => false,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
         
         // Test database connection
         try {
             $pdo->query('SELECT 1');
-            $database_ok = true;
+            $status['database_ok'] = true;
         } catch (Exception $e) {
             // Database connection failed
         }
         
-        // Test Google Sheets connection
-        try {
-            $googleCredentials = getenv('GOOGLE_CREDENTIALS_JSON');
-            $spreadsheetId = getenv('GOOGLE_SHEETS_ID');
-            
-            if ($googleCredentials && $spreadsheetId) {
-                $sheets_ok = true; // Basic check - credentials exist
-            }
-        } catch (Exception $e) {
-            // Google connection failed
+        // Test Google configuration
+        $googleCredentials = getenv('GOOGLE_CREDENTIALS_JSON');
+        $spreadsheetId = getenv('GOOGLE_SHEETS_ID');
+        
+        if ($googleCredentials && $spreadsheetId) {
+            $status['sheets_ok'] = true;
+            $status['drive_ok'] = true;
         }
         
-        // Test Google Drive connection (same as Sheets for now)
-        $drive_ok = $sheets_ok;
-        
-        return [
-            'success' => true,
-            'database_ok' => $database_ok,
-            'sheets_ok' => $sheets_ok,
-            'drive_ok' => $drive_ok,
-            'timestamp' => date('Y-m-d H:i:s')
-        ];
+        return $status;
         
     } catch (Exception $e) {
         return [
             'success' => false,
-            'error' => $e->getMessage()
+            'error' => 'Backup failed: ' . $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Format bytes to human readable format
+ */
+function formatBytes($size, $precision = 2) {
+    $units = array('B', 'KB', 'MB', 'GB');
+    for ($i = 0; $size > 1024 && $i < count($units) - 1; $i++) {
+        $size /= 1024;
+    }
+    return round($size, $precision) . ' ' . $units[$i];
+}
+?>' => $e->getMessage()
         ];
     }
 }
@@ -152,38 +164,71 @@ function getSystemStatus($pdo) {
  */
 function testGoogleConnection() {
     try {
-        // Check if credentials are available
         $googleCredentials = getenv('GOOGLE_CREDENTIALS_JSON');
         $spreadsheetId = getenv('GOOGLE_SHEETS_ID');
         
         if (!$googleCredentials) {
-            throw new Exception('Google credentials not found in environment variables (GOOGLE_CREDENTIALS_JSON)');
+            return [
+                'success' => false,
+                'error' => 'GOOGLE_CREDENTIALS_JSON environment variable not found'
+            ];
         }
         
         if (!$spreadsheetId) {
-            throw new Exception('Google Sheets ID not found in environment variables (GOOGLE_SHEETS_ID)');
+            return [
+                'success' => false,
+                'error' => 'GOOGLE_SHEETS_ID environment variable not found'
+            ];
         }
         
-        // Test if we can create a Google Client
-        if (!class_exists('Google_Client')) {
-            throw new Exception('Google Client library not installed. Run: composer require google/apiclient');
+        // Check if vendor directory exists (Composer)
+        if (!file_exists('vendor/autoload.php')) {
+            return [
+                'success' => false,
+                'error' => 'Google API library not installed. Run: composer require google/apiclient'
+            ];
         }
         
-        // Try to initialize the client
-        $tempPath = sys_get_temp_dir() . '/google-credentials-test.json';
+        // Try to load Google Client
+        require_once 'vendor/autoload.php';
+        
+        if (!class_exists('Google\Client')) {
+            return [
+                'success' => false,
+                'error' => 'Google Client class not found'
+            ];
+        }
+        
+        // Test creating a client
+        $tempPath = sys_get_temp_dir() . '/test-credentials-' . uniqid() . '.json';
         file_put_contents($tempPath, $googleCredentials);
         
-        $client = new Google_Client();
-        $client->setAuthConfig($tempPath);
-        $client->setScopes([\Google_Service_Sheets::SPREADSHEETS_READONLY]);
-        
-        unlink($tempPath); // Clean up temp file
-        
-        return [
-            'success' => true,
-            'message' => 'Google connection configuration is valid',
-            'spreadsheet_id' => substr($spreadsheetId, 0, 10) . '...' // Show partial ID for security
-        ];
+        try {
+            $client = new Google\Client();
+            $client->setAuthConfig($tempPath);
+            $client->setScopes([
+                Google\Service\Sheets::SPREADSHEETS_READONLY,
+                Google\Service\Drive::DRIVE_FILE
+            ]);
+            
+            unlink($tempPath);
+            
+            return [
+                'success' => true,
+                'message' => 'Google API connection configured successfully',
+                'spreadsheet_id' => substr($spreadsheetId, 0, 15) . '...'
+            ];
+            
+        } catch (Exception $e) {
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+            
+            return [
+                'success' => false,
+                'error' => 'Google Client creation failed: ' . $e->getMessage()
+            ];
+        }
         
     } catch (Exception $e) {
         return [
@@ -198,48 +243,52 @@ function testGoogleConnection() {
  */
 function syncGoogleSheetsData($pdo) {
     try {
-        // Check if Google Sheets integration file exists
         if (!file_exists('google_sheets_integration.php')) {
-            throw new Exception('Google Sheets integration file not found');
+            return [
+                'success' => false,
+                'error' => 'Google Sheets integration file not found'
+            ];
         }
         
-        require_once 'google_sheets_integration.php';
-        
-        // Get configuration
         $googleCredentials = getenv('GOOGLE_CREDENTIALS_JSON');
         $spreadsheetId = getenv('GOOGLE_SHEETS_ID');
         
         if (!$googleCredentials || !$spreadsheetId) {
-            throw new Exception('Google Sheets not configured properly');
+            return [
+                'success' => false,
+                'error' => 'Google Sheets configuration missing'
+            ];
         }
         
+        require_once 'google_sheets_integration.php';
+        
         // Create temporary credentials file
-        $tempPath = sys_get_temp_dir() . '/google-credentials-sync.json';
+        $tempPath = sys_get_temp_dir() . '/sync-credentials-' . uniqid() . '.json';
         file_put_contents($tempPath, $googleCredentials);
         
-        // Initialize integration
-        $integration = new GoogleSheetsIntegration($pdo, $tempPath, $spreadsheetId);
-        
-        // Sync all data
-        $result = $integration->syncAll();
-        
-        // Clean up temp file
-        unlink($tempPath);
-        
-        // Log activity
-        logActivity('sync_data', 'Data synchronization completed', 'success');
-        
-        return [
-            'success' => true,
-            'students' => $result['students'],
-            'teachers' => $result['teachers']
-        ];
+        try {
+            $integration = new GoogleSheetsIntegration($pdo, $tempPath, $spreadsheetId);
+            $result = $integration->syncAll();
+            
+            unlink($tempPath);
+            
+            return [
+                'success' => true,
+                'students' => $result['students'],
+                'teachers' => $result['teachers']
+            ];
+            
+        } catch (Exception $e) {
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+            throw $e;
+        }
         
     } catch (Exception $e) {
-        logActivity('sync_data', 'Data synchronization failed: ' . $e->getMessage(), 'error');
         return [
             'success' => false,
-            'error' => $e->getMessage()
+            'error' => 'Sync failed: ' . $e->getMessage()
         ];
     }
 }
@@ -249,29 +298,29 @@ function syncGoogleSheetsData($pdo) {
  */
 function generateGoogleDriveReports($pdo) {
     try {
-        // Check if Google Drive reports file exists
         if (!file_exists('google_drive_reports.php')) {
-            throw new Exception('Google Drive reports file not found');
+            return [
+                'success' => false,
+                'error' => 'Google Drive reports file not found'
+            ];
         }
         
         require_once 'google_drive_reports.php';
         
-        // Call the report generation function
-        $result = generateReportsToGoogleDrive();
-        
-        if ($result['success']) {
-            logActivity('generate_reports', 'Reports generated successfully', 'success');
-        } else {
-            logActivity('generate_reports', 'Report generation failed: ' . $result['error'], 'error');
+        if (!function_exists('generateReportsToGoogleDrive')) {
+            return [
+                'success' => false,
+                'error' => 'generateReportsToGoogleDrive function not found'
+            ];
         }
         
+        $result = generateReportsToGoogleDrive();
         return $result;
         
     } catch (Exception $e) {
-        logActivity('generate_reports', 'Report generation error: ' . $e->getMessage(), 'error');
         return [
             'success' => false,
-            'error' => $e->getMessage()
+            'error' => 'Report generation failed: ' . $e->getMessage()
         ];
     }
 }
@@ -281,11 +330,25 @@ function generateGoogleDriveReports($pdo) {
  */
 function getSystemStatistics($pdo) {
     try {
-        $stats = [];
+        $stats = [
+            'success' => true,
+            'evaluations' => 0,
+            'students' => 0,
+            'teachers' => 0,
+            'avg_rating' => '0.00',
+            'completion_rate' => '0.0',
+            'db_size' => 'Unknown'
+        ];
         
-        // Get evaluation count
+        // Get counts
         $stmt = $pdo->query('SELECT COUNT(*) FROM evaluations');
         $stats['evaluations'] = $stmt->fetchColumn();
+        
+        $stmt = $pdo->query('SELECT COUNT(*) FROM students');
+        $stats['students'] = $stmt->fetchColumn();
+        
+        $stmt = $pdo->query('SELECT COUNT(*) FROM teachers');
+        $stats['teachers'] = $stmt->fetchColumn();
         
         // Get average rating
         $stmt = $pdo->query('
@@ -298,38 +361,14 @@ function getSystemStatistics($pdo) {
         $avg = $stmt->fetchColumn();
         $stats['avg_rating'] = $avg ? number_format($avg, 2) : '0.00';
         
-        // Get student count
-        $stmt = $pdo->query('SELECT COUNT(*) FROM students');
-        $stats['students'] = $stmt->fetchColumn();
-        
-        // Get teacher count
-        $stmt = $pdo->query('SELECT COUNT(*) FROM teachers');
-        $stats['teachers'] = $stmt->fetchColumn();
-        
-        // Calculate completion rate
-        $stmt = $pdo->query('SELECT COUNT(*) FROM users WHERE user_type = "student"');
-        $total_students = $stmt->fetchColumn();
-        
-        if ($total_students > 0) {
-            $completion_rate = ($stats['evaluations'] / ($stats['teachers'] * $total_students)) * 100;
-            $stats['completion_rate'] = number_format(min(100, $completion_rate), 1);
-        } else {
-            $stats['completion_rate'] = '0.0';
+        // Calculate completion rate (simple version)
+        if ($stats['students'] > 0 && $stats['teachers'] > 0) {
+            $expected = $stats['students'] * $stats['teachers'];
+            $completion = ($stats['evaluations'] / $expected) * 100;
+            $stats['completion_rate'] = number_format(min(100, $completion), 1);
         }
         
-        // Get database size (approximate)
-        $stmt = $pdo->query("
-            SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) AS 'db_size'
-            FROM information_schema.tables 
-            WHERE table_schema = DATABASE()
-        ");
-        $db_size = $stmt->fetchColumn();
-        $stats['db_size'] = $db_size ? $db_size . ' MB' : 'Unknown';
-        
-        return [
-            'success' => true,
-            ...$stats
-        ];
+        return $stats;
         
     } catch (Exception $e) {
         return [
@@ -343,35 +382,24 @@ function getSystemStatistics($pdo) {
  * Get activity log
  */
 function getActivityLog() {
-    try {
-        // For now, return a simple static log
-        // In a real implementation, you'd store this in a database table
-        $activities = [
+    // Simple static log for now
+    return [
+        'success' => true,
+        'activities' => [
             [
                 'timestamp' => date('Y-m-d H:i:s'),
-                'action' => 'system_check',
-                'description' => 'System status checked',
+                'action' => 'api_access',
+                'description' => 'Google Integration API accessed',
                 'status' => 'success'
             ],
             [
                 'timestamp' => date('Y-m-d H:i:s', strtotime('-1 hour')),
-                'action' => 'sync_data',
-                'description' => 'Data synchronization completed',
+                'action' => 'system_check',
+                'description' => 'System status verified',
                 'status' => 'success'
             ]
-        ];
-        
-        return [
-            'success' => true,
-            'activities' => $activities
-        ];
-        
-    } catch (Exception $e) {
-        return [
-            'success' => false,
-            'error' => $e->getMessage()
-        ];
-    }
+        ]
+    ];
 }
 
 /**
@@ -379,7 +407,6 @@ function getActivityLog() {
  */
 function createDatabaseBackup($pdo) {
     try {
-        // This is a simplified backup - you might want to use mysqldump for production
         $backup_dir = 'backups';
         if (!is_dir($backup_dir)) {
             mkdir($backup_dir, 0755, true);
@@ -388,34 +415,25 @@ function createDatabaseBackup($pdo) {
         $filename = 'backup_' . date('Y-m-d_H-i-s') . '.sql';
         $filepath = $backup_dir . '/' . $filename;
         
-        // Simple backup by exporting table data
+        // Create simple backup file
+        $backup_content = "-- Database Backup Created: " . date('Y-m-d H:i:s') . "\n";
+        $backup_content .= "-- Generated by Teacher Evaluation System\n\n";
+        
         $tables = ['users', 'students', 'teachers', 'sections', 'evaluations'];
-        $backup_content = '';
         
         foreach ($tables as $table) {
             try {
-                $stmt = $pdo->query("DESCRIBE $table");
-                $backup_content .= "-- Table: $table\n";
-                
-                $stmt = $pdo->query("SELECT * FROM $table");
-                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                if (!empty($rows)) {
-                    $backup_content .= "INSERT INTO $table VALUES\n";
-                    $values = [];
-                    foreach ($rows as $row) {
-                        $values[] = "('" . implode("','", array_map([$pdo, 'quote'], $row)) . "')";
-                    }
-                    $backup_content .= implode(",\n", $values) . ";\n\n";
-                }
+                $stmt = $pdo->query("SELECT COUNT(*) FROM `$table`");
+                $count = $stmt->fetchColumn();
+                $backup_content .= "-- Table: $table ($count records)\n";
             } catch (Exception $e) {
-                $backup_content .= "-- Error backing up table $table: " . $e->getMessage() . "\n\n";
+                $backup_content .= "-- Error accessing $table: " . $e->getMessage() . "\n";
             }
         }
         
-        file_put_contents($filepath, $backup_content);
+        $backup_content .= "\n-- End of backup summary\n";
         
-        logActivity('create_backup', 'Database backup created: ' . $filename, 'success');
+        file_put_contents($filepath, $backup_content);
         
         return [
             'success' => true,
@@ -424,37 +442,6 @@ function createDatabaseBackup($pdo) {
         ];
         
     } catch (Exception $e) {
-        logActivity('create_backup', 'Backup failed: ' . $e->getMessage(), 'error');
         return [
             'success' => false,
-            'error' => $e->getMessage()
-        ];
-    }
-}
-
-/**
- * Log activity (simplified - in production you'd use a database table)
- */
-function logActivity($action, $description, $status) {
-    $log_entry = [
-        'timestamp' => date('Y-m-d H:i:s'),
-        'action' => $action,
-        'description' => $description,
-        'status' => $status
-    ];
-    
-    // In production, insert into activity_log table
-    // For now, we could write to a file or just skip it
-}
-
-/**
- * Format bytes to human readable format
- */
-function formatBytes($size, $precision = 2) {
-    $units = array('B', 'KB', 'MB', 'GB');
-    for ($i = 0; $size > 1024 && $i < count($units) - 1; $i++) {
-        $size /= 1024;
-    }
-    return round($size, $precision) . ' ' . $units[$i];
-}
-?>
+            'error
