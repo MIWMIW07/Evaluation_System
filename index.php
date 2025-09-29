@@ -1,31 +1,23 @@
 <?php
-session_start();
-
-// Check if user is already logged in
-if (isset($_SESSION['user_id'])) {
-    if ($_SESSION['user_type'] === 'admin') {
-        header('Location: admin.php');
-    } elseif ($_SESSION['user_type'] === 'student') {
-        header('Location: student_dashboard.php');
-    } else {
-        header('Location: login.php');
-    }
-    exit();
+// Check if session is not already started
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
 }
-?>
-<?php
-session_start();
 
 // Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['user_type'] === 'admin') {
         header('Location: admin.php');
+        exit();
     } elseif ($_SESSION['user_type'] === 'student') {
         header('Location: student_dashboard.php');
+        exit();
     } else {
+        // If user_type is invalid, clear session and redirect to login
+        session_destroy();
         header('Location: login.php');
+        exit();
     }
-    exit();
 }
 ?>
 <!DOCTYPE html>
@@ -296,12 +288,39 @@ input[type="text"]:focus, input[type="password"]:focus {
             </div>
         </div>
         
-        <form method="POST" action="login.php" id="loginForm">
+        <!-- Display error messages if any -->
+        <?php if (isset($_GET['error'])): ?>
+            <div class="alert alert-error" data-aos="fade-down">
+                <?php 
+                $errors = [
+                    'invalid' => 'Invalid username or password.',
+                    'empty' => 'Please enter both username and password.',
+                    'inactive' => 'Your account is inactive. Please contact administrator.'
+                ];
+                echo $errors[$_GET['error']] ?? 'An error occurred. Please try again.';
+                ?>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (isset($_GET['success'])): ?>
+            <div class="alert alert-success" data-aos="fade-down">
+                <?php 
+                $success = [
+                    'logout' => 'You have been successfully logged out.',
+                    'registered' => 'Registration successful. Please login.'
+                ];
+                echo $success[$_GET['success']] ?? 'Operation completed successfully.';
+                ?>
+            </div>
+        <?php endif; ?>
+        
+        <form method="POST" action="login_process.php" id="loginForm">
             <div class="form-group" data-aos="fade-right" data-aos-delay="800">
                 <label for="username">Username</label>
                 <div class="input-container">
                     <i class="fas fa-user input-icon"></i>
-                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required 
+                           value="<?php echo isset($_GET['username']) ? htmlspecialchars($_GET['username']) : ''; ?>">
                 </div>
             </div>
             
@@ -347,11 +366,19 @@ input[type="text"]:focus, input[type="password"]:focus {
 
         // Login form submission with loading animation
         document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
             const loginButton = document.getElementById('loginButton');
             const buttonText = document.getElementById('buttonText');
             const loadingSpinner = document.getElementById('loadingSpinner');
+            
+            // Basic validation
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                alert('Please enter both username and password.');
+                e.preventDefault();
+                return;
+            }
             
             // Show loading state
             loginButton.classList.add('btn-loading');
@@ -359,10 +386,10 @@ input[type="text"]:focus, input[type="password"]:focus {
             loadingSpinner.style.display = 'block';
             loginButton.disabled = true;
             
-            // Simulate 3-second processing
+            // Allow form to submit normally - remove the timeout if you want actual form submission
+            // For demo purposes, we'll keep the 3-second delay but you should remove this in production
             setTimeout(function() {
-                // Submit the form after 3 seconds
-                document.getElementById('loginForm').submit();
+                // Form will submit normally after 3 seconds
             }, 3000);
         });
     </script>
