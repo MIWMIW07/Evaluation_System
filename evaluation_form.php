@@ -19,10 +19,9 @@ $existing_evaluation = null;
 
 // Get teacher name and subject from URL parameters
 $teacher_name = isset($_GET['teacher']) ? trim($_GET['teacher']) : '';
-$subject = isset($_GET['subject']) ? trim($_GET['subject']) : '';
 
 // Validate parameters
-if (empty($teacher_name) || empty($subject)) {
+if (empty($teacher_name) {
     $error = "Missing teacher information. Please select a teacher from your dashboard.";
 } else {
     try {
@@ -35,11 +34,11 @@ if (empty($teacher_name) || empty($subject)) {
 
         // Verify this teacher assignment exists for this student's section
         $stmt = $pdo->prepare("
-            SELECT teacher_name, subject, section, program 
+            SELECT teacher_name, section, program 
             FROM teacher_assignments 
-            WHERE teacher_name = ? AND subject = ? AND section = ? AND program = ? AND is_active = true
+            WHERE teacher_name = ? AND section = ? AND program = ? AND is_active = true
         ");
-        $stmt->execute([$teacher_name, $subject, $student_section, $student_program]);
+        $stmt->execute([$teacher_name, $student_section, $student_program]);
         $teacher_assignment = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$teacher_assignment) {
@@ -48,7 +47,6 @@ if (empty($teacher_name) || empty($subject)) {
             // Create teacher_info structure for compatibility with existing code
             $teacher_info = [
                 'name' => $teacher_name,
-                'subject' => $subject,
                 'department' => $student_program,
                 'display_department' => $student_program === 'COLLEGE' ? 'College Department' : 'Senior High School Department'
             ];
@@ -56,9 +54,9 @@ if (empty($teacher_name) || empty($subject)) {
             // Check if student has already evaluated this teacher for this subject
             $check_stmt = $pdo->prepare("
                 SELECT * FROM evaluations 
-                WHERE student_username = ? AND teacher_name = ? AND subject = ? AND section = ?
+                WHERE student_username = ? AND teacher_name = ? AND section = ?
             ");
-            $check_stmt->execute([$student_username, $teacher_name, $subject, $student_section]);
+            $check_stmt->execute([$student_username, $teacher_name, $student_section]);
             $existing_evaluation = $check_stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($existing_evaluation) {
@@ -128,7 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode && $teacher_info) {
 
         // Insert evaluation using the updated table structure
         $insert_sql = "INSERT INTO evaluations (
-            student_username, student_name, teacher_name, section, program, subject,
+            student_username, student_name, teacher_name, section, program,
             q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
             q2_1, q2_2, q2_3, q2_4,
             q3_1, q3_2, q3_3, q3_4,
@@ -142,7 +140,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode && $teacher_info) {
             $teacher_name,
             $_SESSION['section'] ?? '',
             $_SESSION['program'] ?? '',
-            $subject,
             $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
             $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
             $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
@@ -158,9 +155,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode && $teacher_info) {
             // Reload to show in view mode
             $check_stmt = $pdo->prepare("
                 SELECT * FROM evaluations 
-                WHERE student_username = ? AND teacher_name = ? AND subject = ? AND section = ?
+                WHERE student_username = ? AND teacher_name =  ? AND section = ?
             ");
-            $check_stmt->execute([$student_username, $teacher_name, $subject, $student_section]);
+            $check_stmt->execute([$student_username, $teacher_name, $student_section]);
             $existing_evaluation = $check_stmt->fetch(PDO::FETCH_ASSOC);
             $is_view_mode = true;
         } else {
