@@ -28,50 +28,55 @@ $student_program = $_SESSION['program'] ?? 'Not Set';
 $student_section = $_SESSION['section'] ?? 'Not Set';
 $student_id = $_SESSION['student_id'];
 
-// Fetch available programs and sections from teacher_assignments table
-$available_programs = [];
-try {
-    $stmt = $pdo->query("
-        SELECT DISTINCT program, section 
-        FROM teacher_assignments 
-        WHERE is_active = true 
-        ORDER BY program, section
-    ");
-    $sections_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Handle section change
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_section'])) {
+    $new_section = trim($_POST['new_section']);
     
-    // Organize by program
-    foreach ($sections_result as $row) {
-        $program_display = ($row['program'] === 'COLLEGE') ? 'College' : 'Senior High';
-        if (!isset($available_programs[$program_display])) {
-            $available_programs[$program_display] = [];
+    if (!empty($new_section)) {
+        // Validate that the section exists for this student's program
+        try {
+            $stmt = $pdo->prepare("
+                SELECT DISTINCT section 
+                FROM teacher_assignments 
+                WHERE program = ? AND section = ? AND is_active = true
+                LIMIT 1
+            ");
+            $stmt->execute([$student_program, $new_section]);
+            $valid_section = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($valid_section) {
+                $_SESSION['section'] = $new_section;
+                $student_section = $new_section;
+                $success = "Section successfully changed to $new_section";
+                
+                // Clear evaluated teachers cache since section changed
+                $evaluated_teachers = [];
+            } else {
+                $error = "Section '$new_section' is not available for your program ($student_program)";
+            }
+        } catch (Exception $e) {
+            $error = "Error validating section: " . $e->getMessage();
         }
-        $available_programs[$program_display][] = $row['section'];
+    } else {
+        $error = "Please enter a section";
     }
-} catch (Exception $e) {
-    $error = "Could not load available sections: " . $e->getMessage();
-    $available_programs = [];
 }
 
-// Handle section change form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_section'])) {
-    $new_program = $_POST['program'] ?? '';
-    $new_section = $_POST['section'] ?? '';
-    
-    if (!empty($new_program) && !empty($new_section)) {
-        // Update session variables
-        $_SESSION['program'] = $new_program;
-        $_SESSION['section'] = $new_section;
-        
-        // Update local variables
-        $student_program = $new_program;
-        $student_section = $new_section;
-        
-        $success = "Section updated successfully to $new_program - $new_section";
-        
-        // Clear evaluated teachers cache since section changed
-        $evaluated_teachers = [];
-    } else {
-        $error = "Please select both program and section";
+// Get available sections for this student's program
+$available_sections = [];
+if ($student_program !== 'Not Set') {
+    try {
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT section 
+            FROM teacher_assignments 
+            WHERE program = ? AND is_active = true 
+            ORDER BY section
+        ");
+        $stmt->execute([$student_program]);
+        $available_sections = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (Exception $e) {
+        // Table might not exist yet or other error
+        $available_sections = [];
     }
 }
 
@@ -101,16 +106,13 @@ try {
 // Get available teachers from teacher_assignments table
 if ($student_section !== 'Not Set' && $student_program !== 'Not Set') {
     try {
-        // Convert display program back to database format
-        $db_program = ($student_program === 'College') ? 'COLLEGE' : 'SHS';
-        
         $stmt = $pdo->prepare("
             SELECT teacher_name, subject, program, section
             FROM teacher_assignments 
             WHERE section = ? AND program = ? AND is_active = true
             ORDER BY teacher_name, subject
         ");
-        $stmt->execute([$student_section, $db_program]);
+        $stmt->execute([$student_section, $student_program]);
         $teachers_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         $error = "Could not load teachers: " . $e->getMessage();
@@ -232,35 +234,30 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         /* Change Section Styles */
         .change-section {
             background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
-            padding: 25px;
+            padding: 20px;
             border-radius: 10px;
             margin-bottom: 30px;
             border-left: 5px solid #800000;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         
         .change-section h3 {
             color: #800000;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
         
-        .change-section h3::before {
-            content: '🔄';
-            font-size: 1.2em;
-        }
-        
-        .section-form {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            align-items: end;
+        .change-section-form {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
         }
         
         .form-group {
-            margin-bottom: 0;
+            flex: 1;
+            min-width: 200px;
         }
         
         .form-group label {
@@ -275,7 +272,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             padding: 12px 15px;
             border: 2px solid #D4AF37;
             border-radius: 8px;
-            background: #FFF;
+            background: #fff;
             color: #500000;
             font-size: 1em;
             transition: all 0.3s ease;
@@ -301,6 +298,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             cursor: pointer;
             text-align: center;
             font-size: 0.95em;
+            white-space: nowrap;
         }
 
         .btn:hover {
@@ -318,6 +316,11 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         .btn-secondary:hover {
             background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
             color: #500000;
+        }
+        
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9em;
         }
         
         .stats-container {
@@ -601,36 +604,23 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             }
         }
 
-        @media (max-width: 480px) {
-            .container {
-                padding: 15px;
-            }
-
-            .header h1 {
-                font-size: 1.5em;
-            }
-
-            .info-grid,
-            .stats-container,
-            .teachers-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .btn, .logout-btn {
-                width: 100%;
-                font-size: 0.9em;
-                padding: 12px;
-            }
-            
-            .section-form {
-                grid-template-columns: 1fr;
-            }
-        }
-        
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
                 padding: 20px;
+            }
+            
+            .change-section-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .form-group {
+                min-width: 100%;
+            }
+            
+            .btn {
+                width: 100%;
             }
             
             .stats-container {
@@ -656,6 +646,28 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             
             .skeleton-teachers {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .info-grid,
+            .stats-container,
+            .teachers-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .btn, .logout-btn {
+                width: 100%;
+                font-size: 0.9em;
+                padding: 12px;
             }
         }
     </style>
@@ -717,45 +729,42 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     </div>
                 </div>
             </div>
-            
-            <!-- Change Section Form -->
+
+            <!-- Change Section Feature -->
             <div class="change-section">
-                <h3>Change Program & Section</h3>
-                <form method="post" action="" class="section-form">
+                <h3>🔄 Change Section</h3>
+                <p style="color: #800000; margin-bottom: 15px;">
+                    Select a different section to view and evaluate teachers assigned to that section.
+                </p>
+                
+                <form method="post" action="" class="change-section-form">
                     <div class="form-group">
-                        <label for="program">Select Program:</label>
-                        <select name="program" id="program" class="form-control" required>
-                            <option value="">-- Select Program --</option>
-                            <?php foreach ($available_programs as $program => $sections): ?>
-                                <option value="<?php echo htmlspecialchars($program); ?>" 
-                                    <?php echo ($student_program === $program) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($program); ?>
+                        <label for="new_section">Select New Section:</label>
+                        <select name="new_section" id="new_section" class="form-control" required>
+                            <option value="">-- Select Section --</option>
+                            <?php foreach($available_sections as $section): ?>
+                                <option value="<?php echo htmlspecialchars($section); ?>" 
+                                    <?php echo $section === $student_section ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($section); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="section">Select Section:</label>
-                        <select name="section" id="section" class="form-control" required>
-                            <option value="">-- Select Section --</option>
-                            <?php if ($student_program && isset($available_programs[$student_program])): ?>
-                                <?php foreach ($available_programs[$student_program] as $section): ?>
-                                    <option value="<?php echo htmlspecialchars($section); ?>" 
-                                        <?php echo ($student_section === $section) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($section); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <button type="submit" name="change_section" class="btn">
-                            🔄 Update Section
-                        </button>
-                    </div>
+                    <button type="submit" name="change_section" class="btn">
+                        🔄 Change Section
+                    </button>
                 </form>
+                
+                <?php if (!empty($available_sections)): ?>
+                    <div style="margin-top: 15px; font-size: 0.9em; color: #500000;">
+                        <strong>Available Sections for <?php echo htmlspecialchars($student_program); ?>:</strong> 
+                        <?php echo implode(', ', $available_sections); ?>
+                    </div>
+                <?php else: ?>
+                    <div style="margin-top: 15px; color: #800000;">
+                        No sections available for your program. Please contact administrator.
+                    </div>
+                <?php endif; ?>
             </div>
             
             <?php if (!empty($success)): ?>
@@ -816,13 +825,13 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                                         <?php if ($is_evaluated): ?>
                                             <span class="status-badge status-completed">✅ Evaluated</span>
                                             <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
-                                               class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
+                                               class="btn btn-secondary btn-small">
                                                 👁️ View Evaluation
                                             </a>
                                         <?php else: ?>
                                             <span class="status-badge status-pending">⏳ Pending</span>
                                             <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
-                                               class="btn" style="padding: 8px 15px; font-size: 0.9em;">
+                                               class="btn btn-small">
                                                 📝 Evaluate Teacher
                                             </a>
                                         <?php endif; ?>
@@ -842,7 +851,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 <div class="no-program-message">
                     <h3>⚠️ Incomplete Student Information</h3>
                     <p>Your program or section information is missing from the system.</p>
-                    <p>Please select your program and section above to continue.</p>
+                    <p>Please contact your administrator to update your information in Google Sheets.</p>
                     <p><strong>Current Info:</strong></p>
                     <p>Program: <?php echo htmlspecialchars($student_program); ?></p>
                     <p>Section: <?php echo htmlspecialchars($student_section); ?></p>
@@ -875,26 +884,25 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 }
             });
 
-            // Dynamic section dropdown based on program selection
-            const programSelect = document.getElementById('program');
-            const sectionSelect = document.getElementById('section');
-            
-            // Define available sections from PHP
-            const programSections = <?php echo json_encode($available_programs); ?>;
-            
-            programSelect.addEventListener('change', function() {
-                const selectedProgram = this.value;
-                sectionSelect.innerHTML = '<option value="">-- Select Section --</option>';
-                
-                if (selectedProgram && programSections[selectedProgram]) {
-                    programSections[selectedProgram].forEach(function(section) {
-                        const option = document.createElement('option');
-                        option.value = section;
-                        option.textContent = section;
-                        sectionSelect.appendChild(option);
-                    });
-                }
-            });
+            // Add confirmation for section change
+            const sectionForm = document.querySelector('.change-section-form');
+            if (sectionForm) {
+                sectionForm.addEventListener('submit', function(e) {
+                    const newSection = document.getElementById('new_section').value;
+                    const currentSection = '<?php echo $student_section; ?>';
+                    
+                    if (newSection === currentSection) {
+                        e.preventDefault();
+                        alert('You are already in this section.');
+                        return false;
+                    }
+                    
+                    if (!confirm(`Are you sure you want to change to section ${newSection}? This will update the teachers list.`)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            }
 
             // Add loading state for evaluation buttons
             const evalButtons = document.querySelectorAll('.btn');
