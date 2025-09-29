@@ -181,17 +181,55 @@
             letter-spacing: 1px;
         }
 
-        .form-group {
-            margin-bottom: 25px;
+        /* Enhanced Form Styles */
+        .form-container {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(128, 0, 0, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            margin-bottom: 20px;
         }
 
-        label {
+        .form-header {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #800000;
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .form-header i {
+            color: #D4AF37;
+            font-size: 22px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-label {
             display: block;
             color: #800000;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: 600;
             font-size: 14px;
             letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .form-label i {
+            color: #D4AF37;
+            font-size: 16px;
+            width: 20px;
         }
 
         .input-container {
@@ -200,19 +238,20 @@
 
         input[type="text"], input[type="password"] {
             width: 100%;
-            padding: 15px 15px 15px 50px;
-            border: 2px solid #D4AF37;
+            padding: 16px 20px 16px 50px;
+            border: 2px solid #e0e0e0;
             border-radius: 12px;
             font-size: 16px;
             transition: all 0.3s;
-            background-color: rgba(212, 175, 55, 0.05);
+            background-color: rgba(255, 255, 255, 0.9);
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            color: #333;
         }
 
         input[type="text"]:focus, input[type="password"]:focus {
             outline: none;
-            border-color: #800000;
-            box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.15);
+            border-color: #D4AF37;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
             background-color: white;
         }
 
@@ -223,6 +262,11 @@
             transform: translateY(-50%);
             color: #800000;
             font-size: 18px;
+            transition: color 0.3s;
+        }
+
+        input:focus + .input-icon {
+            color: #D4AF37;
         }
 
         .password-toggle {
@@ -238,6 +282,37 @@
 
         .password-toggle:hover {
             color: #D4AF37;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #800000;
+            cursor: pointer;
+        }
+
+        .remember-me input {
+            accent-color: #D4AF37;
+        }
+
+        .forgot-password {
+            color: #800000;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .forgot-password:hover {
+            color: #D4AF37;
+            text-decoration: underline;
         }
 
         .btn {
@@ -284,6 +359,15 @@
         .btn:active {
             transform: translateY(-1px);
             box-shadow: 0 5px 10px rgba(128, 0, 0, 0.4);
+        }
+
+        .btn i {
+            margin-left: 8px;
+            transition: transform 0.3s;
+        }
+
+        .btn:hover i {
+            transform: translateX(5px);
         }
 
         .alert {
@@ -335,6 +419,16 @@
             .school-name {
                 font-size: 14px;
             }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .form-options {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
@@ -358,26 +452,49 @@
             </div>
         </div>
         
-        <form method="POST" action="login.php">
-            <div class="form-group" data-aos="fade-right" data-aos-delay="700">
-                <label for="username">Username</label>
-                <div class="input-container">
-                    <i class="fas fa-user input-icon"></i>
-                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
-                </div>
+        <div class="form-container" data-aos="fade-in" data-aos-delay="600">
+            <div class="form-header">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Login to Your Account</span>
             </div>
             
-            <div class="form-group" data-aos="fade-right" data-aos-delay="900">
-                <label for="password">Password</label>
-                <div class="input-container">
-                    <i class="fas fa-lock input-icon"></i>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                    <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
+            <form method="POST" action="login.php">
+                <div class="form-group" data-aos="fade-right" data-aos-delay="700">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user"></i>
+                        Username
+                    </label>
+                    <div class="input-container">
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                        <i class="fas fa-user input-icon"></i>
+                    </div>
                 </div>
-            </div>
-            
-            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1100">Login</button>
-        </form>
+                
+                <div class="form-group" data-aos="fade-right" data-aos-delay="900">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock"></i>
+                        Password
+                    </label>
+                    <div class="input-container">
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <i class="fas fa-lock input-icon"></i>
+                        <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
+                    </div>
+                </div>
+                
+                <div class="form-options" data-aos="fade-up" data-aos-delay="1000">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember">
+                        Remember me
+                    </label>
+                    <a href="#" class="forgot-password">Forgot Password?</a>
+                </div>
+                
+                <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1100">
+                    Sign In <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
         
         <div class="footer">
             <p class="copyright">&copy; 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</p>
