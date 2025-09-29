@@ -1,6 +1,21 @@
 {
+    "name": "evaluation-system/google-integration",
+    "description": "Teacher Evaluation System with Google Sheets and Drive Integration",
+    "type": "project",
     "require": {
-        "google/apiclient": "^2.15",
-        "tecnickcom/tcpdf": "^6.6"
+        "php": ">=8.0",
+        "google/apiclient": "^2.15"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts": {
+        "post-install-cmd": [
+            "echo 'Google API Client installed successfully!'"
+        ]
     }
 }
