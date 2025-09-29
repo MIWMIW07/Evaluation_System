@@ -388,7 +388,7 @@
                 </div>
             </div>
             
-            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1000">
+            <button type="submit" class="btn">
                 <i class="fas fa-sign-in-alt"></i> Login
             </button>
         </form>
