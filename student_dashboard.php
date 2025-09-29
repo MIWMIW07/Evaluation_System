@@ -863,7 +863,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Show skeleton loading for 3 seconds
+            // Show skeleton loading for 1 seconds
             setTimeout(function() {
                 document.getElementById('skeleton-loading').style.display = 'none';
                 document.getElementById('main-content').style.display = 'block';
@@ -904,11 +904,11 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     this.textContent = 'Loading...';
                     this.style.pointerEvents = 'none';
                     
-                    // Reset after 3 seconds if page doesn't navigate
+                    // Reset after 1 seconds if page doesn't navigate
                     setTimeout(() => {
                         this.textContent = originalText;
                         this.style.pointerEvents = 'auto';
-                    }, 3000);
+                    }, 1000);
                 });
             });
         });
