@@ -84,6 +84,42 @@ if ($student_program !== 'Not Set') {
 $teachers_result = [];
 $evaluated_teachers = [];
 
+// Get already evaluated teachers for this student
+try {
+    $stmt = $pdo->prepare("
+        SELECT teacher_name, 
+        FROM evaluations 
+        WHERE student_username = ? AND section = ?
+    ");
+    $stmt->execute([$student_username, $student_section]);
+    $evaluated_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Create a unique key for each teacher-subject combination
+    foreach ($evaluated_result as $eval) {
+        $evaluated_teachers[] = $eval['teacher_name'] . '|' . $eval[' '];
+    }
+} catch (Exception $e) {
+    // Table might not exist yet or other error
+    $evaluated_teachers = [];
+}
+
+// Get available teachers from teacher_assignments table
+if ($student_section !== 'Not Set' && $student_program !== 'Not Set') {
+    try {
+        $stmt = $pdo->prepare("
+            SELECT teacher_name, program, section
+            FROM teacher_assignments 
+            WHERE section = ? AND program = ? AND is_active = true
+            ORDER BY teacher_name, 
+        ");
+        $stmt->execute([$student_section, $student_program]);
+        $teachers_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $error = "Could not load teachers: " . $e->getMessage();
+        $teachers_result = [];
+    }
+}
+
 // Calculate statistics
 $total_teachers = count($teachers_result);
 $completed_evaluations = count($evaluated_teachers);
@@ -775,25 +811,24 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                         <div class="teachers-grid">
                             <?php foreach($teachers_result as $teacher): ?>
                                 <?php 
-                                
+                                    $teacher_key = $teacher['teacher_name'] . '|' . $teacher[' '];
                                     $is_evaluated = in_array($teacher_key, $evaluated_teachers); 
                                 ?>
                                 <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
                                     <h4><?php echo htmlspecialchars($teacher['teacher_name']); ?></h4>
-                    
                                     <p><strong>Section:</strong> <?php echo htmlspecialchars($teacher['section']); ?></p>
                                     <p><strong>Program:</strong> <?php echo htmlspecialchars($teacher['program']); ?></p>
                                     
                                     <div class="evaluation-status">
                                         <?php if ($is_evaluated): ?>
                                             <span class="status-badge status-completed">✅ Evaluated</span>
-                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
+                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']);  
                                                class="btn btn-secondary btn-small">
                                                 👁️ View Evaluation
                                             </a>
                                         <?php else: ?>
                                             <span class="status-badge status-pending">⏳ Pending</span>
-                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
+                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); 
                                                class="btn btn-small">
                                                 📝 Evaluate Teacher
                                             </a>
