@@ -757,7 +757,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 
                 <?php if (!empty($available_sections)): ?>
                     <div style="margin-top: 15px; font-size: 0.9em; color: #500000;">
-                        <strong>Available Sections for <?php echo htmlspecialchars($student_program); ?>:</strong> 
+                        
                         <?php echo implode(', ', $available_sections); ?>
                     </div>
                 <?php else: ?>
