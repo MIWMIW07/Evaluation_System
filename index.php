@@ -476,7 +476,6 @@
             <form method="POST" action="login.php">
                 <div class="form-group" data-aos="fade-right" data-aos-delay="700">
                     <label for="username" class="form-label">
-                        <i class="fas fa-user"></i>
                         Username
                     </label>
                     <div class="input-container">
@@ -487,7 +486,6 @@
                 
                 <div class="form-group" data-aos="fade-right" data-aos-delay="900">
                     <label for="password" class="form-label">
-                        <i class="fas fa-lock"></i>
                         Password
                     </label>
                     <div class="input-container">
@@ -504,7 +502,7 @@
                     </label>
                 </div>
                 
-                <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1100">
+                <button type="submit" class="btn" >
                     Sign In <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
