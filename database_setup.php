@@ -1,906 +1,436 @@
 <?php
-// student_dashboard.php - Updated to work with Google Sheets data
-session_start();
+// database_setup.php
+// Updated to include all real teacher assignments from bulk_insert_teachers.php
+// Students and teachers data stored in Google Sheets
 
-// Check if user is logged in and is a student
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
-    header('Location: index.php');
+require_once __DIR__ . '/includes/db_connection.php';
+
+// Check if database is available
+if (!isDatabaseAvailable()) {
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Database Setup - No Connection</title>
+        <style>
+            body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+            .error { color: #e74c3c; font-weight: bold; }
+            .info { background: #e8f4fd; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Database Setup</h1>
+            <div class="error">❌ Database connection not available</div>
+            
+            <div class="info">
+                <h3>Hybrid System Information:</h3>
+                <ul>
+                    <li><strong>Students Data:</strong> Stored in Google Sheets (Student_ID, Last_Name, First_Name, Section, Program, Username, Password)</li>
+                    <li><strong>Teachers List:</strong> Stored in Google Sheets</li>
+                    <li><strong>Evaluations & Teacher Assignments:</strong> Stored in PostgreSQL</li>
+                </ul>
+                
+                <p><strong>Next Steps:</strong></p>
+                <ol>
+                    <li>Set up your PostgreSQL database on Railway</li>
+                    <li>Ensure <code>DATABASE_URL</code> environment variable is set</li>
+                    <li>Reload this setup to create the necessary tables</li>
+                </ol>
+            </div>
+            
+            <p><a href="index.php" style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Home</a></p>
+        </div>
+    </body>
+    </html>
+    <?php
     exit;
 }
 
-// Include database connection
-require_once 'includes/db_connection.php';
+// Function to clean teacher names
+function cleanTeacherName($name) {
+    $name = trim($name);
+    $name = str_replace(['**', '*'], '', $name); // Remove markdown formatting
+    $name = preg_replace('/\s+/', ' ', $name); // Replace multiple spaces with single space
+    return trim($name);
+}
 
-$success = '';
-$error = '';
+// Function to insert all real teacher assignments
+function insertAllTeacherAssignments($pdo) {
+    echo "📝 Inserting all teacher assignments...<br>";
+    
+    $inserted = 0;
+    $stmt = $pdo->prepare("
+        INSERT INTO teacher_assignments (teacher_name, section, subject, program, school_year, semester, is_active)
+        VALUES (?, ?, ?, ?, '2025-2026', '1st', true)
+        ON CONFLICT (teacher_name, section, subject, school_year, semester) DO NOTHING
+    ");
+    
+    // COLLEGE TEACHERS - All your real data
+    echo "&nbsp;&nbsp;📚 Adding College Teachers...<br>";
+    
+    $collegeTeachers = [
+        // BSCS Programs
+        'BSCS-1M1' => ['MR. VELE', 'MR. RODRIGUEZ', 'MR. JIMENEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. LACERNA', 'MS. RENDORA', 'MR. ATIENZA'],
+        'BSCS-2N1' => ['MR. RODRIGUEZ', 'MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MR. JIMENEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. GORDON'],
+        'BSCS-3M1' => ['MR. PATALEN', 'MS. DIMAPILIS', 'MR. V. GORDON', 'MS. DIMAPILIS', 'MS. DIMAPILIS', 'MR. JIMENEZ'],
+        'BSCS-4N1' => ['MS. DIMAPILIS', 'MS. DIMAPILIS', 'MS. DIMAPILIS', 'MR. ELLO', 'MR. V. GORDON', 'MR. PATALEN'],
+        
+        // BSOA Programs  
+        'BSOA-1M1' => ['MR. VELE', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. IGHARAS', 'MS. OCTAVO', 'MS. RENDORA', 'MS. RENDORA', 'MR. ATIENZA'],
+        'BSOA-2N1' => ['MR. LACERNA', 'MS. RENDORA', 'MS. VELE', 'MR. CALCEÑA', 'MS. CARMONA', 'MS. IGHARAS', 'MS. RENDORA', 'MS. RENDORA'],
+        'BSOA-3M1' => ['MR. MATILA', 'MR. ELLO', 'MS. IGHARAS', 'MR. CALCEÑA', 'MR. V. GORDON'],
+        'BSOA-4N1' => ['MR. CALCEÑA', 'MS. IGHARAS', 'MS. IGHARAS', 'MR. CALCEÑA'],
+        
+        // EDUC Programs
+        'EDUC-1M1' => ['MR. VELE', 'MR. MATILA', 'MR. V. GORDON', 'MS. TESORO', 'MR. LACERNA', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. RENDORA', 'MS. RENDORA', 'MR. ATIENZA'],
+        'EDUC-2N1' => ['MS. VELE', 'MR. VALENZUELA', 'MR. ICABANDE', 'MR. ELLO', 'MR. VALENZUELA', 'MR. ORNACHO', 'MR. MATILA', 'MS. OCTAVO', 'MS. RENDORA'],
+        'EDUC-3M1' => ['MS. OCTAVO', 'MR. VALENZUELA', 'MR. MATILA', 'MR. CALCEÑA', 'MS. MAGNO', 'MS. MAGNO', 'MS. TESORO', 'MS. CARMONA'],
+        'EDUC-4M1' => ['MS. TESORO', 'MR. ELLO', 'MS. TESORO', 'MS. TESORO'],
+        'EDUC-4N1' => ['MS. TESORO'],
+    ];
+    
+    foreach ($collegeTeachers as $section => $teachers) {
+        $subjectCounter = 1;
+        foreach ($teachers as $teacher) {
+            $teacher = cleanTeacherName($teacher);
+            if (!empty($teacher)) {
+                $subject = "Subject " . $subjectCounter;
+                $stmt->execute([$teacher, $section, $subject, 'COLLEGE']);
+                $inserted++;
+                $subjectCounter++;
+            }
+        }
+        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
+    }
+    
+    // SHS GRADE 11 TEACHERS
+    echo "&nbsp;&nbsp;🎓 Adding SHS Grade 11 Teachers...<br>";
+    
+    $shs11Teachers = [
+        // HE Sections
+        'HE1M1' => ['MS. TINGSON', 'MS. LAGUADOR', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MR. UMALI', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1M2' => ['MS. TINGSON', 'MRS. YABUT', 'MR. SANTOS', 'MR. ORNACHO', 'MR. ALCEDO', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1M3' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MR. ALCEDO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1M4' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1N1' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1N2' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1N3' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MR. LACERNA', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1N4' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MR. LACERNA', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        
+        // ICT Sections
+        'ICT1M1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MR. R. GORDON', 'MS. RENDORA', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
+        'ICT1M2' => ['MS. ROQUIOS', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
+        'ICT1N1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. RODRIGUEZ', 'MS. ANGELES', 'MS. TINGSON', 'MR. R. GORDON', 'MR. UMALI', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
+        'ICT1N2' => ['MS. ROQUIOS', 'MS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MR. ALCEDO', 'MS. RENDORA', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
+        
+        // HUMSS Sections
+        'HUMSS1M1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. ROQUIOS', 'MS. LAGUADOR', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1M2' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. ROQUIOS', 'MR. R. GORDON', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1M3' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. TESORO', 'MR. UMALI', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1M4' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MR. UMALI', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1M5' => ['MS. ROQUIOS', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. TINGSON', 'MR. R. GORDON', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1N1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1N2' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1N3' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MR. R. GORDON', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        
+        // ABM Sections
+        'ABM1M1' => ['MS. TINGSON', 'MS. RIVERA', 'MS. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MR. UMALI', 'MS. LAGUADOR', 'MR. CALCEÑA', 'MS. GAJIRAN'],
+        'ABM1M2' => ['MS. TINGSON', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MR. UMALI', 'MS. LAGUADOR', 'MR. CALCEÑA', 'MS. GAJIRAN'],
+        'ABM1N1' => ['MS. TINGSON', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. CALCEÑA', 'MS. GAJIRAN'],
+    ];
+    
+    foreach ($shs11Teachers as $section => $teachers) {
+        $subjectCounter = 1;
+        foreach ($teachers as $teacher) {
+            $teacher = cleanTeacherName($teacher);
+            if (!empty($teacher)) {
+                $subject = "Subject " . $subjectCounter;
+                $stmt->execute([$teacher, $section, $subject, 'SHS']);
+                $inserted++;
+                $subjectCounter++;
+            }
+        }
+        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
+    }
+    
+    // SHS GRADE 12 TEACHERS
+    echo "&nbsp;&nbsp;🎓 Adding SHS Grade 12 Teachers...<br>";
+    
+    $shs12Teachers = [
+        // HE3 Sections (Grade 12)
+        'HE3M1' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MR. UMALI', 'MS. MAGNO'],
+        'HE3M2' => ['MS. CARMONA', 'MR. BATILES', 'MS. RIVERA', 'MR. PATIAM', 'MR. UMALI', 'MS. MAGNO'],
+        'HE3M3' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MS. RENDORA', 'MS. MAGNO'],
+        'HE3M4' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MS. RENDORA', 'MS. MAGNO'],
+        'HE3N1' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MS. RENDORA', 'MS. MAGNO'],
+        'HE3N2' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MS. MAGNO'],
+        'HE3N3' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MR. UMALI', 'MS. MAGNO'],
+        'HE3N4' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MS. RENDORA', 'MS. MAGNO'],
+        
+        // ICT3 Sections (Grade 12)
+        'ICT3M1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. RENDORA', 'MR. V. GORDON'],
+        'ICT3M2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
+        'ICT3N1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
+        'ICT3N2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
+        
+        // HUMSS3 Sections (Grade 12)
+        'HUMSS3M1' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
+        'HUMSS3M2' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
+        'HUMSS3M3' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
+        'HUMSS3M4' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
+        'HUMSS3N1' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA'],
+        'HUMSS3N2' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MR. GARCIA'],
+        'HUMSS3N3' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA'],
+        'HUMSS3N4' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MR. GARCIA'],
+        
+        // ABM3 Sections (Grade 12)
+        'ABM3M1' => ['MS. CARMONA', 'MR. BATILES', 'MS. RIVERA', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA', 'MR. CALCEÑA'],
+        'ABM3M2' => ['MS. CARMONA', 'MR. BATILES', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. CALCEÑA', 'MR. CALCEÑA'],
+        'ABM3N1' => ['MS. CARMONA', 'MR. BATILES', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA'],
+    ];
+    
+    foreach ($shs12Teachers as $section => $teachers) {
+        $subjectCounter = 1;
+        foreach ($teachers as $teacher) {
+            $teacher = cleanTeacherName($teacher);
+            if (!empty($teacher)) {
+                $subject = "Subject " . $subjectCounter;
+                $stmt->execute([$teacher, $section, $subject, 'SHS']);
+                $inserted++;
+                $subjectCounter++;
+            }
+        }
+        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
+    }
+    
+    // SHS SC (Special Classes) TEACHERS
+    echo "&nbsp;&nbsp;🌟 Adding SHS Special Classes Teachers...<br>";
+    
+    $shsSCTeachers = [
+        // Grade 11 SC
+        'HE-11SC' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. UMALI', 'MS. GENTEROY'],
+        'ICT-11SC' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. JIMENEZ', 'MR. JIMENEZ'],
+        'HUMSS-11SC' => ['MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MS. VELE', 'MR. MATILA'],
+        'ABM-11SC' => ['MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MS. VELE', 'MR. VALENZUELA', 'MR. RODRIGUEZ'],
+        
+        // Grade 12 SC
+        'HE-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MS. GENTEROY'],
+        'ICT-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MR. JIMENEZ', 'MR. JIMENEZ'],
+        'HUMSS-12SC' => ['MR. LACERNA', 'MR. UMALI', 'MR. PATIAM', 'MR. ICABANDE', 'MR. VELE'],
+        'ABM-12SC' => ['MR. LACERNA', 'MR. UMALI', 'MR. PATIAM', 'MS. IGHARAS', 'MS. IGHARAS'],
+    ];
+    
+    foreach ($shsSCTeachers as $section => $teachers) {
+        $subjectCounter = 1;
+        foreach ($teachers as $teacher) {
+            $teacher = cleanTeacherName($teacher);
+            if (!empty($teacher)) {
+                $subject = "Subject " . $subjectCounter;
+                $stmt->execute([$teacher, $section, $subject, 'SHS']);
+                $inserted++;
+                $subjectCounter++;
+            }
+        }
+        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
+    }
+    
+    return $inserted;
+}
 
-// Get database connection
 try {
     $pdo = getPDO();
-} catch (Exception $e) {
-    die('Database connection failed: ' . $e->getMessage());
-}
-
-// Get student information from session (already loaded from Google Sheets during login)
-$student_username = $_SESSION['username'];
-$student_full_name = $_SESSION['full_name'];
-$student_program = $_SESSION['program'] ?? 'Not Set';
-$student_section = $_SESSION['section'] ?? 'Not Set';
-$student_id = $_SESSION['student_id'];
-
-// Handle section change
-if ($_POST && isset($_POST['change_section'])) {
-    $new_section = $_POST['new_section'];
+    echo "<!DOCTYPE html>";
+    echo "<html><head><title>Database Setup</title>";
+    echo "<style>body{font-family:Arial,sans-serif;margin:20px;line-height:1.6;}h2{color:#800000;}h3{color:#A52A2A;}p{margin:5px 0;}.summary{background:#f0f0f0;padding:15px;border-radius:5px;margin:20px 0;}.success{color:green;}.error{color:red;}.highlight{background:#ffffcc;padding:10px;border-radius:5px;border-left:5px solid #ffcc00;}</style>";
+    echo "</head><body>";
     
-    // Validate that the new section belongs to the same program
-    try {
-        $stmt = $pdo->prepare("
-            SELECT DISTINCT section 
-            FROM teacher_assignments 
-            WHERE program = ? AND section = ? AND is_active = true
-            LIMIT 1
-        ");
-        $stmt->execute([$student_program, $new_section]);
-        $valid_section = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($valid_section) {
-            $_SESSION['section'] = $new_section;
-            $student_section = $new_section;
-            $success = "Section successfully changed to " . htmlspecialchars($new_section);
-        } else {
-            $error = "Invalid section selected for your program.";
-        }
-    } catch (Exception $e) {
-        $error = "Error changing section: " . $e->getMessage();
-    }
-}
+    echo "<h2>🔧 Setting up database system with all real teacher assignments...</h2><br>";
 
-// Get available sections for the student's program
-$available_sections = [];
-if ($student_program !== 'Not Set') {
-    try {
-        $stmt = $pdo->prepare("
-            SELECT DISTINCT section 
-            FROM teacher_assignments 
-            WHERE program = ? AND is_active = true 
-            ORDER BY section
-        ");
-        $stmt->execute([$student_program]);
-        $available_sections = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        // Add current section if it's not in the list (for cases where section might not have active teachers)
-        if ($student_section !== 'Not Set' && !in_array($student_section, $available_sections)) {
-            $available_sections[] = $student_section;
-            sort($available_sections);
-        }
-    } catch (Exception $e) {
-        $error = "Could not load available sections: " . $e->getMessage();
-    }
-}
-
-// Get teachers assigned to this student's section from database
-$teachers_result = [];
-$evaluated_teachers = [];
-
-// Get already evaluated teachers for this student
-try {
-    $stmt = $pdo->prepare("
-        SELECT teacher_name, subject 
-        FROM evaluations 
-        WHERE student_username = ? AND section = ?
+    // ==============================
+    // Drop ALL old tables (clean slate)
+    // ==============================
+    echo "🗑️ Cleaning up old tables...<br>";
+    $pdo->exec("
+        DROP TABLE IF EXISTS activity_logs CASCADE;
+        DROP TABLE IF EXISTS evaluations CASCADE;
+        DROP TABLE IF EXISTS teacher_assignments CASCADE;
+        DROP TABLE IF EXISTS sections CASCADE;
+        DROP TABLE IF EXISTS users CASCADE;
+        DROP TABLE IF EXISTS students CASCADE;
+        DROP TABLE IF EXISTS teachers CASCADE;
+        DROP TABLE IF EXISTS login_attempts CASCADE;
+        DROP TABLE IF EXISTS section_teachers CASCADE;
     ");
-    $stmt->execute([$student_username, $student_section]);
-    $evaluated_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    echo "✓ Old tables removed<br><br>";
+
+    // ==============================
+    // Teacher Assignments Table
+    // ==============================
+    echo "📋 Creating teacher_assignments table...<br>";
+    $pdo->exec("
+        CREATE TABLE teacher_assignments (
+            id SERIAL PRIMARY KEY,
+            teacher_name VARCHAR(100) NOT NULL,
+            section VARCHAR(50) NOT NULL,
+            subject VARCHAR(100) NOT NULL,
+            program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
+            school_year VARCHAR(20) DEFAULT '2025-2026',
+            semester VARCHAR(10) DEFAULT '1st' CHECK (semester IN ('1st','2nd')),
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (teacher_name, section, subject, school_year, semester)
+        );
+        
+        CREATE INDEX idx_teacher_name ON teacher_assignments(teacher_name);
+        CREATE INDEX idx_section ON teacher_assignments(section);
+        CREATE INDEX idx_program ON teacher_assignments(program);
+        CREATE INDEX idx_active ON teacher_assignments(is_active);
+    ");
+    echo "✓ Teacher assignments table created<br><br>";
+
+    // ==============================
+    // Evaluations Table
+    // ==============================
+    echo "📊 Creating evaluations table...<br>";
+    $pdo->exec("
+        CREATE TABLE evaluations (
+            id SERIAL PRIMARY KEY,
+            student_username VARCHAR(50) NOT NULL,
+            student_name VARCHAR(100) NOT NULL,
+            teacher_name VARCHAR(100) NOT NULL,
+            section VARCHAR(50) NOT NULL,
+            program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
+            subject VARCHAR(100),
+            
+            -- Section 1: Teaching Ability (6 questions)
+            q1_1 SMALLINT CHECK (q1_1 BETWEEN 1 AND 5),
+            q1_2 SMALLINT CHECK (q1_2 BETWEEN 1 AND 5),
+            q1_3 SMALLINT CHECK (q1_3 BETWEEN 1 AND 5),
+            q1_4 SMALLINT CHECK (q1_4 BETWEEN 1 AND 5),
+            q1_5 SMALLINT CHECK (q1_5 BETWEEN 1 AND 5),
+            q1_6 SMALLINT CHECK (q1_6 BETWEEN 1 AND 5),
+            
+            -- Section 2: Management Skills (4 questions)
+            q2_1 SMALLINT CHECK (q2_1 BETWEEN 1 AND 5),
+            q2_2 SMALLINT CHECK (q2_2 BETWEEN 1 AND 5),
+            q2_3 SMALLINT CHECK (q2_3 BETWEEN 1 AND 5),
+            q2_4 SMALLINT CHECK (q2_4 BETWEEN 1 AND 5),
+            
+            -- Section 3: Guidance Skills (4 questions)
+            q3_1 SMALLINT CHECK (q3_1 BETWEEN 1 AND 5),
+            q3_2 SMALLINT CHECK (q3_2 BETWEEN 1 AND 5),
+            q3_3 SMALLINT CHECK (q3_3 BETWEEN 1 AND 5),
+            q3_4 SMALLINT CHECK (q3_4 BETWEEN 1 AND 5),
+            
+            -- Section 4: Personal and Social Characteristics (6 questions)
+            q4_1 SMALLINT CHECK (q4_1 BETWEEN 1 AND 5),
+            q4_2 SMALLINT CHECK (q4_2 BETWEEN 1 AND 5),
+            q4_3 SMALLINT CHECK (q4_3 BETWEEN 1 AND 5),
+            q4_4 SMALLINT CHECK (q4_4 BETWEEN 1 AND 5),
+            q4_5 SMALLINT CHECK (q4_5 BETWEEN 1 AND 5),
+            q4_6 SMALLINT CHECK (q4_6 BETWEEN 1 AND 5),
+            
+            -- Comments and timestamps
+            comments TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            
+            -- Prevent duplicate evaluations
+            UNIQUE (student_username, teacher_name, subject, section)
+        );
+        
+        CREATE INDEX idx_student_username ON evaluations(student_username);
+        CREATE INDEX idx_teacher_eval ON evaluations(teacher_name);
+        CREATE INDEX idx_section_eval ON evaluations(section);
+        CREATE INDEX idx_program_eval ON evaluations(program);
+    ");
+    echo "✓ Evaluations table created<br><br>";
+
+    // ==============================
+    // Insert ALL Real Teacher Assignments
+    // ==============================
+    $totalInserted = insertAllTeacherAssignments($pdo);
+
+    // ==============================
+    // Summary and Statistics
+    // ==============================
+    echo "<div class='summary'>";
+    echo "<h3>✅ Database Setup Complete!</h3>";
+    echo "<p class='success'><strong>Total teacher assignments inserted: {$totalInserted}</strong></p>";
+    echo "</div>";
     
-    // Create a unique key for each teacher-subject combination
-    foreach ($evaluated_result as $eval) {
-        $evaluated_teachers[] = $eval['teacher_name'] . '|' . $eval['subject'];
+    // Show detailed statistics
+    echo "<h3>📈 Assignment Statistics by Program</h3>";
+    $stmt = $pdo->query("SELECT program, COUNT(*) as count FROM teacher_assignments GROUP BY program ORDER BY program");
+    $stats = $stmt->fetchAll();
+    
+    foreach ($stats as $stat) {
+        echo "<p>• <strong>{$stat['program']}:</strong> {$stat['count']} assignments</p>";
     }
-} catch (Exception $e) {
-    // Table might not exist yet or other error
-    $evaluated_teachers = [];
-}
-
-// Get available teachers from teacher_assignments table
-if ($student_section !== 'Not Set' && $student_program !== 'Not Set') {
-    try {
-        $stmt = $pdo->prepare("
-            SELECT teacher_name, subject, program, section
-            FROM teacher_assignments 
-            WHERE section = ? AND program = ? AND is_active = true
-            ORDER BY teacher_name, subject
-        ");
-        $stmt->execute([$student_section, $student_program]);
-        $teachers_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Exception $e) {
-        $error = "Could not load teachers: " . $e->getMessage();
-        $teachers_result = [];
+    
+    $stmt = $pdo->query("SELECT COUNT(DISTINCT teacher_name) as unique_teachers FROM teacher_assignments");
+    $uniqueTeachers = $stmt->fetchColumn();
+    echo "<p><strong>Unique teachers:</strong> {$uniqueTeachers}</p>";
+    
+    $stmt = $pdo->query("SELECT COUNT(DISTINCT section) as unique_sections FROM teacher_assignments");
+    $uniqueSections = $stmt->fetchColumn();
+    echo "<p><strong>Sections covered:</strong> {$uniqueSections}</p>";
+    
+    // Show specific BSCS3M1 assignments (your section)
+    echo "<div class='highlight'>";
+    echo "<h3>🎯 Your Section (BSCS3M1) Teachers:</h3>";
+    $stmt = $pdo->prepare("SELECT teacher_name, subject FROM teacher_assignments WHERE section = ? AND program = ? ORDER BY subject");
+    $stmt->execute(['BSCS3M1', 'COLLEGE']);
+    $bscs3m1_teachers = $stmt->fetchAll();
+    
+    if ($bscs3m1_teachers) {
+        foreach ($bscs3m1_teachers as $teacher) {
+            echo "<p>• <strong>{$teacher['teacher_name']}</strong> - {$teacher['subject']}</p>";
+        }
+        echo "<p style='color:green;'><strong>✅ Found " . count($bscs3m1_teachers) . " teachers for your section!</strong></p>";
+    } else {
+        echo "<p style='color:red;'><strong>❌ No teachers found for BSCS3M1</strong></p>";
     }
-}
+    echo "</div>";
+    
+    echo "<div style='background: #d4edda; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; margin: 20px 0;'>";
+    echo "<h3>🏫 System Information</h3>";
+    echo "<p><strong>Tables Created:</strong></p>";
+    echo "<ul>";
+    echo "<li>📋 <code>teacher_assignments</code> - All real teacher-section-subject assignments</li>";
+    echo "<li>📊 <code>evaluations</code> - Student evaluation responses storage</li>";
+    echo "</ul>";
+    
+    echo "<p><strong>Data Sources:</strong></p>";
+    echo "<ul>";
+    echo "<li>📑 <strong>Students:</strong> Google Sheets (Student_ID, Last_Name, First_Name, Section, Program, Username, Password)</li>";
+    echo "<li>👨‍🏫 <strong>Teachers:</strong> Database teacher_assignments table (now populated with all real data)</li>";
+    echo "<li>📊 <strong>Evaluations:</strong> Database evaluations table</li>";
+    echo "</ul>";
+    
+    echo "<p><strong>Ready to use:</strong></p>";
+    echo "<ol>";
+    echo "<li>✅ All teacher assignments are loaded</li>";
+    echo "<li>✅ Your BSCS3M1 section should now show teachers</li>";
+    echo "<li>✅ Students can now evaluate their assigned teachers</li>";
+    echo "</ol>";
+    echo "</div>";
+    
+    echo "<br><p><a href='index.php' style='background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;'>🏠 Go to Login Page</a></p>";
+    echo "<p><a href='student_dashboard.php' style='background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-left: 10px;'>📱 Test Student Dashboard</a></p>";
+    
+    echo "</body></html>";
 
-// Calculate statistics
-$total_teachers = count($teachers_result);
-$completed_evaluations = count($evaluated_teachers);
-$remaining_evaluations = $total_teachers - $completed_evaluations;
-$completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $total_teachers) * 100, 1) : 0;
+} catch (PDOException $e) {
+    echo "<div style='background: #f8d7da; padding: 20px; border-radius: 8px; border-left: 4px solid #dc3545; margin: 20px 0;'>";
+    echo "<h3>❌ Database Setup Failed</h3>";
+    echo "<p><strong>Error:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
+    echo "<p>Please check your database connection and try again.</p>";
+    echo "</div>";
+    echo "</body></html>";
+    exit(1);
+}
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - Teacher Evaluation System</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #800000 0%, #500000 100%);
-            color: #333;
-            line-height: 1.6;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-            position: relative;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 25px;
-            border-bottom: 3px solid #D4AF37;
-        }
-        
-        .header h1 {
-            color: #800000;
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #800000, #A52A2A);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .logo {
-            max-height: 50px;
-            width: auto;
-            height: auto;
-        }
-        
-        .user-info {
-            background: linear-gradient(135deg, #F5F5DC 0%, #FFD700 100%);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            border-left: 5px solid #D4AF37;
-        }
-        
-        .user-info h3 {
-            color: #800000;
-            margin-bottom: 10px;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .info-item {
-            background: #F5F5DC;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border: 1px solid #D4AF37;
-        }
-        
-        .info-item label {
-            font-weight: 600;
-            color: #800000;
-            font-size: 0.9em;
-            display: block;
-            margin-bottom: 5px;
-        }
-        
-        .info-item span {
-            color: #500000;
-            font-weight: bold;
-        }
-        
-        /* Section Change Styles */
-        .section-change {
-            background: linear-gradient(135deg, #FFEC8B 0%, #FFD700 100%);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            border-left: 5px solid #800000;
-        }
-        
-        .section-change h3 {
-            color: #800000;
-            margin-bottom: 15px;
-        }
-        
-        .section-form {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        
-        .section-select {
-            flex: 1;
-            min-width: 200px;
-            padding: 10px 15px;
-            border: 2px solid #D4AF37;
-            border-radius: 8px;
-            background: #F5F5DC;
-            color: #500000;
-            font-weight: 600;
-        }
-        
-        .section-select:focus {
-            outline: none;
-            border-color: #800000;
-            box-shadow: 0 0 5px rgba(128, 0, 0, 0.3);
-        }
-        
-        .change-section-btn {
-            background: linear-gradient(135deg, #800000 0%, #A52A2A 100%);
-            color: #FFD700;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .change-section-btn:hover {
-            background: linear-gradient(135deg, #A52A2A 0%, #800000 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        
-        .current-section-note {
-            margin-top: 10px;
-            font-size: 0.9em;
-            color: #800000;
-            font-style: italic;
-        }
-        
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .stat-card {
-            background: linear-gradient(135deg, #F5F5DC 0%, #FFEC8B 100%);
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid #800000;
-        }
-        
-        .stat-card h3 {
-            color: #800000;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        .stat-card p {
-            color: #500000;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .progress-card {
-            border-left-color: #D4AF37;
-        }
-        
-        .progress-card h3 {
-            color: #800000;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #F5F5DC;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 15px;
-            border: 1px solid #D4AF37;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(135deg, #800000, #A52A2A);
-            border-radius: 10px;
-            transition: width 0.5s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #FFD700;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-        
-        .teachers-section {
-            margin-top: 30px;
-        }
-        
-        .teachers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .teacher-card {
-            background: #F5F5DC;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid #800000;
-            transition: all 0.3s ease;
-        }
-        
-        .teacher-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        }
-        
-        .teacher-card.evaluated {
-            border-left-color: #D4AF37;
-            background: linear-gradient(135deg, #FFEC8B 0%, #FFD700 100%);
-        }
-        
-        .teacher-card h4 {
-            color: #800000;
-            margin-bottom: 10px;
-            font-size: 1.1em;
-        }
-        
-        .teacher-card p {
-            color: #500000;
-            margin-bottom: 15px;
-        }
-        
-        .evaluation-status {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        
-        .status-pending {
-            background: #FFEC8B;
-            color: #800000;
-            border: 1px solid #D4AF37;
-        }
-        
-        .status-completed {
-            background: #D4AF37;
-            color: #800000;
-            border: 1px solid #FFD700;
-        }
-        
-        .alert {
-            padding: 20px;
-            margin-bottom: 25px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .alert-success {
-            color: #800000;
-            background: linear-gradient(135deg, #FFEC8B 0%, #FFD700 100%);
-            border-left: 5px solid #D4AF37;
-        }
-        
-        .alert-error {
-            color: #800000;
-            background: linear-gradient(135deg, #FFEC8B 0%, #F5F5DC 100%);
-            border-left: 5px solid #800000;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #800000 0%, #A52A2A 100%);
-            color: #FFD700;
-            text-decoration: none;
-            border-radius: 25px;
-            font-weight: 600;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            text-align: center;
-            font-size: 0.95em;
-        }
-
-        .btn:hover {
-            background: linear-gradient(135deg, #A52A2A 0%, #800000 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-            color: #FFEC8B;
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #D4AF37 0%, #FFD700 100%);
-            color: #800000;
-        }
-
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
-            color: #500000;
-        }
-        
-        .logout-container {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 25px;
-            border-top: 2px solid #D4AF37;
-        }
-        
-        .logout-btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #800000 0%, #500000 100%);
-            color: #FFD700;
-            padding: 12px 25px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-            margin-top: 15px;
-        }
-        
-        .logout-btn:hover {
-            background: linear-gradient(135deg, #500000 0%, #800000 100%);
-            transform: translateY(-2px);
-            color: #FFEC8B;
-        }
-        
-        .no-program-message {
-            text-align: center;
-            padding: 40px;
-            background: linear-gradient(135deg, #FFEC8B 0%, #F5F5DC 100%);
-            border-radius: 10px;
-            margin-top: 30px;
-            border: 1px solid #D4AF37;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #500000;
-            background: #F5F5DC;
-            border-radius: 10px;
-            border: 1px solid #D4AF37;
-        }
-        
-        .empty-state h3 {
-            margin-bottom: 15px;
-            color: #800000;
-        }
-        
-        /* Skeleton Loading Styles */
-        .skeleton-loading {
-            display: block;
-        }
-        
-        .content-loaded {
-            display: none;
-        }
-        
-        .skeleton-header {
-            height: 80px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            animation: loading 1.5s infinite;
-        }
-        
-        .skeleton-user-info {
-            height: 120px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            animation: loading 1.5s infinite;
-        }
-        
-        .skeleton-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .skeleton-stat-card {
-            height: 120px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            border-radius: 15px;
-            animation: loading 1.5s infinite;
-        }
-        
-        .skeleton-section {
-            height: 30px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            animation: loading 1.5s infinite;
-        }
-        
-        .skeleton-teachers {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .skeleton-teacher-card {
-            height: 180px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            border-radius: 12px;
-            animation: loading 1.5s infinite;
-        }
-        
-        .skeleton-footer {
-            height: 80px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            border-radius: 8px;
-            margin-top: 40px;
-            animation: loading 1.5s infinite;
-        }
-        
-        @keyframes loading {
-            0% {
-                background-position: 200% 0;
-            }
-            100% {
-                background-position: -200% 0;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 15px;
-            }
-
-            .header h1 {
-                font-size: 1.5em;
-            }
-
-            .info-grid,
-            .stats-container,
-            .teachers-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .btn, .logout-btn {
-                width: 100%;
-                font-size: 0.9em;
-                padding: 12px;
-            }
-            
-            .section-form {
-                flex-direction: column;
-            }
-            
-            .section-select {
-                min-width: 100%;
-            }
-            
-            .change-section-btn {
-                width: 100%;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                padding: 20px;
-            }
-            
-            .stats-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .teachers-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .header h1 {
-                font-size: 1.8em;
-            }
-
-            .header-content {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .skeleton-stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .skeleton-teachers {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Skeleton Loading Structure -->
-    <div id="skeleton-loading" class="skeleton-loading">
-        <div class="container">
-            <div class="skeleton-header"></div>
-            <div class="skeleton-user-info"></div>
-            <div class="skeleton-stats">
-                <div class="skeleton-stat-card"></div>
-                <div class="skeleton-stat-card"></div>
-                <div class="skeleton-stat-card"></div>
-                <div class="skeleton-stat-card"></div>
-            </div>
-            <div class="skeleton-section"></div>
-            <div class="skeleton-section" style="width: 70%;"></div>
-            <div class="skeleton-teachers">
-                <div class="skeleton-teacher-card"></div>
-                <div class="skeleton-teacher-card"></div>
-                <div class="skeleton-teacher-card"></div>
-            </div>
-            <div class="skeleton-footer"></div>
-        </div>
-    </div>
-    
-    <!-- Actual Content -->
-    <div id="main-content" class="content-loaded">
-        <div class="container">
-            <div class="header">
-                <div class="header-content">
-                    <img src="logo.png" alt="School Logo" class="logo" onerror="this.style.display='none'">
-                    <div>
-                        <h1>Student Dashboard</h1>
-                        <p>Teacher Evaluation System</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="user-info">
-                <h3>👤 Welcome, <?php echo htmlspecialchars($student_full_name); ?>!</h3>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label>Username:</label>
-                        <span><?php echo htmlspecialchars($student_username); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Student ID:</label>
-                        <span><?php echo htmlspecialchars($student_id); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Current Program:</label>
-                        <span><?php echo htmlspecialchars($student_program); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label>Current Section:</label>
-                        <span><?php echo htmlspecialchars($student_section); ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <?php if (!empty($success)): ?>
-                <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-            <?php endif; ?>
-            
-            <?php if (!empty($error)): ?>
-                <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
-            <?php endif; ?>
-
-            <!-- Section Change Form -->
-            <?php if ($student_program !== 'Not Set' && !empty($available_sections)): ?>
-                <div class="section-change">
-                    <h3>🔄 Change Section</h3>
-                    <form method="post" class="section-form">
-                        <select name="new_section" class="section-select" required>
-                            <option value="">Select a section...</option>
-                            <?php foreach($available_sections as $section): ?>
-                                <option value="<?php echo htmlspecialchars($section); ?>" 
-                                    <?php echo $section == $student_section ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($section); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <button type="submit" name="change_section" value="1" class="change-section-btn">
-                            Change Section
-                        </button>
-                    </form>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($student_program !== 'Not Set' && $student_section !== 'Not Set'): ?>
-                <div class="stats-container">
-                    <div class="stat-card">
-                        <h3><?php echo $total_teachers; ?></h3>
-                        <p>Total Teachers</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3><?php echo $completed_evaluations; ?></h3>
-                        <p>Completed Evaluations</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3><?php echo $remaining_evaluations; ?></h3>
-                        <p>Remaining Evaluations</p>
-                    </div>
-                    <div class="stat-card progress-card">
-                        <h3><?php echo $completion_percentage; ?>%</h3>
-                        <p>Completion Progress</p>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: <?php echo $completion_percentage; ?>%;">
-                                <?php if ($completion_percentage > 20): ?>
-                                    <?php echo $completion_percentage; ?>%
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="teachers-section">
-                    <h2>👨‍🏫 Teachers Available for Evaluation</h2>
-                    <p style="color: #800000; margin-bottom: 20px;">
-                        Click "Evaluate Teacher" to start evaluating a teacher. Already evaluated teachers are marked as completed.
-                    </p>
-                    
-                    <?php if (!empty($teachers_result)): ?>
-                        <div class="teachers-grid">
-                            <?php foreach($teachers_result as $teacher): ?>
-                                <?php 
-                                    $teacher_key = $teacher['teacher_name'] . '|' . $teacher['subject'];
-                                    $is_evaluated = in_array($teacher_key, $evaluated_teachers); 
-                                ?>
-                                <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
-                                    <h4><?php echo htmlspecialchars($teacher['teacher_name']); ?></h4>
-                                    <p><strong>Subject:</strong> <?php echo htmlspecialchars($teacher['subject']); ?></p>
-                                    <p><strong>Section:</strong> <?php echo htmlspecialchars($teacher['section']); ?></p>
-                                    <p><strong>Program:</strong> <?php echo htmlspecialchars($teacher['program']); ?></p>
-                                    
-                                    <div class="evaluation-status">
-                                        <?php if ($is_evaluated): ?>
-                                            <span class="status-badge status-completed">✅ Evaluated</span>
-                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
-                                               class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
-                                                👁️ View Evaluation
-                                            </a>
-                                        <?php else: ?>
-                                            <span class="status-badge status-pending">⏳ Pending</span>
-                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&subject=<?php echo urlencode($teacher['subject']); ?>" 
-                                               class="btn" style="padding: 8px 15px; font-size: 0.9em;">
-                                                📝 Evaluate Teacher
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="empty-state">
-                            <h3>📭 No Teachers Found</h3>
-                            <p>No teachers are assigned to your current section (<?php echo htmlspecialchars($student_section); ?>).</p>
-                            <p>Try changing to a different section using the section changer above.</p>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            <?php else: ?>
-                <div class="no-program-message">
-                    <h3>⚠️ Incomplete Student Information</h3>
-                    <p>Your program or section information is missing from the system.</p>
-                    <p>Please contact your administrator to update your information in Google Sheets.</p>
-                    <p><strong>Current Info:</strong></p>
-                    <p>Program: <?php echo htmlspecialchars($student_program); ?></p>
-                    <p>Section: <?php echo htmlspecialchars($student_section); ?></p>
-                </div>
-            <?php endif; ?>
-            
-            <div class="logout-container">
-                <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
-                <p>Teacher Evaluation System - Student Dashboard</p>
-                <p style="margin-top: 10px;">
-                    Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
-                </p>
-                <a href="logout.php" class="logout-btn">🚪 Logout</a>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Show skeleton loading for 3 seconds
-            setTimeout(function() {
-                document.getElementById('skeleton-loading').style.display = 'none';
-                document.getElementById('main-content').style.display = 'block';
-            }, 3000);
-
-            // Add confirmation for logout
-            document.querySelector('.logout-btn').addEventListener('click', function(e) {
-                if (!confirm('Are you sure you want to logout?')) {
-                    e.preventDefault();
-                }
-            });
-
-            // Add loading state for evaluation buttons
-            const evalButtons = document.querySelectorAll('.btn');
-            evalButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const originalText = this.textContent;
-                    this.textContent = 'Loading...';
-                    this.style.pointerEvents = 'none';
-                    
-                    // Reset after 3 seconds if page doesn't navigate
-                    setTimeout(() => {
-                        this.textContent = originalText;
-                        this.style.pointerEvents = 'auto';
-                    }, 3000);
-                });
-            });
-
-            // Add loading state for section change button
-            const sectionChangeBtn = document.querySelector('.change-section-btn');
-            if (sectionChangeBtn) {
-                sectionChangeBtn.addEventListener('click', function() {
-                    const originalText = this.textContent;
-                    this.textContent = 'Changing...';
-                    this.style.pointerEvents = 'none';
-                    
-                    // Reset after 3 seconds if form doesn't submit
-                    setTimeout(() => {
-                        this.textContent = originalText;
-                        this.style.pointerEvents = 'auto';
-                    }, 3000);
-                });
-            }
-        });
-    </script>
-</body>
-</html>
-
