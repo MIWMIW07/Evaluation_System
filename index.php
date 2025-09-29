@@ -327,6 +327,10 @@
             overflow: hidden;
             z-index: 1;
             letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .btn::before {
@@ -357,7 +361,6 @@
         }
 
         .btn i {
-            margin-left: 8px;
             transition: transform 0.3s;
         }
 
@@ -365,11 +368,48 @@
             transform: translateX(5px);
         }
 
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .btn.loading .btn-text {
+            visibility: hidden;
+        }
+
+        .btn.loading .btn-spinner {
+            display: inline-block;
+        }
+
+        .btn-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .alert {
             padding: 12px;
             margin-bottom: 15px;
             border-radius: 8px;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .alert-success {
@@ -457,7 +497,9 @@
                 <span>Login to Your Account</span>
             </div>
             
-            <form method="POST" action="login.php">
+            <div id="message-container"></div>
+            
+            <form id="loginForm" method="POST">
                 <div class="form-group" data-aos="fade-right" data-aos-delay="700">
                     <label for="username" class="form-label">
                         <i class="fas fa-user"></i>
@@ -481,8 +523,10 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="btn">
-                    Sign In <i class="fas fa-arrow-right"></i>
+                <button type="submit" class="btn" id="loginButton">
+                    <span class="btn-text">Sign In</span>
+                    <i class="fas fa-arrow-right"></i>
+                    <div class="btn-spinner"></div>
                 </button>
             </form>
         </div>
@@ -511,6 +555,72 @@
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginButton = document.getElementById('loginButton');
+            const messageContainer = document.getElementById('message-container');
+            
+            // Clear previous messages
+            messageContainer.innerHTML = '';
+            
+            // Show loading state
+            loginButton.classList.add('loading');
+            
+            // Simulate processing for 3 seconds
+            setTimeout(() => {
+                // Check credentials (for demo purposes)
+                // In a real application, this would be done server-side
+                if (username === 'TOQUECHRISTOPHERGLEN' && password === 'admin123') {
+                    // Success message
+                    messageContainer.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Login successful! Redirecting to dashboard...</span>
+                        </div>
+                    `;
+                    
+                    // Redirect after a short delay
+                    setTimeout(() => {
+                        // In a real application, redirect to the dashboard
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                } else {
+                    // Error message
+                    messageContainer.innerHTML = `
+                        <div class="alert alert-error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span>Invalid username or password. Please try again.</span>
+                        </div>
+                    `;
+                    
+                    // Reset loading state
+                    loginButton.classList.remove('loading');
+                    
+                    // Shake animation for error
+                    const formContainer = document.querySelector('.form-container');
+                    formContainer.style.animation = 'shake 0.5s';
+                    setTimeout(() => {
+                        formContainer.style.animation = '';
+                    }, 500);
+                }
+            }, 3000);
+        });
+
+        // Add shake animation for error state
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                20%, 40%, 60%, 80% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
