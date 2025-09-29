@@ -1,4 +1,5 @@
 <?php
+//google_integration_dashboard.php
 session_start();
 require_once 'includes/db_connection.php';
 
@@ -233,28 +234,23 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
             loadActivityLog();
         });
         
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            const debugText = document.getElementById('debugModeText');
+            const debugInfo = document.getElementById('debugInfo');
+            
+            if (debugMode) {
+                debugText.textContent = 'Disable Debug Mode';
+                debugInfo.style.display = 'block';
+            } else {
+                debugText.textContent = 'Enable Debug Mode';
+                debugInfo.style.display = 'none';
+            }
+        }
+        
         function getApiEndpoint() {
-    // Use the regular API - debug is having issues
-    return 'google_integration_api.php';
-}
-
-// Set debug mode to false by default
-let debugMode = false;
-
-function toggleDebugMode() {
-    debugMode = !debugMode;
-    const debugText = document.getElementById('debugModeText');
-    const debugInfo = document.getElementById('debugInfo');
-    
-    if (debugMode) {
-        debugText.textContent = 'Disable Debug Mode';
-        debugInfo.style.display = 'block';
-        alert('Debug mode enabled - using detailed error reporting');
-    } else {
-        debugText.textContent = 'Enable Debug Mode';
-        debugInfo.style.display = 'none';
-    }
-}
+            return debugMode ? 'debug_google_api.php' : 'google_integration_api.php';
+        }
         
         function showResult(elementId, data, loading = false) {
             const element = document.getElementById(elementId);
@@ -336,21 +332,23 @@ function toggleDebugMode() {
             }
             
             try {
+                const formData = new FormData();
+                formData.append('action', action);
+                
                 const response = await fetch(getApiEndpoint(), {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `action=${action}`
+                    body: formData
                 });
                 
                 const responseText = await response.text();
+                console.log('Raw response:', responseText);
                 
                 // Try to parse as JSON
                 try {
                     const data = JSON.parse(responseText);
                     return data;
                 } catch (parseError) {
+                    console.error('JSON parse error:', parseError);
                     return {
                         success: false,
                         error: 'Invalid JSON response from server',
@@ -360,6 +358,7 @@ function toggleDebugMode() {
                 }
                 
             } catch (error) {
+                console.error('Network error:', error);
                 return {
                     success: false,
                     error: 'Network error: ' + error.message
@@ -462,7 +461,6 @@ function toggleDebugMode() {
         }
         
         function listBackups() {
-            // Simple implementation - could be enhanced
             const resultDiv = document.getElementById('backupResult');
             resultDiv.innerHTML = `
                 <div class="result-box result-warning">
