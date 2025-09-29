@@ -146,7 +146,7 @@ function getSystemStatus($pdo) {
     } catch (Exception $e) {
         return [
             'success' => false,
-            'error' => 'Backup failed: ' . $e->getMessage()
+            'error' => 'Status check failed: ' . $e->getMessage()
         ];
     }
 }
@@ -160,10 +160,6 @@ function formatBytes($size, $precision = 2) {
         $size /= 1024;
     }
     return round($size, $precision) . ' ' . $units[$i];
-}
-?>' => $e->getMessage()
-        ];
-    }
 }
 
 /**
@@ -451,4 +447,8 @@ function createDatabaseBackup($pdo) {
     } catch (Exception $e) {
         return [
             'success' => false,
-            'error
+            'error' => 'Backup failed: ' . $e->getMessage()
+        ];
+    }
+}
+?>
