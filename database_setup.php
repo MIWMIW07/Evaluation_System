@@ -756,10 +756,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                             Change Section
                         </button>
                     </form>
-                    <p class="current-section-note">
-                        Note: You can only change to sections within your current program (<?php echo htmlspecialchars($student_program); ?>).
-                        Changing your section will update the list of teachers available for evaluation.
-                    </p>
                 </div>
             <?php endif; ?>
 
@@ -907,3 +903,4 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
     </script>
 </body>
 </html>
+
