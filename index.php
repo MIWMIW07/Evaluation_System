@@ -70,7 +70,7 @@ if (isset($_SESSION['user_id'])) {
         }
 
         .login-container {
-            background: grey;
+            background: #F5F5F0;
             padding: 50px 45px;
             border-radius: 24px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
