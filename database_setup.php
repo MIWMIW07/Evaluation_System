@@ -62,9 +62,9 @@ function insertAllTeacherAssignments($pdo) {
     
     $inserted = 0;
     $stmt = $pdo->prepare("
-        INSERT INTO teacher_assignments (teacher_name, section, subject, program, school_year, semester, is_active)
+        INSERT INTO teacher_assignments (teacher_name, section, program, school_year, semester, is_active)
         VALUES (?, ?, ?, ?, '2025-2026', '1st', true)
-        ON CONFLICT (teacher_name, section, subject, school_year, semester) DO NOTHING
+        ON CONFLICT (teacher_name, section, school_year, semester) DO NOTHING
     ");
     
     // COLLEGE TEACHERS - All your real data
@@ -90,20 +90,6 @@ function insertAllTeacherAssignments($pdo) {
         'EDUC-4M1' => ['MS. TESORO', 'MR. ELLO', 'MS. TESORO', 'MS. TESORO'],
         'EDUC-4N1' => ['MS. TESORO'],
     ];
-    
-    foreach ($collegeTeachers as $section => $teachers) {
-        $subjectCounter = 1;
-        foreach ($teachers as $teacher) {
-            $teacher = cleanTeacherName($teacher);
-            if (!empty($teacher)) {
-                $subject = "Subject " . $subjectCounter;
-                $stmt->execute([$teacher, $section, $subject, 'COLLEGE']);
-                $inserted++;
-                $subjectCounter++;
-            }
-        }
-        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
-    }
     
     // SHS GRADE 11 TEACHERS
     echo "&nbsp;&nbsp;🎓 Adding SHS Grade 11 Teachers...<br>";
@@ -141,20 +127,6 @@ function insertAllTeacherAssignments($pdo) {
         'ABM1N1' => ['MS. TINGSON', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. CALCEÑA', 'MS. GAJIRAN'],
     ];
     
-    foreach ($shs11Teachers as $section => $teachers) {
-        $subjectCounter = 1;
-        foreach ($teachers as $teacher) {
-            $teacher = cleanTeacherName($teacher);
-            if (!empty($teacher)) {
-                $subject = "Subject " . $subjectCounter;
-                $stmt->execute([$teacher, $section, $subject, 'SHS']);
-                $inserted++;
-                $subjectCounter++;
-            }
-        }
-        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
-    }
-    
     // SHS GRADE 12 TEACHERS
     echo "&nbsp;&nbsp;🎓 Adding SHS Grade 12 Teachers...<br>";
     
@@ -191,20 +163,6 @@ function insertAllTeacherAssignments($pdo) {
         'ABM3N1' => ['MS. CARMONA', 'MR. BATILES', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA'],
     ];
     
-    foreach ($shs12Teachers as $section => $teachers) {
-        $subjectCounter = 1;
-        foreach ($teachers as $teacher) {
-            $teacher = cleanTeacherName($teacher);
-            if (!empty($teacher)) {
-                $subject = "Subject " . $subjectCounter;
-                $stmt->execute([$teacher, $section, $subject, 'SHS']);
-                $inserted++;
-                $subjectCounter++;
-            }
-        }
-        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
-    }
-    
     // SHS SC (Special Classes) TEACHERS
     echo "&nbsp;&nbsp;🌟 Adding SHS Special Classes Teachers...<br>";
     
@@ -221,23 +179,6 @@ function insertAllTeacherAssignments($pdo) {
         'HUMSS-12SC' => ['MR. LACERNA', 'MR. UMALI', 'MR. PATIAM', 'MR. ICABANDE', 'MR. VELE'],
         'ABM-12SC' => ['MR. LACERNA', 'MR. UMALI', 'MR. PATIAM', 'MS. IGHARAS', 'MS. IGHARAS'],
     ];
-    
-    foreach ($shsSCTeachers as $section => $teachers) {
-        $subjectCounter = 1;
-        foreach ($teachers as $teacher) {
-            $teacher = cleanTeacherName($teacher);
-            if (!empty($teacher)) {
-                $subject = "Subject " . $subjectCounter;
-                $stmt->execute([$teacher, $section, $subject, 'SHS']);
-                $inserted++;
-                $subjectCounter++;
-            }
-        }
-        echo "&nbsp;&nbsp;&nbsp;&nbsp;✓ Added " . count($teachers) . " teachers to {$section}<br>";
-    }
-    
-    return $inserted;
-}
 
 try {
     $pdo = getPDO();
@@ -274,14 +215,13 @@ try {
             id SERIAL PRIMARY KEY,
             teacher_name VARCHAR(100) NOT NULL,
             section VARCHAR(50) NOT NULL,
-            subject VARCHAR(100) NOT NULL,
             program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
             school_year VARCHAR(20) DEFAULT '2025-2026',
             semester VARCHAR(10) DEFAULT '1st' CHECK (semester IN ('1st','2nd')),
             is_active BOOLEAN DEFAULT true,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE (teacher_name, section, subject, school_year, semester)
+            UNIQUE (teacher_name, section, school_year, semester)
         );
         
         CREATE INDEX idx_teacher_name ON teacher_assignments(teacher_name);
@@ -303,8 +243,7 @@ try {
             teacher_name VARCHAR(100) NOT NULL,
             section VARCHAR(50) NOT NULL,
             program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
-            subject VARCHAR(100),
-            
+        
             -- Section 1: Teaching Ability (6 questions)
             q1_1 SMALLINT CHECK (q1_1 BETWEEN 1 AND 5),
             q1_2 SMALLINT CHECK (q1_2 BETWEEN 1 AND 5),
@@ -339,7 +278,7 @@ try {
             submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             
             -- Prevent duplicate evaluations
-            UNIQUE (student_username, teacher_name, subject, section)
+            UNIQUE (student_username, teacher_name, section)
         );
         
         CREATE INDEX idx_student_username ON evaluations(student_username);
@@ -382,13 +321,11 @@ try {
     // Show specific BSCS3M1 assignments (your section)
     echo "<div class='highlight'>";
     echo "<h3>🎯 Your Section (BSCS3M1) Teachers:</h3>";
-    $stmt = $pdo->prepare("SELECT teacher_name, subject FROM teacher_assignments WHERE section = ? AND program = ? ORDER BY subject");
     $stmt->execute(['BSCS3M1', 'COLLEGE']);
     $bscs3m1_teachers = $stmt->fetchAll();
     
     if ($bscs3m1_teachers) {
         foreach ($bscs3m1_teachers as $teacher) {
-            echo "<p>• <strong>{$teacher['teacher_name']}</strong> - {$teacher['subject']}</p>";
         }
         echo "<p style='color:green;'><strong>✅ Found " . count($bscs3m1_teachers) . " teachers for your section!</strong></p>";
     } else {
@@ -400,7 +337,6 @@ try {
     echo "<h3>🏫 System Information</h3>";
     echo "<p><strong>Tables Created:</strong></p>";
     echo "<ul>";
-    echo "<li>📋 <code>teacher_assignments</code> - All real teacher-section-subject assignments</li>";
     echo "<li>📊 <code>evaluations</code> - Student evaluation responses storage</li>";
     echo "</ul>";
     
@@ -434,3 +370,4 @@ try {
     exit(1);
 }
 ?>
+
