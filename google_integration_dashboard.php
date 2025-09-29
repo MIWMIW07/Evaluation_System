@@ -195,6 +195,14 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
             <button class="btn btn-success" onclick="generateReports()">Generate All Reports to Google Drive</button>
             <div id="reportResult"></div>
         </div>
+
+        <div class="card">
+    <h3>🔍 Debug Report Location</h3>
+    <p>Check where your reports are being saved:</p>
+    <button class="btn btn-warning" onclick="debugReports()">Debug Report Location</button>
+    <div id="debugReportResult"></div>
+</div>
+
         
         <div class="card">
             <h3>💾 Backup & Restore</h3>
@@ -468,6 +476,19 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
                 </div>
             `;
         }
+
+        async function debugReports() {
+    const resultDiv = document.getElementById('debugReportResult');
+    resultDiv.innerHTML = '<p class="loading">Checking report location...</p>';
+    
+    try {
+        const response = await fetch('debug_reports.php');
+        const html = await response.text();
+        resultDiv.innerHTML = `<div class="debug-details">${html}</div>`;
+    } catch (error) {
+        resultDiv.innerHTML = `<div class="result-box result-error">Error: ${error.message}</div>`;
+    }
+}
     </script>
 </body>
 </html>
