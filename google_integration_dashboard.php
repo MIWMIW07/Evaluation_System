@@ -233,23 +233,28 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
             loadActivityLog();
         });
         
-        function toggleDebugMode() {
-            debugMode = !debugMode;
-            const debugText = document.getElementById('debugModeText');
-            const debugInfo = document.getElementById('debugInfo');
-            
-            if (debugMode) {
-                debugText.textContent = 'Disable Debug Mode';
-                debugInfo.style.display = 'block';
-            } else {
-                debugText.textContent = 'Enable Debug Mode';
-                debugInfo.style.display = 'none';
-            }
-        }
-        
         function getApiEndpoint() {
-            return debugMode ? 'debug_google_api.php' : 'google_integration_api.php';
-        }
+    // Use the regular API - debug is having issues
+    return 'google_integration_api.php';
+}
+
+// Set debug mode to false by default
+let debugMode = false;
+
+function toggleDebugMode() {
+    debugMode = !debugMode;
+    const debugText = document.getElementById('debugModeText');
+    const debugInfo = document.getElementById('debugInfo');
+    
+    if (debugMode) {
+        debugText.textContent = 'Disable Debug Mode';
+        debugInfo.style.display = 'block';
+        alert('Debug mode enabled - using detailed error reporting');
+    } else {
+        debugText.textContent = 'Enable Debug Mode';
+        debugInfo.style.display = 'none';
+    }
+}
         
         function showResult(elementId, data, loading = false) {
             const element = document.getElementById(elementId);
