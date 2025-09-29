@@ -13,6 +13,21 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 ?>
+<?php
+session_start();
+
+// Check if user is already logged in
+if (isset($_SESSION['user_id'])) {
+    if ($_SESSION['user_type'] === 'admin') {
+        header('Location: admin.php');
+    } elseif ($_SESSION['user_type'] === 'student') {
+        header('Location: student_dashboard.php');
+    } else {
+        header('Location: login.php');
+    }
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -164,6 +179,10 @@ input[type="text"]:focus, input[type="password"]:focus {
     position: relative;
     overflow: hidden;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
 .btn::before {
@@ -179,18 +198,42 @@ input[type="text"]:focus, input[type="password"]:focus {
     transition: opacity 0.4s ease;
 }
 
-.btn:hover {
+.btn:hover:not(.btn-loading) {
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(128, 0, 0, 0.4);
 }
 
-.btn:hover::before {
+.btn:hover:not(.btn-loading)::before {
     opacity: 1;
 }
 
-.btn:active {
+.btn:active:not(.btn-loading) {
     transform: translateY(-1px);
     box-shadow: 0 4px 10px rgba(128, 0, 0, 0.4);
+}
+
+.btn-loading {
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 4px 15px rgba(128, 0, 0, 0.3);
+}
+
+.btn-loading::before {
+    opacity: 1;
+}
+
+.loading-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 2px solid white;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .alert {
@@ -253,7 +296,7 @@ input[type="text"]:focus, input[type="password"]:focus {
             </div>
         </div>
         
-        <form method="POST" action="login.php">
+        <form method="POST" action="login.php" id="loginForm">
             <div class="form-group" data-aos="fade-right" data-aos-delay="800">
                 <label for="username">Username</label>
                 <div class="input-container">
@@ -271,7 +314,10 @@ input[type="text"]:focus, input[type="password"]:focus {
                 </div>
             </div>
             
-            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1200">Login</button>
+            <button type="submit" class="btn" id="loginButton" data-aos="zoom-in" data-aos-delay="1200">
+                <span id="buttonText">Login</span>
+                <div class="loading-spinner" id="loadingSpinner" style="display: none;"></div>
+            </button>
         </form>
         
         <div class="footer">
@@ -297,6 +343,27 @@ input[type="text"]:focus, input[type="password"]:focus {
             // Toggle eye icon
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
+        });
+
+        // Login form submission with loading animation
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const loginButton = document.getElementById('loginButton');
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            
+            // Show loading state
+            loginButton.classList.add('btn-loading');
+            buttonText.textContent = 'Processing...';
+            loadingSpinner.style.display = 'block';
+            loginButton.disabled = true;
+            
+            // Simulate 3-second processing
+            setTimeout(function() {
+                // Submit the form after 3 seconds
+                document.getElementById('loginForm').submit();
+            }, 3000);
         });
     </script>
 </body>
