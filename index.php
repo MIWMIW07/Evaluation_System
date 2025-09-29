@@ -413,11 +413,6 @@
             
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-            
-            setTimeout(function() {
-                form.submit();
-            }, 3000);
-        });
 
         document.getElementById('passwordToggle').addEventListener('click', function() {
             const passwordInput = document.getElementById('password');
