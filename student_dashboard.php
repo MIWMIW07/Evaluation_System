@@ -734,7 +734,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             <div class="change-section">
                 <h3>🔄 Change Section</h3>
                 <p style="color: #800000; margin-bottom: 15px;">
-                    Select a different section to view and evaluate teachers assigned to that section.
+                    Select a different section for back subject to evaluate the teachers assigned to that subject.
                 </p>
                 
                 <form method="post" action="" class="change-section-form">
@@ -758,7 +758,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 <?php if (!empty($available_sections)): ?>
                     <div style="margin-top: 15px; font-size: 0.9em; color: #500000;">
                         
-                        <?php echo implode(', ', $available_sections); ?>
                     </div>
                 <?php else: ?>
                     <div style="margin-top: 15px; color: #800000;">
