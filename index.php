@@ -23,7 +23,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
-            overflow: hidden;
+            overflow: auto;
             position: relative;
         }
 
@@ -110,6 +110,7 @@
             transition: transform 0.3s ease;
             display: flex;
             flex-direction: column;
+            margin: 20px 0;
         }
 
         .login-container:hover {
@@ -192,7 +193,7 @@
             border: 1px solid rgba(212, 175, 55, 0.2);
             margin-bottom: 15px;
             flex-grow: 1;
-            /* Removed scrollbar properties */
+            /* Removed scroll properties */
             overflow: visible;
         }
 
@@ -459,16 +460,18 @@
             <form method="POST" action="login.php">
                 <div class="form-group" data-aos="fade-right" data-aos-delay="700">
                     <label for="username" class="form-label">
+                        <i class="fas fa-user"></i>
                         Username
                     </label>
                     <div class="input-container">
-                        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required value="TOQUECHRISTOPHERGLEN">
                         <i class="fas fa-user input-icon"></i>
                     </div>
                 </div>
                 
                 <div class="form-group" data-aos="fade-right" data-aos-delay="900">
                     <label for="password" class="form-label">
+                        <i class="fas fa-lock"></i>
                         Password
                     </label>
                     <div class="input-container">
@@ -485,7 +488,7 @@
                     </label>
                 </div>
                 
-                <button type="submit" class="btn" >
+                <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1100">
                     Sign In <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
