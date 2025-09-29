@@ -108,7 +108,6 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(212, 175, 55, 0.3);
             transition: transform 0.3s ease;
-            max-height: 90vh;
             display: flex;
             flex-direction: column;
         }
@@ -193,22 +192,8 @@
             border: 1px solid rgba(212, 175, 55, 0.2);
             margin-bottom: 15px;
             flex-grow: 1;
-            overflow-y: auto;
-            max-height: 400px;
-        }
-
-        .form-container::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .form-container::-webkit-scrollbar-track {
-            background: rgba(212, 175, 55, 0.1);
-            border-radius: 4px;
-        }
-
-        .form-container::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #D4AF37 0%, #800000 100%);
-            border-radius: 4px;
+            /* Removed scrollbar properties */
+            overflow: visible;
         }
 
         .form-header {
@@ -415,7 +400,6 @@
         @media (max-width: 480px) {
             .login-container {
                 padding: 20px 15px;
-                max-height: 95vh;
             }
             
             h1 {
@@ -432,7 +416,6 @@
             
             .form-container {
                 padding: 15px;
-                max-height: 350px;
             }
             
             .form-header {
