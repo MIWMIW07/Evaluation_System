@@ -874,7 +874,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             setTimeout(function() {
                 document.getElementById('skeleton-loading').style.display = 'none';
                 document.getElementById('main-content').style.display = 'block';
-            }, 3000);
+            }, 1000);
 
             // Add confirmation for logout
             document.querySelector('.logout-btn').addEventListener('click', function(e) {
