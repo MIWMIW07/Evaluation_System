@@ -98,7 +98,7 @@
 
         .login-container {
             background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
+            padding: 30px;
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.3);
             width: 100%;
@@ -108,6 +108,9 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(212, 175, 55, 0.3);
             transition: transform 0.3s ease;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .login-container:hover {
@@ -116,8 +119,8 @@
 
         .header-container {
             text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
             border-bottom: 2px solid #D4AF37;
             position: relative;
         }
@@ -137,10 +140,10 @@
             align-items: center;
             justify-content: center;
             background: rgba(212, 175, 55, 0.15);
-            padding: 15px;
+            padding: 12px;
             border-radius: 12px;
             border-left: 4px solid #D4AF37;
-            margin-top: 20px;
+            margin-top: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
@@ -151,22 +154,22 @@
             background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 15px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .logo {
-            height: 60px;
+            height: 50px;
             width: auto;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
         }
 
         h1 {
             color: #800000;
-            font-size: 32px;
+            font-size: 28px;
             line-height: 1.3;
             margin-bottom: 5px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -175,7 +178,7 @@
 
         .system-subtitle {
             color: #D4AF37;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 600;
             text-shadow: 0 2px 4px rgba(0,0,0,0.1);
             letter-spacing: 1px;
@@ -185,38 +188,55 @@
         .form-container {
             background: rgba(255, 255, 255, 0.8);
             border-radius: 16px;
-            padding: 30px;
+            padding: 20px;
             box-shadow: 0 8px 25px rgba(128, 0, 0, 0.1);
             border: 1px solid rgba(212, 175, 55, 0.2);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .form-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .form-container::-webkit-scrollbar-track {
+            background: rgba(212, 175, 55, 0.1);
+            border-radius: 4px;
+        }
+
+        .form-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #D4AF37 0%, #800000 100%);
+            border-radius: 4px;
         }
 
         .form-header {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             color: #800000;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .form-header i {
             color: #D4AF37;
-            font-size: 22px;
+            font-size: 20px;
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             position: relative;
         }
 
         .form-label {
             display: block;
             color: #800000;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-weight: 600;
             font-size: 14px;
             letter-spacing: 0.5px;
@@ -238,10 +258,10 @@
 
         input[type="text"], input[type="password"] {
             width: 100%;
-            padding: 16px 20px 16px 50px;
+            padding: 14px 15px 14px 45px;
             border: 2px solid #e0e0e0;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 15px;
             transition: all 0.3s;
             background-color: rgba(255, 255, 255, 0.9);
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
@@ -257,11 +277,11 @@
 
         .input-icon {
             position: absolute;
-            left: 18px;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
             color: #800000;
-            font-size: 18px;
+            font-size: 17px;
             transition: color 0.3s;
         }
 
@@ -271,12 +291,12 @@
 
         .password-toggle {
             position: absolute;
-            right: 18px;
+            right: 16px;
             top: 50%;
             transform: translateY(-50%);
             color: #800000;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 17px;
             transition: color 0.3s;
         }
 
@@ -288,7 +308,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 20px;
+            margin-top: 15px;
             font-size: 14px;
         }
 
@@ -304,25 +324,14 @@
             accent-color: #D4AF37;
         }
 
-        .forgot-password {
-            color: #800000;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .forgot-password:hover {
-            color: #D4AF37;
-            text-decoration: underline;
-        }
-
         .btn {
             width: 100%;
             background: linear-gradient(135deg, #D4AF37 0%, #800000 100%);
             color: white;
-            padding: 16px;
+            padding: 15px;
             border: none;
             border-radius: 12px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.4s ease;
@@ -371,8 +380,8 @@
         }
 
         .alert {
-            padding: 15px;
-            margin-bottom: 20px;
+            padding: 12px;
+            margin-bottom: 15px;
             border-radius: 8px;
             font-weight: 500;
         }
@@ -391,11 +400,11 @@
 
         .footer {
             text-align: center;
-            margin-top: 30px;
+            margin-top: 15px;
             color: #666;
             font-size: 12px;
             border-top: 1px solid rgba(212, 175, 55, 0.3);
-            padding-top: 20px;
+            padding-top: 15px;
         }
 
         .copyright {
@@ -405,11 +414,12 @@
 
         @media (max-width: 480px) {
             .login-container {
-                padding: 30px 20px;
+                padding: 20px 15px;
+                max-height: 95vh;
             }
             
             h1 {
-                font-size: 26px;
+                font-size: 24px;
             }
             
             .system-subtitle {
@@ -417,16 +427,21 @@
             }
             
             .school-name {
-                font-size: 14px;
+                font-size: 13px;
             }
             
             .form-container {
-                padding: 20px;
+                padding: 15px;
+                max-height: 350px;
+            }
+            
+            .form-header {
+                font-size: 16px;
             }
             
             .form-options {
                 flex-direction: column;
-                gap: 15px;
+                gap: 10px;
                 align-items: flex-start;
             }
         }
@@ -487,7 +502,6 @@
                         <input type="checkbox" name="remember">
                         Remember me
                     </label>
-                    <a href="#" class="forgot-password">Forgot Password?</a>
                 </div>
                 
                 <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1100">
