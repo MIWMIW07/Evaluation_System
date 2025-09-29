@@ -1,23 +1,16 @@
 <?php
-// Check if session is not already started
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
+session_start();
 
 // Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['user_type'] === 'admin') {
         header('Location: admin.php');
-        exit();
     } elseif ($_SESSION['user_type'] === 'student') {
         header('Location: student_dashboard.php');
-        exit();
     } else {
-        // If user_type is invalid, clear session and redirect to login
-        session_destroy();
         header('Location: login.php');
-        exit();
     }
+    exit();
 }
 ?>
 <!DOCTYPE html>
@@ -171,10 +164,6 @@ input[type="text"]:focus, input[type="password"]:focus {
     position: relative;
     overflow: hidden;
     z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
 }
 
 .btn::before {
@@ -190,42 +179,18 @@ input[type="text"]:focus, input[type="password"]:focus {
     transition: opacity 0.4s ease;
 }
 
-.btn:hover:not(.btn-loading) {
+.btn:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(128, 0, 0, 0.4);
 }
 
-.btn:hover:not(.btn-loading)::before {
+.btn:hover::before {
     opacity: 1;
 }
 
-.btn:active:not(.btn-loading) {
+.btn:active {
     transform: translateY(-1px);
     box-shadow: 0 4px 10px rgba(128, 0, 0, 0.4);
-}
-
-.btn-loading {
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: 0 4px 15px rgba(128, 0, 0, 0.3);
-}
-
-.btn-loading::before {
-    opacity: 1;
-}
-
-.loading-spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top: 2px solid white;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
 }
 
 .alert {
@@ -288,39 +253,12 @@ input[type="text"]:focus, input[type="password"]:focus {
             </div>
         </div>
         
-        <!-- Display error messages if any -->
-        <?php if (isset($_GET['error'])): ?>
-            <div class="alert alert-error" data-aos="fade-down">
-                <?php 
-                $errors = [
-                    'invalid' => 'Invalid username or password.',
-                    'empty' => 'Please enter both username and password.',
-                    'inactive' => 'Your account is inactive. Please contact administrator.'
-                ];
-                echo $errors[$_GET['error']] ?? 'An error occurred. Please try again.';
-                ?>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (isset($_GET['success'])): ?>
-            <div class="alert alert-success" data-aos="fade-down">
-                <?php 
-                $success = [
-                    'logout' => 'You have been successfully logged out.',
-                    'registered' => 'Registration successful. Please login.'
-                ];
-                echo $success[$_GET['success']] ?? 'Operation completed successfully.';
-                ?>
-            </div>
-        <?php endif; ?>
-        
-        <form method="POST" action="login_process.php" id="loginForm">
+        <form method="POST" action="login.php">
             <div class="form-group" data-aos="fade-right" data-aos-delay="800">
                 <label for="username">Username</label>
                 <div class="input-container">
                     <i class="fas fa-user input-icon"></i>
-                    <input type="text" id="username" name="username" placeholder="Enter your username" required 
-                           value="<?php echo isset($_GET['username']) ? htmlspecialchars($_GET['username']) : ''; ?>">
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
                 </div>
             </div>
             
@@ -333,10 +271,7 @@ input[type="text"]:focus, input[type="password"]:focus {
                 </div>
             </div>
             
-            <button type="submit" class="btn" id="loginButton" data-aos="zoom-in" data-aos-delay="1200">
-                <span id="buttonText">Login</span>
-                <div class="loading-spinner" id="loadingSpinner" style="display: none;"></div>
-            </button>
+            <button type="submit" class="btn" data-aos="zoom-in" data-aos-delay="1200">Login</button>
         </form>
         
         <div class="footer">
@@ -363,35 +298,6 @@ input[type="text"]:focus, input[type="password"]:focus {
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
-
-        // Login form submission with loading animation
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            const loginButton = document.getElementById('loginButton');
-            const buttonText = document.getElementById('buttonText');
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            
-            // Basic validation
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-            
-            if (!username || !password) {
-                alert('Please enter both username and password.');
-                e.preventDefault();
-                return;
-            }
-            
-            // Show loading state
-            loginButton.classList.add('btn-loading');
-            buttonText.textContent = 'Processing...';
-            loadingSpinner.style.display = 'block';
-            loginButton.disabled = true;
-            
-            // Allow form to submit normally - remove the timeout if you want actual form submission
-            // For demo purposes, we'll keep the 3-second delay but you should remove this in production
-            setTimeout(function() {
-                // Form will submit normally after 3 seconds
-            }, 3000);
-        });
     </script>
 </body>
-</html>
+</html> 
