@@ -1,3 +1,19 @@
+<?php
+session_start();
+
+// Check if user is already logged in
+if (isset($_SESSION['user_id'])) {
+    if ($_SESSION['user_type'] === 'admin') {
+        header('Location: admin.php');
+    } elseif ($_SESSION['user_type'] === 'student') {
+        header('Location: student_dashboard.php');
+    } else {
+        header('Location: login.php');
+    }
+    exit();
+}
+?>
+    
 <!DOCTYPE html>
 <html lang="en">
 <head>
