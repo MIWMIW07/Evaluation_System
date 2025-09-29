@@ -206,7 +206,6 @@ class GoogleSheetsHelper {
             $evaluationData['teacher_name'],
             $evaluationData['section'],
             $evaluationData['program'],
-            $evaluationData['subject'] ?? '',
             
             // Section 1: Teaching Ability (6 questions)
             $evaluationData['q1_1'], $evaluationData['q1_2'], $evaluationData['q1_3'],
