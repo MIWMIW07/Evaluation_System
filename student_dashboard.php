@@ -28,6 +28,12 @@ $student_program = $_SESSION['program'] ?? 'Not Set';
 $student_section = $_SESSION['section'] ?? 'Not Set';
 $student_id = $_SESSION['student_id'];
 
+// Define program levels and their respective programs
+$program_levels = [
+    'Senior High' => ['ABM', 'HE', 'HUMSS', 'ICT'],
+    'College' => ['BSCS', 'EDUC', 'BSOA']
+];
+
 // Get available programs and sections from teacher_assignments table
 $available_programs = [];
 $available_sections = [];
@@ -61,22 +67,37 @@ try {
     $available_sections = [];
 }
 
+// Determine current program level based on current program
+$current_level = '';
+foreach ($program_levels as $level => $programs) {
+    if (in_array($student_program, $programs)) {
+        $current_level = $level;
+        break;
+    }
+}
+if (empty($current_level)) {
+    $current_level = 'Senior High'; // Default level
+}
+
 // Handle section/program update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_section_program'])) {
+    $new_level = trim($_POST['level']);
     $new_program = trim($_POST['program']);
     $new_section = trim($_POST['section']);
     
-    if (!empty($new_program) && !empty($new_section)) {
+    if (!empty($new_level) && !empty($new_program) && !empty($new_section)) {
         // Update session variables
+        $_SESSION['level'] = $new_level;
         $_SESSION['program'] = $new_program;
         $_SESSION['section'] = $new_section;
         
+        $current_level = $new_level;
         $student_program = $new_program;
         $student_section = $new_section;
         
-        $success = "Section and Program updated successfully!";
+        $success = "Level, Program and Section updated successfully!";
     } else {
-        $error = "Please select both Program and Section.";
+        $error = "Please select Level, Program and Section.";
     }
 }
 
@@ -255,8 +276,8 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         
         .update-form {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
             align-items: end;
         }
         
@@ -719,6 +740,10 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                         <span><?php echo htmlspecialchars($student_id); ?></span>
                     </div>
                     <div class="info-item">
+                        <label>Current Level:</label>
+                        <span><?php echo htmlspecialchars($current_level); ?></span>
+                    </div>
+                    <div class="info-item">
                         <label>Current Program:</label>
                         <span><?php echo htmlspecialchars($student_program); ?></span>
                     </div>
@@ -731,21 +756,30 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             
             <!-- New Section Update Form -->
             <div class="section-update">
-                <h3>🔄 Update Section & Program</h3>
-                <p>Select your program and section from the dropdown lists below:</p>
+                <h3>🔄 Update Level, Program & Section</h3>
+                <p>Select your level, program, and section from the dropdown lists below:</p>
                 
                 <form method="POST" class="update-form">
+                    <div class="form-group">
+                        <label for="level">Level:</label>
+                        <select id="level" name="level" class="form-control" required>
+                            <option value="">-- Select Level --</option>
+                            <option value="Senior High" <?php echo ($current_level === 'Senior High') ? 'selected' : ''; ?>>Senior High</option>
+                            <option value="College" <?php echo ($current_level === 'College') ? 'selected' : ''; ?>>College</option>
+                        </select>
+                    </div>
+                    
                     <div class="form-group">
                         <label for="program">Program:</label>
                         <select id="program" name="program" class="form-control" required>
                             <option value="">-- Select Program --</option>
-                            <?php foreach($available_programs as $program): ?>
+                            <?php foreach($program_levels[$current_level] as $program): ?>
                                 <option value="<?php echo htmlspecialchars($program); ?>" 
                                     <?php echo ($program === $student_program) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($program); ?>
                                 </option>
                             <?php endforeach; ?>
-                            <?php if (!empty($student_program) && !in_array($student_program, $available_programs)): ?>
+                            <?php if (!empty($student_program) && !in_array($student_program, $program_levels[$current_level])): ?>
                                 <option value="<?php echo htmlspecialchars($student_program); ?>" selected>
                                     <?php echo htmlspecialchars($student_program); ?> (Current)
                                 </option>
@@ -773,7 +807,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     
                     <div class="form-group">
                         <button type="submit" name="update_section_program" class="btn">
-                            💾 Update Section & Program
+                            💾 Update Level, Program & Section
                         </button>
                     </div>
                 </form>
@@ -867,8 +901,9 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 <div class="no-program-message">
                     <h3>⚠️ Incomplete Student Information</h3>
                     <p>Your program or section information is missing from the system.</p>
-                    <p>Please use the form above to update your program and section information.</p>
+                    <p>Please use the form above to update your level, program and section information.</p>
                     <p><strong>Current Info:</strong></p>
+                    <p>Level: <?php echo htmlspecialchars($current_level); ?></p>
                     <p>Program: <?php echo htmlspecialchars($student_program); ?></p>
                     <p>Section: <?php echo htmlspecialchars($student_section); ?></p>
                 </div>
@@ -916,20 +951,65 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 });
             });
             
+            // Program levels data
+            const programLevels = {
+                'Senior High': ['ABM', 'HE', 'HUMSS', 'ICT'],
+                'College': ['BSCS', 'EDUC', 'BSOA']
+            };
+            
+            // Handle level change to update program options
+            const levelSelect = document.getElementById('level');
+            const programSelect = document.getElementById('program');
+            
+            if (levelSelect && programSelect) {
+                levelSelect.addEventListener('change', function() {
+                    const selectedLevel = this.value;
+                    const currentProgram = '<?php echo $student_program; ?>';
+                    
+                    // Clear existing options except the first one
+                    while (programSelect.options.length > 1) {
+                        programSelect.remove(1);
+                    }
+                    
+                    if (selectedLevel && programLevels[selectedLevel]) {
+                        // Add programs for the selected level
+                        programLevels[selectedLevel].forEach(function(program) {
+                            const option = document.createElement('option');
+                            option.value = program;
+                            option.textContent = program;
+                            if (program === currentProgram) {
+                                option.selected = true;
+                            }
+                            programSelect.appendChild(option);
+                        });
+                        
+                        // Add current program if it's not in the list
+                        if (currentProgram && !programLevels[selectedLevel].includes(currentProgram)) {
+                            const option = document.createElement('option');
+                            option.value = currentProgram;
+                            option.textContent = currentProgram + ' (Current)';
+                            option.selected = true;
+                            programSelect.appendChild(option);
+                        }
+                    }
+                });
+            }
+            
             // Add confirmation for section update
             const updateForm = document.querySelector('.update-form');
             if (updateForm) {
                 updateForm.addEventListener('submit', function(e) {
+                    const level = document.getElementById('level').value;
                     const program = document.getElementById('program').value;
                     const section = document.getElementById('section').value;
                     
-                    if (!program || !section) {
+                    if (!level || !program || !section) {
                         e.preventDefault();
-                        alert('Please select both Program and Section.');
+                        alert('Please select Level, Program and Section.');
                         return;
                     }
                     
-                    if (!confirm('Are you sure you want to update your section and program? This will refresh the teacher list.')) {
+                    if (!confirm('Are you sure you want to update your level, program and section? This will refresh the teacher list.')) {
                         e.preventDefault();
                     }
                 });
