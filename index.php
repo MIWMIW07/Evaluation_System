@@ -431,7 +431,7 @@ if (isset($_SESSION['user_id'])) {
 
              setTimeout(function() {
                 form.submit();
-            }, 3000);
+            }, 1000);
         });
 
         document.getElementById('passwordToggle').addEventListener('click', function() {
