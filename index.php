@@ -327,10 +327,6 @@
             overflow: hidden;
             z-index: 1;
             letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
         }
 
         .btn::before {
@@ -361,6 +357,7 @@
         }
 
         .btn i {
+            margin-left: 8px;
             transition: transform 0.3s;
         }
 
@@ -368,48 +365,11 @@
             transform: translateX(5px);
         }
 
-        .btn.loading {
-            pointer-events: none;
-            opacity: 0.8;
-        }
-
-        .btn.loading .btn-text {
-            visibility: hidden;
-        }
-
-        .btn.loading .btn-spinner {
-            display: inline-block;
-        }
-
-        .btn-spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 2px solid transparent;
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         .alert {
             padding: 12px;
             margin-bottom: 15px;
             border-radius: 8px;
             font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .alert-success {
@@ -436,34 +396,6 @@
         .copyright {
             color: #800000;
             font-weight: 500;
-        }
-
-        .user-type-selector {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            background: rgba(212, 175, 55, 0.1);
-            padding: 10px;
-            border-radius: 10px;
-        }
-
-        .user-type-btn {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid transparent;
-            border-radius: 8px;
-            background: white;
-            color: #800000;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-
-        .user-type-btn.active {
-            background: linear-gradient(135deg, #D4AF37 0%, #800000 100%);
-            color: white;
-            border-color: #D4AF37;
         }
 
         @media (max-width: 480px) {
@@ -525,23 +457,14 @@
                 <span>Login to Your Account</span>
             </div>
             
-            <div class="user-type-selector">
-                <button type="button" class="user-type-btn active" data-type="student">Student</button>
-                <button type="button" class="user-type-btn" data-type="teacher">Teacher</button>
-            </div>
-            
-            <div id="message-container"></div>
-            
-            <form id="loginForm" method="POST" action="login.php">
-                <input type="hidden" id="user_type" name="user_type" value="student">
-                
+            <form method="POST" action="login.php">
                 <div class="form-group" data-aos="fade-right" data-aos-delay="700">
                     <label for="username" class="form-label">
                         <i class="fas fa-user"></i>
                         Username
                     </label>
                     <div class="input-container">
-                        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required value="TOQUECHRISTOPHERGLEN">
                         <i class="fas fa-user input-icon"></i>
                     </div>
                 </div>
@@ -558,10 +481,8 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="btn" id="loginButton">
-                    <span class="btn-text">Sign In</span>
-                    <i class="fas fa-arrow-right"></i>
-                    <div class="btn-spinner"></div>
+                <button type="submit" class="btn">
+                    Sign In <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
         </div>
@@ -590,131 +511,7 @@
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
-
-        // User type selector
-        const userTypeButtons = document.querySelectorAll('.user-type-btn');
-        const userTypeInput = document.getElementById('user_type');
-        
-        userTypeButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                // Remove active class from all buttons
-                userTypeButtons.forEach(btn => btn.classList.remove('active'));
-                // Add active class to clicked button
-                this.classList.add('active');
-                // Update hidden input value
-                userTypeInput.value = this.getAttribute('data-type');
-            });
-        });
-
-        // Login form submission
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const userType = document.getElementById('user_type').value;
-            const loginButton = document.getElementById('loginButton');
-            const messageContainer = document.getElementById('message-container');
-            
-            // Clear previous messages
-            messageContainer.innerHTML = '';
-            
-            // Validate inputs
-            if (!username.trim() || !password.trim()) {
-                messageContainer.innerHTML = `
-                    <div class="alert alert-error">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span>Please enter both username and password.</span>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Show loading state
-            loginButton.classList.add('loading');
-            
-            // Create form data for submission
-            const formData = new FormData();
-            formData.append('username', username);
-            formData.append('password', password);
-            formData.append('user_type', userType);
-            
-            // Submit to actual login.php
-            fetch('login.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.text();
-            })
-            .then(data => {
-                // Reset loading state
-                loginButton.classList.remove('loading');
-                
-                // Check if login was successful based on response
-                // This assumes login.php redirects on success or returns an error message
-                if (data.includes('success') || data.includes('dashboard')) {
-                    // Success message
-                    messageContainer.innerHTML = `
-                        <div class="alert alert-success">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Login successful! Redirecting to dashboard...</span>
-                        </div>
-                    `;
-                    
-                    // Redirect after a short delay
-                    setTimeout(() => {
-                        if (userType === 'student') {
-                            window.location.href = 'student_dashboard.php';
-                        } else {
-                            window.location.href = 'teacher_dashboard.php';
-                        }
-                    }, 1500);
-                } else {
-                    // Error message
-                    messageContainer.innerHTML = `
-                        <div class="alert alert-error">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <span>Invalid username or password. Please try again.</span>
-                        </div>
-                    `;
-                    
-                    // Shake animation for error
-                    const formContainer = document.querySelector('.form-container');
-                    formContainer.style.animation = 'shake 0.5s';
-                    setTimeout(() => {
-                        formContainer.style.animation = '';
-                    }, 500);
-                }
-            })
-            .catch(error => {
-                // Reset loading state
-                loginButton.classList.remove('loading');
-                
-                // Network or server error
-                messageContainer.innerHTML = `
-                    <div class="alert alert-error">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span>Login failed. Please check your connection and try again.</span>
-                    </div>
-                `;
-                console.error('Login error:', error);
-            });
-        });
-
-        // Add shake animation for error state
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes shake {
-                0%, 100% { transform: translateX(0); }
-                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-                20%, 40%, 60%, 80% { transform: translateX(5px); }
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 </html>
+lagyan mo ng error message pag mali ang password or username at lagyan mo din ng ng successfull message pag tama tapos dun sa loob ng login button lagyan mo ng loading processing 3sec
