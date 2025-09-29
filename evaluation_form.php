@@ -1156,43 +1156,104 @@ if ($is_view_mode && $existing_evaluation) {
                 tagalogContent.forEach(el => el.style.display = 'none');
             }
 
-            // Update progress bar
+            // Update progress bar - FIXED VERSION
             function updateProgress() {
                 if (!form) return;
                 
-                // Get all unique radio group names (English only, since we sync them)
-                const radioNames = new Set();
-                const radioInputs = form.querySelectorAll('input[type="radio"]:not([name*="_tl"])');
-                radioInputs.forEach(input => radioNames.add(input.name));
-                
-                const totalRatings = radioNames.size;
-                let answeredRatings = 0;
-                
-                // Check each radio group
-                radioNames.forEach(name => {
-                    const checked = form.querySelector(`input[name="${name}"]:checked`);
-                    if (checked) answeredRatings++;
-                });
+                let totalFields = 0;
+                let completedFields = 0;
 
-                // Comments: check if both positive and negative are filled
-                const totalComments = 2;
-                let answeredComments = 0;
+                // Check which language is active
+                const isEnglishActive = englishBtn && englishBtn.classList.contains('active');
                 
-                const positiveEn = form.querySelector('textarea[name="q5-positive-en"]');
-                const negativeEn = form.querySelector('textarea[name="q5-negative-en"]');
-                
-                if (positiveEn && positiveEn.value.trim()) answeredComments++;
-                if (negativeEn && negativeEn.value.trim()) answeredComments++;
+                if (isEnglishActive) {
+                    // Check English radio buttons
+                    const englishRadios = form.querySelectorAll('input[type="radio"]:not([name*="_tl"])');
+                    const englishRadioGroups = new Set();
+                    englishRadios.forEach(radio => englishRadioGroups.add(radio.name));
+                    
+                    totalFields += englishRadioGroups.size;
+                    englishRadioGroups.forEach(name => {
+                        const checked = form.querySelector(`input[name="${name}"]:checked`);
+                        if (checked) completedFields++;
+                    });
 
-                const progress = totalRatings > 0 ? ((answeredRatings / totalRatings + answeredComments / totalComments) / 2) * 100 : 0;
+                    // Check English comments
+                    const positiveEn = form.querySelector('textarea[name="q5-positive-en"]');
+                    const negativeEn = form.querySelector('textarea[name="q5-negative-en"]');
+                    
+                    totalFields += 2;
+                    if (positiveEn && positiveEn.value.trim()) completedFields++;
+                    if (negativeEn && negativeEn.value.trim()) completedFields++;
+                } else {
+                    // Check Tagalog radio buttons
+                    const tagalogRadios = form.querySelectorAll('input[type="radio"][name*="_tl"]');
+                    const tagalogRadioGroups = new Set();
+                    tagalogRadios.forEach(radio => tagalogRadioGroups.add(radio.name));
+                    
+                    totalFields += tagalogRadioGroups.size;
+                    tagalogRadioGroups.forEach(name => {
+                        const checked = form.querySelector(`input[name="${name}"]:checked`);
+                        if (checked) completedFields++;
+                    });
+
+                    // Check Tagalog comments
+                    const positiveTl = form.querySelector('textarea[name="q5-positive-tl"]');
+                    const negativeTl = form.querySelector('textarea[name="q5-negative-tl"]');
+                    
+                    totalFields += 2;
+                    if (positiveTl && positiveTl.value.trim()) completedFields++;
+                    if (negativeTl && negativeTl.value.trim()) completedFields++;
+                }
+
+                const progress = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
                 
                 if (progressBar) progressBar.style.width = progress + '%';
-                if (progressText) progressText.textContent = `Completion: ${Math.round(progress)}%`;
+                if (progressText) progressText.textContent = `Completion: ${progress}%`;
                 if (submitBtn) submitBtn.disabled = progress < 100;
             }
 
-            // Listen to changes
+            // Real-time sync for Tagalog radio buttons to English ones
+            function setupRealTimeSync() {
+                if (!form) return;
+
+                // When Tagalog radio is clicked, sync to English
+                form.addEventListener('change', (e) => {
+                    if (e.target.type === 'radio' && e.target.name.includes('_tl')) {
+                        const englishName = e.target.name.replace('_tl', '');
+                        const englishRadio = form.querySelector(`input[name="${englishName}"][value="${e.target.value}"]`);
+                        if (englishRadio) {
+                            englishRadio.checked = true;
+                        }
+                        updateProgress();
+                    }
+                });
+
+                // When Tagalog textarea is typed, sync to English
+                form.addEventListener('input', (e) => {
+                    if (e.target.name === 'q5-positive-tl') {
+                        const positiveEn = form.querySelector('textarea[name="q5-positive-en"]');
+                        if (positiveEn) positiveEn.value = e.target.value;
+                        updateProgress();
+                    } else if (e.target.name === 'q5-negative-tl') {
+                        const negativeEn = form.querySelector('textarea[name="q5-negative-en"]');
+                        if (negativeEn) negativeEn.value = e.target.value;
+                        updateProgress();
+                    }
+                });
+
+                // When English textarea is typed, update progress
+                form.addEventListener('input', (e) => {
+                    if (e.target.name === 'q5-positive-en' || e.target.name === 'q5-negative-en') {
+                        updateProgress();
+                    }
+                });
+            }
+
+            // Listen to changes in both languages
             if (form) {
+                setupRealTimeSync();
+                
                 form.addEventListener('change', updateProgress);
                 form.addEventListener('input', updateProgress);
 
@@ -1201,7 +1262,7 @@ if ($is_view_mode && $existing_evaluation) {
                     let valid = true;
                     const errors = [];
 
-                    // Check all radio groups
+                    // Check all radio groups (English version for submission)
                     const radioNames = new Set();
                     const radioInputs = form.querySelectorAll('input[type="radio"]:not([name*="_tl"])');
                     radioInputs.forEach(input => radioNames.add(input.name));
@@ -1214,7 +1275,7 @@ if ($is_view_mode && $existing_evaluation) {
                         }
                     });
 
-                    // Check comments
+                    // Check comments (English version for submission)
                     const positiveEn = form.querySelector('textarea[name="q5-positive-en"]');
                     const negativeEn = form.querySelector('textarea[name="q5-negative-en"]');
                     
