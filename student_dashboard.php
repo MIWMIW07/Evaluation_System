@@ -28,6 +28,39 @@ $student_program = $_SESSION['program'] ?? 'Not Set';
 $student_section = $_SESSION['section'] ?? 'Not Set';
 $student_id = $_SESSION['student_id'];
 
+// Get available programs and sections from teacher_assignments table
+$available_programs = [];
+$available_sections = [];
+
+try {
+    // Get distinct active programs
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT program 
+        FROM teacher_assignments 
+        WHERE is_active = true 
+        ORDER BY program
+    ");
+    $stmt->execute();
+    $programs_result = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $available_programs = $programs_result ?: [];
+    
+    // Get distinct active sections
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT section 
+        FROM teacher_assignments 
+        WHERE is_active = true 
+        ORDER BY section
+    ");
+    $stmt->execute();
+    $sections_result = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $available_sections = $sections_result ?: [];
+    
+} catch (Exception $e) {
+    // If table doesn't exist or other error, use empty arrays
+    $available_programs = [];
+    $available_sections = [];
+}
+
 // Handle section/program update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_section_program'])) {
     $new_program = trim($_POST['program']);
@@ -43,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_section_progra
         
         $success = "Section and Program updated successfully!";
     } else {
-        $error = "Please fill in both Program and Section fields.";
+        $error = "Please select both Program and Section.";
     }
 }
 
@@ -223,7 +256,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         .update-form {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
+            gap: 20px;
             align-items: end;
         }
         
@@ -253,6 +286,15 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             outline: none;
             border-color: #800000;
             box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.1);
+        }
+        
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23800000' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 12px;
+            padding-right: 40px;
         }
         
         .btn {
@@ -690,21 +732,43 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             <!-- New Section Update Form -->
             <div class="section-update">
                 <h3>🔄 Update Section & Program</h3>
-                <p>If you need to change your current section or program for evaluation purposes, please update them below:</p>
+                <p>Select your program and section from the dropdown lists below:</p>
                 
                 <form method="POST" class="update-form">
                     <div class="form-group">
                         <label for="program">Program:</label>
-                        <input type="text" id="program" name="program" class="form-control" 
-                               value="<?php echo htmlspecialchars($student_program); ?>" 
-                               placeholder="Enter your program (e.g., BSIT, BSCS)" required>
+                        <select id="program" name="program" class="form-control" required>
+                            <option value="">-- Select Program --</option>
+                            <?php foreach($available_programs as $program): ?>
+                                <option value="<?php echo htmlspecialchars($program); ?>" 
+                                    <?php echo ($program === $student_program) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($program); ?>
+                                </option>
+                            <?php endforeach; ?>
+                            <?php if (!empty($student_program) && !in_array($student_program, $available_programs)): ?>
+                                <option value="<?php echo htmlspecialchars($student_program); ?>" selected>
+                                    <?php echo htmlspecialchars($student_program); ?> (Current)
+                                </option>
+                            <?php endif; ?>
+                        </select>
                     </div>
                     
                     <div class="form-group">
                         <label for="section">Section:</label>
-                        <input type="text" id="section" name="section" class="form-control" 
-                               value="<?php echo htmlspecialchars($student_section); ?>" 
-                               placeholder="Enter your section (e.g., A, B, C)" required>
+                        <select id="section" name="section" class="form-control" required>
+                            <option value="">-- Select Section --</option>
+                            <?php foreach($available_sections as $section): ?>
+                                <option value="<?php echo htmlspecialchars($section); ?>" 
+                                    <?php echo ($section === $student_section) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($section); ?>
+                                </option>
+                            <?php endforeach; ?>
+                            <?php if (!empty($student_section) && !in_array($student_section, $available_sections)): ?>
+                                <option value="<?php echo htmlspecialchars($student_section); ?>" selected>
+                                    <?php echo htmlspecialchars($student_section); ?> (Current)
+                                </option>
+                            <?php endif; ?>
+                        </select>
                     </div>
                     
                     <div class="form-group">
@@ -861,7 +925,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     
                     if (!program || !section) {
                         e.preventDefault();
-                        alert('Please fill in both Program and Section fields.');
+                        alert('Please select both Program and Section.');
                         return;
                     }
                     
