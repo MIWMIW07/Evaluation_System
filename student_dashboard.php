@@ -491,7 +491,82 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             transform: translateY(-2px);
             color: #FFEC8B;
         }
-        
+        .dev-logo {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 42px;
+    height: 42px;
+    margin: 0 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #800000, #A52A2A);
+    color: #FFD700;
+    font-weight: bold;
+    font-size: 1.1em;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.dev-logo:hover {
+    background: linear-gradient(135deg, #FFD700, #D4AF37);
+    color: #800000;
+    transform: scale(1.2);
+}
+
+.dev-logo::after {
+    content: attr(data-name);
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 115%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #800000;
+    color: #FFD700;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    font-size: 0.85em;
+    font-weight: bold;
+    transition: opacity 0.3s ease;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+.dev-logo::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent #800000 transparent;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.dev-logo:hover::after,
+.dev-logo:hover::before {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Mobile friendly: force tap instead of hover */
+@media (max-width: 768px) {
+    .dev-logo:hover::after,
+    .dev-logo:hover::before {
+        display: none; /* disable hover tooltip */
+    }
+    .dev-logo.active::after,
+    .dev-logo.active::before {
+        visibility: visible;
+        opacity: 1;
+    }
+}
+
         .no-program-message {
             text-align: center;
             padding: 40px;
@@ -851,14 +926,18 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             <?php endif; ?>
             
             <div class="logout-container">
-                <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
-                <p>Teacher Evaluation System - Student Dashboard</p>
-                <p style="margin-top: 10px;">
-                    Last updated: <?php echo date('F j, Y \a\t g:i A'); ?>
-                    Developer: ISRAEL GABRIEL, TOQUE CHRISTOPHER GLEN, MERVIN LEO MICOSA
-                </p>
-                <a href="logout.php" class="logout-btn">🚪 Logout</a>
-            </div>
+    <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
+    <p>Teacher Evaluation System - Student Dashboard</p>
+    <p style="margin-top: 10px;">
+        Last updated: <?php echo date('F j, Y \a\t g:i A'); ?><br>
+        Developer: 
+        <span class="dev-logo" data-name="ISRAEL GABRIEL">I</span>
+        <span class="dev-logo" data-name="TOQUE CHRISTOPHER GLEN">T</span>
+        <span class="dev-logo" data-name="MERVIN LEO MICOSA">M</span>
+    </p>
+    <a href="logout.php" class="logout-btn">🚪 Logout</a>
+</div>
+
         </div>
     </div>
 
@@ -876,6 +955,20 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     e.preventDefault();
                 }
             });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const devLogos = document.querySelectorAll('.dev-logo');
+
+    devLogos.forEach(logo => {
+        logo.addEventListener('click', function() {
+            // Sa mobile, toggle yung pangalan
+            if (window.innerWidth <= 768) {
+                devLogos.forEach(l => l.classList.remove('active')); // close iba
+                this.classList.toggle('active');
+            }
+        });
+    });
+});
 
             // Add confirmation for section change
             const sectionForm = document.querySelector('.change-section-form');
