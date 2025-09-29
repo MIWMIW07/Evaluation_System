@@ -28,6 +28,30 @@ $student_program = $_SESSION['program'] ?? 'Not Set';
 $student_section = $_SESSION['section'] ?? 'Not Set';
 $student_id = $_SESSION['student_id'];
 
+// Fetch available programs and sections from teacher_assignments table
+$available_programs = [];
+try {
+    $stmt = $pdo->query("
+        SELECT DISTINCT program, section 
+        FROM teacher_assignments 
+        WHERE is_active = true 
+        ORDER BY program, section
+    ");
+    $sections_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Organize by program
+    foreach ($sections_result as $row) {
+        $program_display = ($row['program'] === 'COLLEGE') ? 'College' : 'Senior High';
+        if (!isset($available_programs[$program_display])) {
+            $available_programs[$program_display] = [];
+        }
+        $available_programs[$program_display][] = $row['section'];
+    }
+} catch (Exception $e) {
+    $error = "Could not load available sections: " . $e->getMessage();
+    $available_programs = [];
+}
+
 // Handle section change form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_section'])) {
     $new_program = $_POST['program'] ?? '';
@@ -50,30 +74,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_section'])) {
         $error = "Please select both program and section";
     }
 }
-
-// Define available programs and sections
-$available_programs = [
-    'College' => [
-        'BSIT-1A', 'BSIT-1B', 'BSIT-1C', 'BSIT-1D',
-        'BSIT-2A', 'BSIT-2B', 'BSIT-2C', 'BSIT-2D',
-        'BSIT-3A', 'BSIT-3B', 'BSIT-3C', 'BSIT-3D',
-        'BSIT-4A', 'BSIT-4B', 'BSIT-4C', 'BSIT-4D',
-        'BSCS-1A', 'BSCS-1B', 'BSCS-1C',
-        'BSCS-2A', 'BSCS-2B', 'BSCS-2C',
-        'BSCS-3A', 'BSCS-3B', 'BSCS-3C',
-        'BSCS-4A', 'BSCS-4B', 'BSCS-4C'
-    ],
-    'Senior High' => [
-        'ICT-11A', 'ICT-11B', 'ICT-11C', 'ICT-11D',
-        'ICT-12A', 'ICT-12B', 'ICT-12C', 'ICT-12D',
-        'STEM-11A', 'STEM-11B', 'STEM-11C',
-        'STEM-12A', 'STEM-12B', 'STEM-12C',
-        'ABM-11A', 'ABM-11B', 'ABM-11C',
-        'ABM-12A', 'ABM-12B', 'ABM-12C',
-        'HUMSS-11A', 'HUMSS-11B', 'HUMSS-11C',
-        'HUMSS-12A', 'HUMSS-12B', 'HUMSS-12C'
-    ]
-];
 
 // Get teachers assigned to this student's section from database
 $teachers_result = [];
@@ -101,13 +101,16 @@ try {
 // Get available teachers from teacher_assignments table
 if ($student_section !== 'Not Set' && $student_program !== 'Not Set') {
     try {
+        // Convert display program back to database format
+        $db_program = ($student_program === 'College') ? 'COLLEGE' : 'SHS';
+        
         $stmt = $pdo->prepare("
             SELECT teacher_name, subject, program, section
             FROM teacher_assignments 
             WHERE section = ? AND program = ? AND is_active = true
             ORDER BY teacher_name, subject
         ");
-        $stmt->execute([$student_section, $student_program]);
+        $stmt->execute([$student_section, $db_program]);
         $teachers_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         $error = "Could not load teachers: " . $e->getMessage();
@@ -876,7 +879,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             const programSelect = document.getElementById('program');
             const sectionSelect = document.getElementById('section');
             
-            // Define available sections for each program
+            // Define available sections from PHP
             const programSections = <?php echo json_encode($available_programs); ?>;
             
             programSelect.addEventListener('change', function() {
