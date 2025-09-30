@@ -938,16 +938,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                         🔄 Change Section
                     </button>
                 </form>
-                
-                <?php if (!empty($available_sections)): ?>
-                    <div style="margin-top: 15px; font-size: 0.9em; color: #500000;">
-                        Available sections for your program: <?php echo implode(', ', $available_sections); ?>
-                    </div>
-                <?php else: ?>
-                    <div style="margin-top: 15px; color: #800000;">
-                        No sections available for your program. Please contact administrator.
-                    </div>
-                <?php endif; ?>
             </div>
             
             <?php if (!empty($success)): ?>
