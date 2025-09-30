@@ -137,37 +137,48 @@ if ($show_preloader && $redirect_url) {
             transition: opacity 0.8s ease;
         }
         
-        .logo-container {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 100000;
-        }
-        
-        .circle-border {
-            width: 170px;
-            height: 170px;
-            border-radius: 50%;
-            border: 6px solid goldenrod;
-            border-top: 6px solid gold;
-            border-bottom: 6px solid maroon;
-            border-left: 6px solid lightgoldenrodyellow;
-            border-right: 6px solid darkred;
+        .logo-section {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            animation: spinBorder 3s linear infinite, glow 2s ease-in-out infinite alternate;
-            box-shadow: 0 0 20px goldenrod, 0 0 40px maroon;
+            justify-content: center;
+            margin-bottom: 30px;
             position: relative;
         }
         
-        .circle-border img {
+        .logo-container {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin-bottom: 20px;
+        }
+        
+        .logo-image {
             width: 100px;
             height: 100px;
             border-radius: 50%;
-            /* Remove the rotation from the logo itself */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+        
+        .rotating-border {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top: 3px solid gold;
+            border-right: 3px solid maroon;
+            border-bottom: 3px solid goldenrod;
+            border-left: 3px solid #800020;
+            animation: spinBorder 2s linear infinite;
+            box-shadow: 0 0 15px rgba(218, 165, 32, 0.5);
         }
         
         .logo-placeholder {
@@ -182,17 +193,21 @@ if ($show_preloader && $redirect_url) {
             font-weight: bold;
             font-size: 14px;
             text-align: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
             box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
         
         .loading-content {
             text-align: center;
             color: white;
-            margin-top: 200px; /* Push content below the centered logo */
         }
         
         .welcome-message {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
             margin-bottom: 10px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
@@ -233,18 +248,27 @@ if ($show_preloader && $redirect_url) {
         }
         
         @keyframes spinBorder {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes glow {
             0% { 
-                box-shadow: 0 0 10px goldenrod, 0 0 20px maroon;
-                border-width: 6px;
+                transform: rotate(0deg);
+                border-top-color: gold;
+                border-right-color: maroon;
+            }
+            25% {
+                border-top-color: goldenrod;
+                border-right-color: #800020;
+            }
+            50% {
+                border-top-color: #DAA520;
+                border-right-color: #4A0012;
+            }
+            75% {
+                border-top-color: #800020;
+                border-right-color: gold;
             }
             100% { 
-                box-shadow: 0 0 30px gold, 0 0 60px darkred;
-                border-width: 8px;
+                transform: rotate(360deg);
+                border-top-color: gold;
+                border-right-color: maroon;
             }
         }
         
@@ -259,33 +283,38 @@ if ($show_preloader && $redirect_url) {
         
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            50% { transform: scale(1.02); }
             100% { transform: scale(1); }
         }
     </style>
 </head>
 <body>
     <div class="preloader-overlay" id="preloader">
-        <div class="logo-container">
-            <div class="circle-border pulse">
+        <div class="logo-section">
+            <div class="logo-container">
+                <div class="rotating-border"></div>
                 <!-- Logo with fallback -->
-                <img src="logo.png" alt="School Logo" id="school-logo" 
+                <img src="logo.png" alt="School Logo" class="logo-image" id="school-logo" 
                      onerror="this.style.display='none'; document.getElementById('logo-placeholder').style.display='flex';">
+                <div id="logo-placeholder" class="logo-placeholder" style="display: none;">
+                    School Logo
+                </div>
+            </div>
+            
+            <div class="loading-content">
+                <div class="welcome-message">Login Successful!</div>
+                <div class="user-info">Welcome, <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'User'); ?>!</div>
             </div>
         </div>
         
-        <div class="loading-content">
-            <div class="welcome-message">Login Successful!</div>
-            <div class="user-info">Welcome, <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'User'); ?>!</div>
-            <div class="loading-text">Loading your dashboard...</div>
-            
-            <div class="progress-bar">
-                <div class="progress"></div>
-            </div>
-            
-            <div class="redirect-info">
-                You will be automatically redirected in <span id="countdown">3</span> seconds
-            </div>
+        <div class="loading-text">Loading your dashboard...</div>
+        
+        <div class="progress-bar">
+            <div class="progress"></div>
+        </div>
+        
+        <div class="redirect-info">
+            You will be automatically redirected in <span id="countdown">3</span> seconds
         </div>
     </div>
 
