@@ -230,4 +230,3 @@ function addTeacherAssignment($teacherName, $section, $program) {
     }
 }
 ?>
- 
