@@ -197,10 +197,18 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
         </div>
 
         <div class="card">
-    <h3>🔍 Debug Report Location</h3>
-    <p>Check where your reports are being saved:</p>
-    <button class="btn btn-warning" onclick="debugReports()">Debug Report Location</button>
-    <div id="debugReportResult"></div>
+            <h3>🔍 Debug Report Location</h3>
+            <p>Check where your reports are being saved:</p>
+            <button class="btn btn-warning" onclick="debugReports()">Debug Report Location</button>
+            <div id="debugReportResult"></div>
+        </div>
+
+        <div class="card">
+    <h3>🐛 Debug & Troubleshooting</h3>
+    <p>Diagnose report generation issues:</p>
+    <button class="btn btn-warning" onclick="runDetailedDebug()">Run Detailed Debug</button>
+    <button class="btn" onclick="testSingleReport()">Test Single Report</button>
+    <div id="debugResults"></div>
 </div>
 
         
@@ -487,6 +495,31 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
         resultDiv.innerHTML = `<div class="debug-details">${html}</div>`;
     } catch (error) {
         resultDiv.innerHTML = `<div class="result-box result-error">Error: ${error.message}</div>`;
+    }
+    }
+async function runDetailedDebug() {
+    const resultDiv = document.getElementById('debugResults');
+    resultDiv.innerHTML = '<p class="loading">Running detailed debug...</p>';
+    
+    try {
+        const response = await fetch('detailed_debug_reports.php');
+        const html = await response.text();
+        resultDiv.innerHTML = `<div class="debug-details">${html}</div>`;
+    } catch (error) {
+        resultDiv.innerHTML = `<div class="result-box result-error">Debug error: ${error.message}</div>`;
+    }
+}
+
+async function testSingleReport() {
+    const resultDiv = document.getElementById('debugResults');
+    resultDiv.innerHTML = '<p class="loading">Testing single report generation...</p>';
+    
+    try {
+        const response = await fetch('test_single_report.php');
+        const html = await response.text();
+        resultDiv.innerHTML = `<div class="debug-details">${html}</div>`;
+    } catch (error) {
+        resultDiv.innerHTML = `<div class="result-box result-error">Test error: ${error.message}</div>`;
     }
 }
     </script>
