@@ -1,4 +1,6 @@
 <?php
+//login.php
+ob_start();
 session_start();
 require_once 'includes/db_connection.php';
 
@@ -185,4 +187,5 @@ if ($show_preloader && $redirect_url) {
 <?php
     exit; // Important: stop further execution
 }
+    ob_end_flush();
 ?>
