@@ -473,7 +473,7 @@ if (isset($_SESSION['user_id'])) {
         </form>
         
         <div class="footer">
-            <p>&copy; 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</p>
+            <p>&copy; 2025 - Philippine Technological Institute of Science Arts and Trade - Central Inc.</p>
         </div>
     </div>
 
