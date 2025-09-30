@@ -579,7 +579,7 @@ if ($is_view_mode && $existing_evaluation) {
             background-color: #fff9e6;
         }
 
-        /* MAROON RADIO BUTTONS */
+        /* UPDATED RADIO BUTTONS - Numbers beside radio buttons */
         .rating-options {
             display: flex;
             justify-content: space-between;
@@ -587,8 +587,9 @@ if ($is_view_mode && $existing_evaluation) {
         }
 
         .rating-options label {
-            display: inline-block;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 18%;
             cursor: pointer;
             color: #5E0C0C;
@@ -596,6 +597,7 @@ if ($is_view_mode && $existing_evaluation) {
             padding: 5px 0;
             transition: all 0.3s ease;
             border-radius: 4px;
+            font-size: 14px; /* Smaller font size */
         }
 
         .rating-options label:hover {
@@ -607,16 +609,16 @@ if ($is_view_mode && $existing_evaluation) {
             display: none;
         }
 
-        /* Custom radio buttons */
+        /* Custom radio buttons - smaller size */
         .rating-options label::before {
             content: '';
-            display: block;
-            width: 20px;
-            height: 20px;
+            display: inline-block;
+            width: 16px; /* Smaller size */
+            height: 16px; /* Smaller size */
             border: 2px solid #800000;
             border-radius: 50%;
             background-color: white;
-            margin: 0 auto 5px;
+            margin-right: 8px; /* Space between radio and number */
             transition: all 0.3s ease;
         }
 
@@ -750,12 +752,11 @@ if ($is_view_mode && $existing_evaluation) {
                 text-align: left;
                 margin-bottom: 5px;
                 padding: 8px 10px;
+                justify-content: flex-start;
             }
 
             .rating-options label::before {
-                display: inline-block;
                 margin-right: 10px;
-                vertical-align: middle;
             }
 
             th, td {
