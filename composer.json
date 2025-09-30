@@ -4,7 +4,8 @@
     "type": "project",
     "require": {
         "php": ">=8.0",
-        "google/apiclient": "^2.15"
+        "google/apiclient": "^2.15",
+        "tecnickcom/tcpdf": "^6.6"
     },
     "autoload": {
         "psr-4": {
@@ -15,7 +16,8 @@
     "prefer-stable": true,
     "scripts": {
         "post-install-cmd": [
-            "echo 'Google API Client installed successfully!'"
+            "echo 'Dependencies installed successfully!'",
+            "echo 'TCPDF and Google API Client are ready to use.'"
         ]
     }
 }
