@@ -157,6 +157,7 @@ if ($show_preloader && $redirect_url) {
             animation: spinBorder 3s linear infinite, glow 2s ease-in-out infinite alternate;
             box-shadow: 0 0 20px goldenrod, 0 0 40px maroon;
             margin: 0 auto 20px;
+            position: relative;
         }
         
         .circle-border img {
@@ -164,6 +165,22 @@ if ($show_preloader && $redirect_url) {
             height: 100px;
             animation: spinLogo 5s linear infinite;
             border-radius: 50%;
+        }
+        
+        .logo-placeholder {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, gold, goldenrod);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #4A0012;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            animation: spinLogo 5s linear infinite;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
         
         .loading-content {
@@ -254,13 +271,18 @@ if ($show_preloader && $redirect_url) {
         <div class="loading-content">
             <div class="logo-container">
                 <div class="circle-border pulse">
-                    <img src="assets/logo.png" alt="School Logo" onerror="this.style.display='none'">
+                    <!-- Logo with fallback -->
+                    <img src="assets/logo.png" alt="School Logo" id="school-logo" 
+                         onerror="this.style.display='none'; document.getElementById('logo-placeholder').style.display='flex';">
+                    <div id="logo-placeholder" class="logo-placeholder" style="display: none;">
+                        SCHOOL<br>LOGO
+                    </div>
                 </div>
             </div>
             
-            <div class="welcome-message">🎉 Login Successful!</div>
+            <div class="welcome-message">Login Successful!</div>
             <div class="user-info">Welcome, <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'User'); ?>!</div>
-            <div class="loading-text">Redirecting to your dashboard...</div>
+            <div class="loading-text">Loading your dashboard...</div>
             
             <div class="progress-bar">
                 <div class="progress"></div>
@@ -290,8 +312,6 @@ if ($show_preloader && $redirect_url) {
         setTimeout(() => {
             const preloader = document.getElementById('preloader');
             preloader.style.opacity = '0';
-            
-            // Add some nice exit animation
             preloader.style.transform = 'scale(1.1)';
         }, 2500);
 
@@ -303,6 +323,18 @@ if ($show_preloader && $redirect_url) {
         // Allow user to click to skip waiting
         document.getElementById('preloader').addEventListener('click', () => {
             window.location.href = "<?php echo $redirect_url; ?>";
+        });
+
+        // Auto-hide logo if not found and show placeholder
+        window.addEventListener('load', function() {
+            const logo = document.getElementById('school-logo');
+            const placeholder = document.getElementById('logo-placeholder');
+            
+            // Check if logo loaded successfully
+            if (logo.complete && logo.naturalHeight === 0) {
+                logo.style.display = 'none';
+                placeholder.style.display = 'flex';
+            }
         });
     </script>
 </body>
