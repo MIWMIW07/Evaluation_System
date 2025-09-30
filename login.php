@@ -159,7 +159,7 @@ if ($show_preloader && $redirect_url) {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -45%);
             z-index: 2;
         }
         
