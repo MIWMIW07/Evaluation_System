@@ -13,6 +13,15 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
 // Set headers for JSON response
 header('Content-Type: application/json');
 
+// Check if TCPDF exists
+if (!file_exists('tcpdf/tcpdf.php')) {
+    echo json_encode([
+        'success' => false,
+        'error' => 'TCPDF library not found. Please ensure tcpdf folder exists in your project root.'
+    ]);
+    exit;
+}
+
 // Include TCPDF library
 require_once 'tcpdf/tcpdf.php';
 
@@ -80,11 +89,11 @@ function generateIndividualReport($pdo, $teacherName, $program, $section, $outpu
             $pdf->SetFont('helvetica', 'B', 12);
             $pdf->Cell(0, 10, "STUDENT INFORMATION", 0, 1, 'L');
             $pdf->SetFont('helvetica', '', 10);
-            $pdf->Cell(0, 6, "Student Name: " . $eval['student_name'], 0, 1);
-            $pdf->Cell(0, 6, "Teacher: " . $eval['teacher_name'], 0, 1);
-            $pdf->Cell(0, 6, "Program: " . $eval['program'], 0, 1);
-            $pdf->Cell(0, 6, "Section: " . $eval['section'], 0, 1);
-            $pdf->Cell(0, 6, "Date: " . date('F j, Y', strtotime($eval['submitted_at'])), 0, 1);
+            $pdf->Cell(0, 6, "Student Name: " . ($eval['student_name'] ?? 'N/A'), 0, 1);
+            $pdf->Cell(0, 6, "Teacher: " . ($eval['teacher_name'] ?? 'N/A'), 0, 1);
+            $pdf->Cell(0, 6, "Program: " . ($eval['program'] ?? 'N/A'), 0, 1);
+            $pdf->Cell(0, 6, "Section: " . ($eval['section'] ?? 'N/A'), 0, 1);
+            $pdf->Cell(0, 6, "Date: " . date('F j, Y', strtotime($eval['submitted_at'] ?? 'now')), 0, 1);
             $pdf->Ln(10);
 
             // Evaluation Scores
@@ -97,8 +106,8 @@ function generateIndividualReport($pdo, $teacherName, $program, $section, $outpu
             $pdf->Cell(0, 8, "1. TEACHING FOR INDEPENDENT LEARNING", 0, 1);
             $pdf->SetFont('helvetica', '', 10);
             
-            $q1_1 = $eval['q1_1']; $q1_2 = $eval['q1_2']; $q1_3 = $eval['q1_3'];
-            $q1_4 = $eval['q1_4']; $q1_5 = $eval['q1_5']; $q1_6 = $eval['q1_6'];
+            $q1_1 = $eval['q1_1'] ?? 0; $q1_2 = $eval['q1_2'] ?? 0; $q1_3 = $eval['q1_3'] ?? 0;
+            $q1_4 = $eval['q1_4'] ?? 0; $q1_5 = $eval['q1_5'] ?? 0; $q1_6 = $eval['q1_6'] ?? 0;
             
             $cat1_avg = ($q1_1 + $q1_2 + $q1_3 + $q1_4 + $q1_5 + $q1_6) / 6;
             
@@ -117,7 +126,7 @@ function generateIndividualReport($pdo, $teacherName, $program, $section, $outpu
             $pdf->Cell(0, 8, "2. TEACHING FOR MEANINGFUL LEARNING", 0, 1);
             $pdf->SetFont('helvetica', '', 10);
             
-            $q2_1 = $eval['q2_1']; $q2_2 = $eval['q2_2']; $q2_3 = $eval['q2_3']; $q2_4 = $eval['q2_4'];
+            $q2_1 = $eval['q2_1'] ?? 0; $q2_2 = $eval['q2_2'] ?? 0; $q2_3 = $eval['q2_3'] ?? 0; $q2_4 = $eval['q2_4'] ?? 0;
             
             $cat2_avg = ($q2_1 + $q2_2 + $q2_3 + $q2_4) / 4;
             
@@ -134,7 +143,7 @@ function generateIndividualReport($pdo, $teacherName, $program, $section, $outpu
             $pdf->Cell(0, 8, "3. ASSESSMENT AND EVALUATION", 0, 1);
             $pdf->SetFont('helvetica', '', 10);
             
-            $q3_1 = $eval['q3_1']; $q3_2 = $eval['q3_2']; $q3_3 = $eval['q3_3']; $q3_4 = $eval['q3_4'];
+            $q3_1 = $eval['q3_1'] ?? 0; $q3_2 = $eval['q3_2'] ?? 0; $q3_3 = $eval['q3_3'] ?? 0; $q3_4 = $eval['q3_4'] ?? 0;
             
             $cat3_avg = ($q3_1 + $q3_2 + $q3_3 + $q3_4) / 4;
             
@@ -151,8 +160,8 @@ function generateIndividualReport($pdo, $teacherName, $program, $section, $outpu
             $pdf->Cell(0, 8, "4. PROFESSIONAL DEVELOPMENT", 0, 1);
             $pdf->SetFont('helvetica', '', 10);
             
-            $q4_1 = $eval['q4_1']; $q4_2 = $eval['q4_2']; $q4_3 = $eval['q4_3']; 
-            $q4_4 = $eval['q4_4']; $q4_5 = $eval['q4_5']; $q4_6 = $eval['q4_6'];
+            $q4_1 = $eval['q4_1'] ?? 0; $q4_2 = $eval['q4_2'] ?? 0; $q4_3 = $eval['q4_3'] ?? 0; 
+            $q4_4 = $eval['q4_4'] ?? 0; $q4_5 = $eval['q4_5'] ?? 0; $q4_6 = $eval['q4_6'] ?? 0;
             
             $cat4_avg = ($q4_1 + $q4_2 + $q4_3 + $q4_4 + $q4_5 + $q4_6) / 6;
             
@@ -225,10 +234,10 @@ function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPa
         $overall_avg = 0;
 
         foreach ($evaluations as $eval) {
-            $cat1 = ($eval['q1_1'] + $eval['q1_2'] + $eval['q1_3'] + $eval['q1_4'] + $eval['q1_5'] + $eval['q1_6']) / 6;
-            $cat2 = ($eval['q2_1'] + $eval['q2_2'] + $eval['q2_3'] + $eval['q2_4']) / 4;
-            $cat3 = ($eval['q3_1'] + $eval['q3_2'] + $eval['q3_3'] + $eval['q3_4']) / 4;
-            $cat4 = ($eval['q4_1'] + $eval['q4_2'] + $eval['q4_3'] + $eval['q4_4'] + $eval['q4_5'] + $eval['q4_6']) / 6;
+            $cat1 = (($eval['q1_1'] ?? 0) + ($eval['q1_2'] ?? 0) + ($eval['q1_3'] ?? 0) + ($eval['q1_4'] ?? 0) + ($eval['q1_5'] ?? 0) + ($eval['q1_6'] ?? 0)) / 6;
+            $cat2 = (($eval['q2_1'] ?? 0) + ($eval['q2_2'] ?? 0) + ($eval['q2_3'] ?? 0) + ($eval['q2_4'] ?? 0)) / 4;
+            $cat3 = (($eval['q3_1'] ?? 0) + ($eval['q3_2'] ?? 0) + ($eval['q3_3'] ?? 0) + ($eval['q3_4'] ?? 0)) / 4;
+            $cat4 = (($eval['q4_1'] ?? 0) + ($eval['q4_2'] ?? 0) + ($eval['q4_3'] ?? 0) + ($eval['q4_4'] ?? 0) + ($eval['q4_5'] ?? 0) + ($eval['q4_6'] ?? 0)) / 6;
             $total = ($cat1 + $cat2 + $cat3 + $cat4) / 4;
 
             $category1_avg += $cat1;
@@ -328,12 +337,12 @@ function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPa
         $pdf->SetFont('helvetica', '', 10);
 
         foreach ($evaluations as $eval) {
-            $total_score = ($eval['q1_1'] + $eval['q1_2'] + $eval['q1_3'] + $eval['q1_4'] + $eval['q1_5'] + $eval['q1_6'] +
-                          $eval['q2_1'] + $eval['q2_2'] + $eval['q2_3'] + $eval['q2_4'] +
-                          $eval['q3_1'] + $eval['q3_2'] + $eval['q3_3'] + $eval['q3_4'] +
-                          $eval['q4_1'] + $eval['q4_2'] + $eval['q4_3'] + $eval['q4_4'] + $eval['q4_5'] + $eval['q4_6']) / 20;
+            $total_score = (($eval['q1_1'] ?? 0) + ($eval['q1_2'] ?? 0) + ($eval['q1_3'] ?? 0) + ($eval['q1_4'] ?? 0) + ($eval['q1_5'] ?? 0) + ($eval['q1_6'] ?? 0) +
+                          ($eval['q2_1'] ?? 0) + ($eval['q2_2'] ?? 0) + ($eval['q2_3'] ?? 0) + ($eval['q2_4'] ?? 0) +
+                          ($eval['q3_1'] ?? 0) + ($eval['q3_2'] ?? 0) + ($eval['q3_3'] ?? 0) + ($eval['q3_4'] ?? 0) +
+                          ($eval['q4_1'] ?? 0) + ($eval['q4_2'] ?? 0) + ($eval['q4_3'] ?? 0) + ($eval['q4_4'] ?? 0) + ($eval['q4_5'] ?? 0) + ($eval['q4_6'] ?? 0)) / 20;
             
-            $pdf->Cell(0, 6, "• " . $eval['student_name'] . " - " . number_format($total_score, 2) . " / 5.00", 0, 1);
+            $pdf->Cell(0, 6, "• " . ($eval['student_name'] ?? 'Unknown Student') . " - " . number_format($total_score, 2) . " / 5.00", 0, 1);
         }
 
         // Save PDF
@@ -412,14 +421,18 @@ try {
     
     // Create base directory
     if (!is_dir($basePath)) {
-        mkdir($basePath, 0777, true);
+        if (!mkdir($basePath, 0777, true)) {
+            throw new Exception("Failed to create reports directory: " . $basePath);
+        }
     }
 
     $baseReportsPath = $basePath . 'Teacher Evaluation Reports/Reports/';
     
     // Create reports directory
     if (!is_dir($baseReportsPath)) {
-        mkdir($baseReportsPath, 0777, true);
+        if (!mkdir($baseReportsPath, 0777, true)) {
+            throw new Exception("Failed to create reports subdirectory: " . $baseReportsPath);
+        }
     }
 
     $teachersProcessed = 0;
@@ -427,30 +440,36 @@ try {
     $summaryReports = 0;
 
     foreach ($combinations as $combo) {
-        $teacherName = preg_replace('/[^a-zA-Z0-9-_\.]/', '_', $combo['teacher_name']);
-        $program = preg_replace('/[^a-zA-Z0-9-_\.]/', '_', $combo['program']);
-        $section = preg_replace('/[^a-zA-Z0-9-_\.]/', '_', $combo['section']);
+        $teacherName = $combo['teacher_name'];
+        $program = $combo['program'];
+        $section = $combo['section'];
 
         // Create teacher directory
         $teacherDir = $baseReportsPath . $teacherName . '/';
         if (!is_dir($teacherDir)) {
-            mkdir($teacherDir, 0777, true);
+            if (!mkdir($teacherDir, 0777, true)) {
+                error_log("Failed to create teacher directory: " . $teacherDir);
+                continue;
+            }
             $teachersProcessed++;
         }
 
         // Create program directory
         $programDir = $teacherDir . $program . '/';
         if (!is_dir($programDir)) {
-            mkdir($programDir, 0777, true);
+            if (!mkdir($programDir, 0777, true)) {
+                error_log("Failed to create program directory: " . $programDir);
+                continue;
+            }
         }
 
         // Generate individual reports
-        $individualFilename = "Individual Report - " . $combo['teacher_name'] . " - " . $combo['program'] . " " . $combo['section'] . ".pdf";
+        $individualFilename = "Individual Report - " . $teacherName . " - " . $program . " " . $section . ".pdf";
         $individualSuccess = generateIndividualReport(
             $pdo, 
-            $combo['teacher_name'], 
-            $combo['program'], 
-            $combo['section'], 
+            $teacherName, 
+            $program, 
+            $section, 
             $programDir . $individualFilename
         );
 
@@ -459,12 +478,12 @@ try {
         }
 
         // Generate summary report
-        $summaryFilename = "Summary Report FOR " . $combo['program'] . " - " . $combo['teacher_name'] . ".pdf";
+        $summaryFilename = "Summary Report FOR " . $program . " - " . $teacherName . ".pdf";
         $summarySuccess = generateSummaryReport(
             $pdo,
-            $combo['teacher_name'],
-            $combo['program'],
-            $combo['section'],
+            $teacherName,
+            $program,
+            $section,
             $programDir . $summaryFilename
         );
 
@@ -487,23 +506,24 @@ try {
         'individual_reports' => $individualReports,
         'summary_reports' => $summaryReports,
         'total_files' => $totalFiles,
-        'base_path' => $baseReportsPath,
-        'web_path' => '/reports/Teacher Evaluation Reports/Reports/'
+        'base_path' => $baseReportsPath
     ];
 
     if ($zipCreated && file_exists($zipFile)) {
-        $response['zip_file'] = '/reports/' . basename($zipFile);
+        $response['zip_file'] = 'reports/' . basename($zipFile);
         $response['zip_message'] = 'All reports have been bundled into a ZIP file for easy download.';
     }
 
     echo json_encode($response);
 
 } catch (Exception $e) {
+    // Ensure we only output JSON, even for errors
+    ob_clean();
     error_log("Error in local reports generator: " . $e->getMessage());
     echo json_encode([
         'success' => false,
         'error' => 'Failed to generate reports: ' . $e->getMessage()
     ]);
 }
-ob_end_flush();
+exit;
 ?>
