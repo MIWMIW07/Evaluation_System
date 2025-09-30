@@ -583,7 +583,7 @@ if ($is_view_mode && $existing_evaluation) {
             text-align: center;
             width: 18%;
             cursor: pointer;
-            color: #5E0C0C;
+            color: maroon;
         }
 
         input[type="radio"] {
