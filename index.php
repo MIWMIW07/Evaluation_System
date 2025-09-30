@@ -29,6 +29,11 @@ if (isset($_SESSION['user_id'])) {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+
         body {
             background: linear-gradient(135deg, #8B0000 0%, #4A0000 50%, #2B0000 100%);
             min-height: 100vh;
@@ -37,12 +42,12 @@ if (isset($_SESSION['user_id'])) {
             justify-content: center;
             padding: 20px;
             position: relative;
-            overflow: hidden;
+            overflow: auto;
         }
 
         body::before {
             content: '';
-            position: absolute;
+            position: fixed;
             width: 500px;
             height: 500px;
             background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
@@ -54,7 +59,7 @@ if (isset($_SESSION['user_id'])) {
 
         body::after {
             content: '';
-            position: absolute;
+            position: fixed;
             width: 400px;
             height: 400px;
             background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
@@ -71,19 +76,20 @@ if (isset($_SESSION['user_id'])) {
 
         .login-container {
             background: #F5F5F0;
-            padding: 50px 45px;
+            padding: 2.5rem;
             border-radius: 24px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             width: 100%;
             max-width: 480px;
             position: relative;
             z-index: 1;
+            margin: auto;
         }
 
         .header-container {
             text-align: center;
-            margin-bottom: 35px;
-            padding-bottom: 25px;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
             position: relative;
         }
 
@@ -104,10 +110,10 @@ if (isset($_SESSION['user_id'])) {
             align-items: center;
             justify-content: center;
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(139, 0, 0, 0.05) 100%);
-            padding: 18px 20px;
+            padding: 1rem;
             border-radius: 12px;
             border: 1px solid rgba(212, 175, 55, 0.3);
-            margin-top: 20px;
+            margin-top: 1.25rem;
             position: relative;
             overflow: hidden;
         }
@@ -134,15 +140,16 @@ if (isset($_SESSION['user_id'])) {
             background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 700;
-            font-size: 15px;
+            font-size: 0.9rem;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 0.75rem;
             line-height: 1.4;
+            text-align: center;
         }
 
         .logo {
-            height: 70px;
+            height: 4.375rem;
             width: auto;
             filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
             transition: transform 0.3s ease;
@@ -157,10 +164,10 @@ if (isset($_SESSION['user_id'])) {
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-size: 32px;
+            font-size: 2rem;
             font-weight: 700;
             line-height: 1.2;
-            margin-bottom: 8px;
+            margin-bottom: 0.5rem;
             letter-spacing: -0.5px;
         }
 
@@ -169,13 +176,13 @@ if (isset($_SESSION['user_id'])) {
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-size: 22px;
+            font-size: 1.375rem;
             font-weight: 600;
             letter-spacing: 0.5px;
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 1.5rem;
         }
 
         label {
@@ -184,9 +191,9 @@ if (isset($_SESSION['user_id'])) {
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
+            margin-bottom: 0.625rem;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 0.875rem;
             letter-spacing: 0.3px;
         }
 
@@ -196,10 +203,10 @@ if (isset($_SESSION['user_id'])) {
 
         input[type="text"], input[type="password"] {
             width: 100%;
-            padding: 14px 15px 14px 48px;
+            padding: 0.875rem 0.9375rem 0.875rem 3rem;
             border: 2px solid rgba(212, 175, 55, 0.3);
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 1rem;
             transition: all 0.3s ease;
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.03) 0%, rgba(255, 255, 255, 1) 100%);
             color: #2B0000;
@@ -220,14 +227,14 @@ if (isset($_SESSION['user_id'])) {
 
         .input-icon {
             position: absolute;
-            left: 16px;
+            left: 1rem;
             top: 50%;
             transform: translateY(-50%);
             background: linear-gradient(135deg, #D4AF37 0%, #8B0000 100%);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-size: 18px;
+            font-size: 1.125rem;
             transition: transform 0.3s ease;
         }
 
@@ -237,7 +244,7 @@ if (isset($_SESSION['user_id'])) {
 
         .password-toggle {
             position: absolute;
-            right: 16px;
+            right: 1rem;
             top: 50%;
             transform: translateY(-50%);
             background: linear-gradient(135deg, #D4AF37 0%, #8B0000 100%);
@@ -245,7 +252,7 @@ if (isset($_SESSION['user_id'])) {
             background-clip: text;
             -webkit-text-fill-color: transparent;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 1.125rem;
             transition: transform 0.2s ease;
         }
 
@@ -257,14 +264,14 @@ if (isset($_SESSION['user_id'])) {
             width: 100%;
             background: linear-gradient(135deg, #D4AF37 0%, #B8941F 50%, #8B0000 100%);
             color: white;
-            padding: 16px;
+            padding: 1rem;
             border: none;
             border-radius: 12px;
-            font-size: 17px;
+            font-size: 1.0625rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.4s ease;
-            margin-top: 15px;
+            margin-top: 0.9375rem;
             box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4),
                         0 0 0 1px rgba(212, 175, 55, 0.5);
             position: relative;
@@ -328,11 +335,11 @@ if (isset($_SESSION['user_id'])) {
 
         .footer {
             text-align: center;
-            margin-top: 35px;
+            margin-top: 2.1875rem;
             color: #666;
-            font-size: 12px;
+            font-size: 0.75rem;
             border-top: 1px solid rgba(212, 175, 55, 0.2);
-            padding-top: 25px;
+            padding-top: 1.5625rem;
             line-height: 1.6;
         }
 
@@ -344,30 +351,87 @@ if (isset($_SESSION['user_id'])) {
             font-weight: 500;
         }
 
-        @keyframes shimmer {
-            0% { background-position: -1000px 0; }
-            100% { background-position: 1000px 0; }
-        }
-
+        /* Responsive adjustments */
         @media (max-width: 480px) {
             .login-container {
-                padding: 40px 30px;
+                padding: 2rem 1.5rem;
+                margin: 1rem;
             }
             
             h1 {
-                font-size: 28px;
+                font-size: 1.75rem;
             }
             
             .system-subtitle {
-                font-size: 20px;
+                font-size: 1.25rem;
             }
             
             .school-name {
-                font-size: 13px;
+                font-size: 0.8125rem;
             }
 
             .logo {
-                height: 60px;
+                height: 3.75rem;
+            }
+            
+            .school-name-box {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            }
+            
+            body::before, body::after {
+                display: none; /* Remove floating elements on small screens for better performance */
+            }
+        }
+
+        @media (max-height: 700px) {
+            .login-container {
+                padding: 1.5rem;
+                margin: 0.5rem auto;
+            }
+            
+            .header-container {
+                margin-bottom: 1.5rem;
+            }
+            
+            .form-group {
+                margin-bottom: 1rem;
+            }
+            
+            .footer {
+                margin-top: 1.5rem;
+                padding-top: 1rem;
+            }
+        }
+
+        @media (max-height: 600px) {
+            body {
+                align-items: flex-start;
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+            }
+        }
+
+        @media (max-width: 350px) {
+            .login-container {
+                padding: 1.5rem 1rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .system-subtitle {
+                font-size: 1.125rem;
+            }
+            
+            .school-name {
+                font-size: 0.75rem;
+            }
+            
+            .logo {
+                height: 3rem;
             }
         }
     </style>
