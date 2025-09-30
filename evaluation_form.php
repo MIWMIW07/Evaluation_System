@@ -1,295 +1,3 @@
-<?php
-// evaluation_form.php - Fixed version
-session_start();
-
-// Check if user is logged in and is a student
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
-    header('Location: index.php');
-    exit;
-}
-
-// Include database connection
-require_once 'includes/db_connection.php';
-
-$success = '';
-$error = '';
-$teacher_info = null;
-$is_view_mode = false;
-$existing_evaluation = null;
-
-// Get teacher name and subject from URL parameters
-$teacher_name = isset($_GET['teacher']) ? trim($_GET['teacher']) : '';
-
-// Validate parameters
-if (empty($teacher_name)) {
-    $error = "Missing teacher information. Please select a teacher from your dashboard.";
-} else {
-    try {
-        $pdo = getPDO();
-        
-        // Get student information from session
-        $student_username = $_SESSION['username'];
-        $student_program = $_SESSION['program'] ?? 'COLLEGE';
-        $student_section = $_SESSION['section'] ?? '';
-
-        // Verify this teacher assignment exists for this student's section
-        $stmt = $pdo->prepare("
-            SELECT teacher_name, section, program 
-            FROM teacher_assignments 
-            WHERE teacher_name = ? AND section = ? AND program = ? AND is_active = true
-        ");
-        $stmt->execute([$teacher_name, $student_section, $student_program]);
-        $teacher_assignment = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$teacher_assignment) {
-            $error = "This teacher assignment was not found for your section. Please contact your administrator.";
-        } else {
-            // Create teacher_info structure for compatibility with existing code
-            $teacher_info = [
-                'name' => $teacher_name,
-                'department' => $student_program,
-                'display_department' => $student_program === 'COLLEGE' ? 'College Department' : 'Senior High School Department'
-            ];
-
-            // Check if student has already evaluated this teacher for this subject
-            $check_stmt = $pdo->prepare("
-                SELECT * FROM evaluations 
-                WHERE student_username = ? AND teacher_name = ? AND section = ?
-            ");
-            $check_stmt->execute([$student_username, $teacher_name, $student_section]);
-            $existing_evaluation = $check_stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($existing_evaluation) {
-                $is_view_mode = true;
-            }
-        }
-
-    } catch (Exception $e) {
-        $error = "Database error: " . $e->getMessage();
-    }
-}
-
-// Simple CSRF token generation
-function generate_csrf_token() {
-    if (!isset($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
-    return $_SESSION['csrf_token'];
-}
-
-// Handle form submission (only if not in view mode)
-if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode && $teacher_info) {
-    try {
-        // Validate all required fields
-        $ratings = [];
-
-        // Section 1: Teaching Competence (6 questions)
-        for ($i = 1; $i <= 6; $i++) {
-            $rating = intval($_POST["rating1_$i"] ?? 0);
-            if ($rating < 1 || $rating > 5) {
-                throw new Exception("Invalid rating for question 1.$i");
-            }
-            $ratings["q1_$i"] = $rating;
-        }
-
-        // Section 2: Management Skills (4 questions)
-        for ($i = 1; $i <= 4; $i++) {
-            $rating = intval($_POST["rating2_$i"] ?? 0);
-            if ($rating < 1 || $rating > 5) {
-                throw new Exception("Invalid rating for question 2.$i");
-            }
-            $ratings["q2_$i"] = $rating;
-        }
-
-        // Section 3: Guidance Skills (4 questions)
-        for ($i = 1; $i <= 4; $i++) {
-            $rating = intval($_POST["rating3_$i"] ?? 0);
-            if ($rating < 1 || $rating > 5) {
-                throw new Exception("Invalid rating for question 3.$i");
-            }
-            $ratings["q3_$i"] = $rating;
-        }
-
-        // Section 4: Personal and Social Characteristics (6 questions)
-        for ($i = 1; $i <= 6; $i++) {
-            $rating = intval($_POST["rating4_$i"] ?? 0);
-            if ($rating < 1 || $rating > 5) {
-                throw new Exception("Invalid rating for question 4.$i");
-            }
-            $ratings["q4_$i"] = $rating;
-        }
-
-        // Get comments
-        $positive = trim($_POST['q5-positive-en'] ?? $_POST['q5-positive-tl'] ?? '');
-        $negative = trim($_POST['q5-negative-en'] ?? $_POST['q5-negative-tl'] ?? '');
-        $comments = "Positive: $positive\nNegative: $negative";
-
-        // Insert evaluation using the updated table structure
-        $insert_sql = "INSERT INTO evaluations (
-    student_username, student_name, teacher_name, section, program,
-    q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
-    q2_1, q2_2, q2_3, q2_4,
-    q3_1, q3_2, q3_3, q3_4,
-    q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
-    comments
-) VALUES (
-    ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?,
-    ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?,
-    ?
-)";
-
-        $params = [
-            $_SESSION['username'],
-            $_SESSION['full_name'] ?? '',
-            $teacher_name,
-            $_SESSION['section'] ?? '',
-            $_SESSION['program'] ?? '',
-            $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
-            $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
-            $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
-            $ratings['q4_1'], $ratings['q4_2'], $ratings['q4_3'], $ratings['q4_4'], $ratings['q4_5'], $ratings['q4_6'],
-            $comments
-        ];
-
-        $stmt = $pdo->prepare($insert_sql);
-        $result = $stmt->execute($params);
-
-        if ($result) {
-            $success = "Evaluation submitted successfully! Thank you for your feedback.";
-            // Reload to show in view mode
-            $check_stmt = $pdo->prepare("
-                SELECT * FROM evaluations 
-                WHERE student_username = ? AND teacher_name =  ? AND section = ?
-            ");
-            $check_stmt->execute([$student_username, $teacher_name, $student_section]);
-            $existing_evaluation = $check_stmt->fetch(PDO::FETCH_ASSOC);
-            $is_view_mode = true;
-        } else {
-            throw new Exception("Database error occurred while saving your evaluation.");
-        }
-
-    } catch (Exception $e) {
-        $error = "Error: " . $e->getMessage();
-    }
-}
-
-// Helper function to safely display values
-function safe_display($value, $default = 'Not Available') {
-    return !empty($value) && $value !== null ? htmlspecialchars($value) : $default;
-}
-
-// Define questions for both languages
-$section1_questions = [
-    '1.1' => 'Analyses and elaborates lesson without reading textbook in class.',
-    '1.2' => 'Uses audio visual and devices to support and facilitate instructions.',
-    '1.3' => 'Present ideas/ concepts clearly and convincingly from related fields and integrate subject matter with actual experience.',
-    '1.4' => 'Make the students apply concepts to demonstrate understanding of the lesson.',
-    '1.5' => 'Gives fair test and examination and return test results within the reasonable period.',
-    '1.6' => 'Shows good command of the language of instruction.'
-];
-
-$section2_questions = [
-    '2.1' => 'Maintains responsive, disciplined and safe classroom atmosphere that is conducive to learning.',
-    '2.2' => 'Follow the schematic way.',
-    '2.3' => 'Stimulate students respect regard for the teacher.',
-    '2.4' => 'Allow the students to express their opinions and views.'
-];
-
-$section3_questions = [
-    '3.1' => 'Accepts students as they are by recognizing their strength and weakness as individuals.',
-    '3.2' => 'Inspires students to be self-reliant and self- disciplined.',
-    '3.3' => 'Handles class and student\'s problem with fairness and understanding.',
-    '3.4' => 'Shows genuine concern for the personal and other problems presented by the students outside classroom activities.'
-];
-
-$section4_questions = [
-    '4.1' => 'Maintains emotional balance; neither over critical nor over-sensitive.',
-    '4.2' => 'Is free from mannerisms that distract the teaching and learning process.',
-    '4.3' => 'Is well groomed; clothes are clean and neat (Uses appropriate clothes that are becoming of a teacher).',
-    '4.4' => 'Shows no favoritism.',
-    '4.5' => 'Has good sense of humor and shows enthusiasm in teaching.',
-    '4.6' => 'Has good diction, clear and modulated voice.'
-];
-
-// Tagalog questions
-$section1_tagalog = [
-    '1.1' => 'Nasuri at-naipaliwanag ang araling nang hindi binabasa ang aklat sa klase.',
-    '1.2' => 'Gumugamit ng audio-visual at mga device upang suportahan at mapadali ang pagtuturo',
-    '1.3' => 'Nagpapakita ng mga ideya/konsepto nang malinaw at nakukumbinsi mula sa mga kaugnay na larangan at isama ang subject matter sa aktwal na karanasan.',
-    '1.4' => 'Hinahayaan ang mga mag-aaral na gumamit ng mga konsepto upang ipakita ang pag-unawa sa mga aralin',
-    '1.5' => 'Nagbibigay ng patas na pagsusulit at pagsusuri at ibalik ang mga result ang pagsusulit sa loob ng makatawirang panahon.',
-    '1.6' => 'Naguutos nang maayos sa pagtuturo gamit ang maayos na pananalita.'
-];
-
-$section2_tagalog = [
-    '2.1' => 'Pinapanatiling maayos, disiplinado at ligtas ang silid-aralan upang magkaraon ng maayos na pagaaral.',
-    '2.2' => 'Sumusunod sa sistematikong iskedyul ng mga klase at iba pang pangaraw-araw na gawain.',
-    '2.3' => 'Hinuhubog sa mga mag-aaral ang respeto at paggalang sa mga guro.',
-    '2.4' => 'Pinahihinlulutan ang mga mag-aaral na ipahayag ang kanilang mga opinyon at mga pananaw.'
-];
-
-$section3_tagalog = [
-    '3.1' => 'Pagtanggap sa mga mag-aaral bilang indibidwal na may kalakasan at kahinaan.',
-    '3.2' => 'Pagpapakita ng tiwala at kaayusan sa sarili',
-    '3.3' => 'Pinangangasiwaan ang problema ng klase at mga mag-aaral nang may patas at pang-unawa.',
-    '3.4' => 'Nagpapakita ng tunay na pagmamalasakit sa mga personal at iba pang problemang ipinakita ng mga mag-aaral.'
-];
-
-$section4_tagalog = [
-    '4.1' => 'Nagpapanatili ng emosyonal na balanse: hindi masyadong kritikal o sobrang sensitibo.',
-    '4.2' => 'Malaya sa nakasanayang galaw na nakakagambala sa proseso ng pagtuturo at pagkatuto.',
-    '4.3' => 'Maayos at presentable; Malinis at maayos ang mga damit.',
-    '4.4' => 'Hindi nagpapakita ng paboritismo',
-    '4.5' => 'May magandang sense of humor at nagpapakita ng sigla sa pagtuturo.',
-    '4.6' => 'May magandang diction, malinaw at maayos na timpla ng boses.'
-];
-
-// Calculate average rating if in view mode
-$average_rating = 0;
-$performance_level = '';
-if ($is_view_mode && $existing_evaluation) {
-    $total_rating = 0;
-    $total_questions = 0;
-
-    // Sum all ratings safely
-    for ($i = 1; $i <= 6; $i++) {
-        $total_rating += intval($existing_evaluation["q1_$i"] ?? 0);
-        $total_questions++;
-    }
-    for ($i = 1; $i <= 4; $i++) {
-        $total_rating += intval($existing_evaluation["q2_$i"] ?? 0);
-        $total_questions++;
-    }
-    for ($i = 1; $i <= 4; $i++) {
-        $total_rating += intval($existing_evaluation["q3_$i"] ?? 0);
-        $total_questions++;
-    }
-    for ($i = 1; $i <= 6; $i++) {
-        $total_rating += intval($existing_evaluation["q4_$i"] ?? 0);
-        $total_questions++;
-    }
-
-    if ($total_questions > 0) {
-        $average_rating = round($total_rating / $total_questions, 2);
-
-        if ($average_rating >= 4.5) {
-            $performance_level = 'Outstanding';
-        } else if ($average_rating >= 4.0) {
-            $performance_level = 'Very Satisfactory';
-        } else if ($average_rating >= 3.5) {
-            $performance_level = 'Good/Satisfactory';
-        } else if ($average_rating >= 2.5) {
-            $performance_level = 'Fair';
-        } else {
-            $performance_level = 'Needs Improvement';
-        }
-    }
-}
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -304,9 +12,21 @@ if ($is_view_mode && $existing_evaluation) {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
+        :root {
+            --maroon: #800000;
+            --dark-maroon: #5E0C0C;
+            --gold: #DAA520;
+            --light-gold: #FFD700;
+            --pale-gold: #fff9e6;
+            --cream: #fffaf0;
+            --white: #ffffff;
+            --light-gray: #f5f5f5;
+            --shadow: rgba(94, 12, 12, 0.1);
+        }
+
         body {
-            background-color: #f9f5eb;
-            color: #5E0C0C;
+            background-color: var(--cream);
+            color: var(--dark-maroon);
             line-height: 1.6;
             padding: 20px;
             padding-top: 70px;
@@ -315,11 +35,12 @@ if ($is_view_mode && $existing_evaluation) {
         .container {
             max-width: 1100px;
             margin: 0 auto;
-            background: #fffaf0;
+            background: var(--white);
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(94, 12, 12, 0.1);
+            box-shadow: 0 0 20px var(--shadow);
             position: relative;
+            border: 1px solid var(--gold);
         }
 
         /* Skeleton Loading Styles */
@@ -329,7 +50,7 @@ if ($is_view_mode && $existing_evaluation) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: #f9f5eb;
+            background: var(--cream);
             z-index: 9999;
             display: flex;
             flex-direction: column;
@@ -400,7 +121,7 @@ if ($is_view_mode && $existing_evaluation) {
             width: 50px;
             height: 50px;
             border: 5px solid #f0f0f0;
-            border-top: 5px solid #DAA520;
+            border-top: 5px solid var(--gold);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-top: 20px;
@@ -428,44 +149,71 @@ if ($is_view_mode && $existing_evaluation) {
             opacity: 0;
         }
 
-        /* Rest of your existing styles remain the same */
+        /* Header and Institution Styles */
         header {
             text-align: center;
             margin-bottom: 30px;
-            border-bottom: 2px solid #DAA520;
             padding-bottom: 20px;
+            border-bottom: 2px solid var(--gold);
+            background: linear-gradient(135deg, var(--maroon) 0%, var(--dark-maroon) 100%);
+            color: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px var(--shadow);
         }
 
         h1 {
-            color: #800000;
+            color: var(--gold);
             margin-bottom: 10px;
+            font-size: 1.8em;
         }
 
         h2 {
-            color: #DAA520;
+            color: var(--maroon);
             margin: 25px 0 15px;
             padding-bottom: 5px;
-            border-bottom: 1px solid #f1dca0;
+            border-bottom: 2px solid var(--gold);
+            font-size: 1.4em;
+        }
+
+        h3 {
+            color: var(--maroon);
+            margin: 15px 0 10px;
+            font-size: 1.2em;
         }
 
         .institution-name {
             font-weight: bold;
             font-size: 1.4em;
-            color: #800000;
+            color: var(--gold);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
         .address {
             font-style: italic;
-            color: #9c6c6c;
+            color: var(--pale-gold);
             margin-bottom: 15px;
         }
 
         .teacher-info {
-            background: linear-gradient(135deg, #fff9e6 0%, #f9eeca 100%);
+            background: linear-gradient(135deg, var(--pale-gold) 0%, var(--cream) 100%);
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 25px;
-            border-left: 5px solid #DAA520;
+            border-left: 5px solid var(--gold);
+            box-shadow: 0 2px 5px var(--shadow);
+        }
+
+        .teacher-info h3 {
+            color: var(--maroon);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .teacher-info h3:before {
+            content: "👨‍🏫";
+            margin-right: 10px;
         }
 
         .language-toggle {
@@ -475,20 +223,26 @@ if ($is_view_mode && $existing_evaluation) {
         }
 
         .language-toggle button {
-            padding: 8px 15px;
+            padding: 10px 20px;
             margin: 0 5px;
-            background-color: #f1dca0;
-            border: none;
+            background-color: var(--pale-gold);
+            border: 2px solid var(--gold);
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s;
-            color: #5E0C0C;
+            color: var(--maroon);
         }
 
         .language-toggle button.active {
-            background-color: #DAA520;
-            color: white;
+            background-color: var(--maroon);
+            color: var(--gold);
+            border-color: var(--maroon);
+        }
+
+        .language-toggle button:hover:not(.active) {
+            background-color: var(--gold);
+            color: var(--white);
         }
 
         .progress-container {
@@ -496,15 +250,15 @@ if ($is_view_mode && $existing_evaluation) {
             top: 0;
             left: 0;
             width: 100%;
-            background-color: #fffaf0;
+            background-color: var(--maroon);
             padding: 10px 20px;
-            box-shadow: 0 2px 5px rgba(94, 12, 12, 0.1);
+            box-shadow: 0 2px 5px var(--shadow);
             z-index: 2000;
         }
 
         .progress-bar {
             height: 8px;
-            background-color: #f1dca0;
+            background-color: var(--pale-gold);
             border-radius: 4px;
             margin: 10px 0;
             overflow: hidden;
@@ -512,24 +266,26 @@ if ($is_view_mode && $existing_evaluation) {
 
         .progress {
             height: 100%;
-            background-color: #DAA520;
+            background: linear-gradient(90deg, var(--gold) 0%, var(--light-gold) 100%);
             width: 0%;
             transition: width 0.5s ease;
+            border-radius: 4px;
         }
 
         .progress-text {
             text-align: center;
             font-weight: bold;
-            color: #5E0C0C;
+            color: var(--gold);
             margin-bottom: 5px;
         }
 
         .instructions {
-            background-color: #f9f5eb;
+            background-color: var(--pale-gold);
             padding: 15px;
-            border-left: 4px solid #DAA520;
+            border-left: 4px solid var(--gold);
             margin-bottom: 25px;
             border-radius: 0 5px 5px 0;
+            box-shadow: 0 2px 4px var(--shadow);
         }
 
         .rating-scale {
@@ -537,46 +293,54 @@ if ($is_view_mode && $existing_evaluation) {
             justify-content: space-between;
             margin: 20px 0;
             padding: 15px;
-            background: linear-gradient(to right, #5E0C0C, #800000, #DAA520, #FFD700, #f1dca0);
+            background: linear-gradient(to right, var(--dark-maroon), var(--maroon), var(--gold), var(--light-gold), var(--pale-gold));
             border-radius: 5px;
             color: white;
             font-weight: bold;
             text-align: center;
+            box-shadow: 0 2px 4px var(--shadow);
         }
 
         .rating-item {
             text-align: center;
             flex: 1;
             font-size: 16px;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 25px;
+            box-shadow: 0 2px 5px var(--shadow);
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         th, td {
             padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid #f1dca0;
+            border-bottom: 1px solid var(--pale-gold);
         }
 
         th {
-            background-color: #f9f5eb;
+            background: linear-gradient(135deg, var(--maroon) 0%, var(--dark-maroon) 100%);
             font-weight: 600;
-            color: #5E0C0C;
+            color: var(--gold);
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
         }
 
         tr:hover {
-            background-color: #fff9e6;
+            background-color: var(--pale-gold);
         }
 
         .rating-options {
             display: flex;
             justify-content: space-between;
             width: 100%;
-            color: dark-maroon;
         }
 
         .rating-options label {
@@ -584,48 +348,110 @@ if ($is_view_mode && $existing_evaluation) {
             text-align: center;
             width: 18%;
             cursor: pointer;
-            color: #5E0C0C;
+            color: var(--dark-maroon);
+            font-weight: 500;
+            transition: all 0.2s;
+            padding: 5px;
+            border-radius: 4px;
         }
 
+        .rating-options label:hover {
+            background-color: var(--pale-gold);
+        }
+
+        /* Custom Radio Button Styling */
         input[type="radio"] {
-            transform: scale(1.2);
+            /* Hide default radio */
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--maroon);
+            border-radius: 50%;
+            outline: none;
+            cursor: pointer;
+            position: relative;
             margin: 8px 0;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        input[type="radio"]:checked {
+            background-color: var(--maroon);
+            border-color: var(--maroon);
+        }
+
+        input[type="radio"]:checked::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background-color: var(--gold);
+            border-radius: 50%;
+        }
+
+        input[type="radio"]:focus {
+            box-shadow: 0 0 0 3px rgba(218, 165, 32, 0.3);
         }
 
         textarea {
             width: 100%;
             height: 120px;
             padding: 15px;
-            border: 1px solid #f1dca0;
+            border: 2px solid var(--pale-gold);
             border-radius: 5px;
             resize: vertical;
             font-size: 16px;
-            background-color: #fffaf0;
-            color: #5E0C0C;
+            background-color: var(--white);
+            color: var(--dark-maroon);
+            transition: border 0.3s;
+        }
+
+        textarea:focus {
+            border-color: var(--gold);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(218, 165, 32, 0.2);
         }
 
         .submit-btn {
             display: block;
-            width: 200px;
+            width: 220px;
             margin: 30px auto 10px;
-            padding: 12px;
-            background-color: #DAA520;
-            color: white;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--maroon) 0%, var(--dark-maroon) 100%);
+            color: var(--gold);
             border: none;
             border-radius: 5px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px var(--shadow);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .submit-btn:hover {
-            background-color: #b8860b;
+            background: linear-gradient(135deg, var(--dark-maroon) 0%, var(--maroon) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px var(--shadow);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px var(--shadow);
         }
 
         .submit-btn:disabled {
-            background-color: #9c6c6c;
+            background: #cccccc;
+            color: #666666;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .success-message {
@@ -635,6 +461,7 @@ if ($is_view_mode && $existing_evaluation) {
             border-radius: 10px;
             margin-bottom: 25px;
             border-left: 5px solid #28a745;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .error-message {
@@ -644,15 +471,17 @@ if ($is_view_mode && $existing_evaluation) {
             border-radius: 10px;
             margin-bottom: 25px;
             border-left: 5px solid #dc3545;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .evaluation-status {
-            background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
-            color: #155724;
+            background: linear-gradient(135deg, var(--pale-gold) 0%, var(--cream) 100%);
+            color: var(--dark-maroon);
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 25px;
-            border-left: 5px solid #28a745;
+            border-left: 5px solid var(--gold);
+            box-shadow: 0 2px 5px var(--shadow);
         }
 
         .tagalog {
@@ -662,22 +491,29 @@ if ($is_view_mode && $existing_evaluation) {
         footer {
             text-align: center;
             margin-top: 20px;
-            color: #9c6c6c;
+            color: var(--maroon);
             font-size: 0.9em;
+            padding-top: 20px;
+            border-top: 1px solid var(--pale-gold);
         }
 
         .back-link {
-            background: #4caf50;
-            color: white;
+            background: var(--maroon);
+            color: var(--gold);
             padding: 10px 20px;
             text-decoration: none;
             border-radius: 5px;
             display: inline-block;
             margin-top: 15px;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px var(--shadow);
         }
 
         .back-link:hover {
-            background: #45a049;
+            background: var(--dark-maroon);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px var(--shadow);
         }
 
         /* Responsive design */
@@ -690,6 +526,7 @@ if ($is_view_mode && $existing_evaluation) {
                 width: 100%;
                 text-align: left;
                 margin-bottom: 5px;
+                padding: 8px;
             }
 
             th, td {
@@ -721,6 +558,57 @@ if ($is_view_mode && $existing_evaluation) {
             .skeleton-card {
                 width: 95%;
             }
+
+            .submit-btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
+        /* Additional decorative elements */
+        .section-divider {
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            margin: 30px 0;
+            border: none;
+        }
+
+        .decorative-corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+        }
+
+        .corner-tl {
+            top: 0;
+            left: 0;
+            border-top: 3px solid var(--gold);
+            border-left: 3px solid var(--gold);
+            border-top-left-radius: 10px;
+        }
+
+        .corner-tr {
+            top: 0;
+            right: 0;
+            border-top: 3px solid var(--gold);
+            border-right: 3px solid var(--gold);
+            border-top-right-radius: 10px;
+        }
+
+        .corner-bl {
+            bottom: 0;
+            left: 0;
+            border-bottom: 3px solid var(--gold);
+            border-left: 3px solid var(--gold);
+            border-bottom-left-radius: 10px;
+        }
+
+        .corner-br {
+            bottom: 0;
+            right: 0;
+            border-bottom: 3px solid var(--gold);
+            border-right: 3px solid var(--gold);
+            border-bottom-right-radius: 10px;
         }
     </style>
 </head>
@@ -747,6 +635,12 @@ if ($is_view_mode && $existing_evaluation) {
     </div>
 
     <div class="container">
+        <!-- Decorative corners -->
+        <div class="decorative-corner corner-tl"></div>
+        <div class="decorative-corner corner-tr"></div>
+        <div class="decorative-corner corner-bl"></div>
+        <div class="decorative-corner corner-br"></div>
+        
         <header>
             <div class="institution-name">PHILTECH GMA</div>
             <div class="institution-name">PHILIPPINE TECHNOLOGICAL INSTITUTE OF SCIENCE ARTS AND TRADE CENTRAL INC.</div>
@@ -756,7 +650,7 @@ if ($is_view_mode && $existing_evaluation) {
 
             <?php if ($teacher_info): ?>
             <div class="teacher-info">
-                <h3 style="color: #800000; margin-bottom: 10px;">👨‍🏫 Evaluating: <?php echo safe_display($teacher_info['name']); ?></h3>
+                <h3>Evaluating: <?php echo safe_display($teacher_info['name']); ?></h3>
                 <p style="margin: 5px 0;"><strong>Department:</strong> <?php echo safe_display($teacher_info['display_department']); ?></p>
                 <p style="margin: 5px 0;"><strong>Student:</strong> <?php echo safe_display($_SESSION['full_name'] ?? ''); ?> (<?php echo safe_display($_SESSION['student_id'] ?? $_SESSION['username']); ?>)</p>
                 <p style="margin: 5px 0;"><strong>Student Program:</strong> <?php echo safe_display($_SESSION['program'] ?? ''); ?></p>
@@ -847,6 +741,8 @@ if ($is_view_mode && $existing_evaluation) {
                     </tbody>
                 </table>
                 
+                <hr class="section-divider">
+                
                 <h2>2. Management Skills</h2>
                 <table>
                     <thead>
@@ -872,6 +768,8 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                
+                <hr class="section-divider">
                 
                 <h2>3. Guidance Skills</h2>
                 <table>
@@ -899,6 +797,8 @@ if ($is_view_mode && $existing_evaluation) {
                     </tbody>
                 </table>
                 
+                <hr class="section-divider">
+                
                 <h2>4. Personal and Social Qualities/Skills</h2>
                 <table>
                     <thead>
@@ -924,6 +824,8 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                
+                <hr class="section-divider">
                 
                 <div class="comments-section">
                     <h2>5. Comments</h2>
@@ -963,6 +865,8 @@ if ($is_view_mode && $existing_evaluation) {
                     </tbody>
                 </table>
                 
+                <hr class="section-divider">
+                
                 <h2>2. Kasanayan sa pamamahala</h2>
                 <table>
                     <thead>
@@ -988,6 +892,8 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                
+                <hr class="section-divider">
                 
                 <h2>3. Mga kasanayan sa Paggabay</h2>
                 <table>
@@ -1015,6 +921,8 @@ if ($is_view_mode && $existing_evaluation) {
                     </tbody>
                 </table>
                 
+                <hr class="section-divider">
+                
                 <h2>4. Personal at panlipunang katangian</h2>
                 <table>
                     <thead>
@@ -1040,6 +948,8 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                
+                <hr class="section-divider">
                 
                 <div class="comments-section">
                     <h2>5. Komento</h2>
