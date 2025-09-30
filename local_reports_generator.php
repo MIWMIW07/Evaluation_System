@@ -22,6 +22,21 @@ if (!file_exists('tcpdf/tcpdf.php')) {
     exit;
 }
 
+// TCPDF Configuration - ADD THIS BEFORE INCLUDING TCPDF
+define('K_TCPDF_EXTERNAL_CONFIG', true);
+define('PDF_PAGE_ORIENTATION', 'P');
+define('PDF_UNIT', 'mm');
+define('PDF_PAGE_FORMAT', 'A4');
+define('PDF_CREATOR', 'Teacher Evaluation System');
+define('PDF_AUTHOR', 'Admin');
+
+// TCPDF Paths
+define('K_PATH_MAIN', __DIR__ . '/tcpdf/');
+define('K_PATH_FONTS', K_PATH_MAIN . 'fonts/');
+define('K_PATH_IMAGES', K_PATH_MAIN . 'images/');
+define('K_PATH_CACHE', sys_get_temp_dir() . '/');
+define('K_BLANK_IMAGE', K_PATH_IMAGES . '_blank.png');
+
 // Include TCPDF library
 require_once 'tcpdf/tcpdf.php';
 
@@ -66,8 +81,8 @@ function generateIndividualReport($pdo, $teacherName, $program, $section, $outpu
         $pdf = new EvaluationPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
         // Set document information
-        $pdf->SetCreator('Teacher Evaluation System');
-        $pdf->SetAuthor('Admin');
+        $pdf->SetCreator(PDF_CREATOR);
+        $pdf->SetAuthor(PDF_AUTHOR);
         $pdf->SetTitle("Individual Report - $teacherName - $program $section");
         $pdf->SetSubject('Teacher Evaluation Report');
 
@@ -258,8 +273,8 @@ function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPa
         $pdf = new EvaluationPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
         // Set document information
-        $pdf->SetCreator('Teacher Evaluation System');
-        $pdf->SetAuthor('Admin');
+        $pdf->SetCreator(PDF_CREATOR);
+        $pdf->SetAuthor(PDF_AUTHOR);
         $pdf->SetTitle("Summary Report - $teacherName - $program $section");
 
         // Set header
@@ -525,5 +540,7 @@ try {
         'error' => 'Failed to generate reports: ' . $e->getMessage()
     ]);
 }
+
+ob_end_flush();
 exit;
 ?>
