@@ -472,7 +472,7 @@ if (isset($_SESSION['user_id'])) {
             </button>
         </form>
         
-        <div class="footer" data-aos="fade-right" data-aos-delay="1000">
+        <div class="footer">
             <p>&copy; 2025 - Philippine Technological Institute of Science Arts and Trade - Central Inc.</p>
         </div>
     </div>
