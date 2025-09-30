@@ -231,7 +231,7 @@ try {
     $pdo = getPDO();
     echo "<!DOCTYPE html>";
     echo "<html><head><title>Database Setup</title>";
-    echo "<style>body{font-family:Arial,sans-serif;margin:20px;line-height:1.6;}h2{color:#800000;}h3{color:#A52A2A;}p{margin:5px 0;}.summary{background:#f0f0f0;padding:15px;border-radius:5px;margin:20px 0;}.success{color:green;}.error{color:red;}.highlight{background:#ffffcc;padding:10px;border-radius:5px;border-left:5px solid #ffcc00;}</style>";
+    echo "<style>body{font-family:Arial,sans-serif;margin:20px;line-height:1.6;}h2{color:#800000;}h3{color:#A52A2A;}p{margin:5px 0;}.summary{background:#f0f0f0;padding:15px;border-radius:5px;margin:20px 0;}.success{color:green;}.error{color:red;}.highlight{background:#ffffcc;padding:10px;border-radius:5px;border-left:5px solid #ffcc00;}.teacher-with-image{background:#e8f5e8;padding:8px;border-radius:4px;border-left:4px solid #28a745;}</style>";
     echo "</head><body>";
     
     echo "<h2>🔧 Setting up database system with all real teacher assignments...</h2><br>";
@@ -254,13 +254,14 @@ try {
     echo "✓ Old tables removed<br><br>";
 
     // ==============================
-    // Teacher Assignments Table
+    // Teacher Assignments Table (with teacher_image column)
     // ==============================
     echo "📋 Creating teacher_assignments table...<br>";
     $pdo->exec("
         CREATE TABLE teacher_assignments (
             id SERIAL PRIMARY KEY,
             teacher_name VARCHAR(100) NOT NULL,
+            teacher_image VARCHAR(255) DEFAULT NULL,
             section VARCHAR(50) NOT NULL,
             program VARCHAR(10) NOT NULL CHECK (program IN ('SHS', 'COLLEGE')),
             school_year VARCHAR(20) DEFAULT '2025-2026',
@@ -341,11 +342,21 @@ try {
     $totalInserted = insertAllTeacherAssignments($pdo);
 
     // ==============================
+    // Update MR. V. GORDON with image
+    // ==============================
+    echo "🖼️ Adding teacher image for MR. V. GORDON...<br>";
+    $updateStmt = $pdo->prepare("UPDATE teacher_assignments SET teacher_image = ? WHERE teacher_name = ?");
+    $updateStmt->execute(['sirraiven.jpg', 'MR. V. GORDON']);
+    $updatedCount = $updateStmt->rowCount();
+    echo "✓ Updated {$updatedCount} records for MR. V. GORDON with image: sirraiven.jpg<br><br>";
+
+    // ==============================
     // Summary and Statistics
     // ==============================
     echo "<div class='summary'>";
     echo "<h3>✅ Database Setup Complete!</h3>";
     echo "<p class='success'><strong>Total teacher assignments inserted: {$totalInserted}</strong></p>";
+    echo "<p class='success'><strong>Teacher images configured: MR. V. GORDON → sirraiven.jpg</strong></p>";
     echo "</div>";
     
     // Show detailed statistics
@@ -365,16 +376,32 @@ try {
     $uniqueSections = $stmt->fetchColumn();
     echo "<p><strong>Sections covered:</strong> {$uniqueSections}</p>";
     
+    // Show teachers with images
+    echo "<h3>🖼️ Teachers with Profile Images</h3>";
+    $stmt = $pdo->query("SELECT DISTINCT teacher_name, teacher_image FROM teacher_assignments WHERE teacher_image IS NOT NULL");
+    $teachersWithImages = $stmt->fetchAll();
+    
+    if ($teachersWithImages) {
+        foreach ($teachersWithImages as $teacher) {
+            echo "<div class='teacher-with-image'>";
+            echo "<p>• <strong>{$teacher['teacher_name']}</strong> → {$teacher['teacher_image']}</p>";
+            echo "</div>";
+        }
+    } else {
+        echo "<p>No teachers with images configured yet.</p>";
+    }
+    
     // Show specific BSCS3M1 assignments (your section)
     echo "<div class='highlight'>";
     echo "<h3>🎯 Your Section (BSCS3M1) Teachers:</h3>";
-    $stmt = $pdo->prepare("SELECT teacher_name FROM teacher_assignments WHERE section = ? AND program = ? ORDER BY teacher_name");
+    $stmt = $pdo->prepare("SELECT teacher_name, teacher_image FROM teacher_assignments WHERE section = ? AND program = ? ORDER BY teacher_name");
     $stmt->execute(['BSCS3M1', 'COLLEGE']);
     $bscs3m1_teachers = $stmt->fetchAll();
     
     if ($bscs3m1_teachers) {
         foreach ($bscs3m1_teachers as $teacher) {
-            echo "<p>• <strong>{$teacher['teacher_name']}</strong></p>";
+            $imageInfo = $teacher['teacher_image'] ? "🖼️ {$teacher['teacher_image']}" : "📝 No image";
+            echo "<p>• <strong>{$teacher['teacher_name']}</strong> ({$imageInfo})</p>";
         }
         echo "<p style='color:green;'><strong>✅ Found " . count($bscs3m1_teachers) . " teachers for your section!</strong></p>";
     } else {
@@ -386,21 +413,29 @@ try {
     echo "<h3>🏫 System Information</h3>";
     echo "<p><strong>Tables Created:</strong></p>";
     echo "<ul>";
-    echo "<li>📋 <code>teacher_assignments</code> - All real teacher-section assignments</li>";
+    echo "<li>📋 <code>teacher_assignments</code> - All real teacher-section assignments (with image support)</li>";
     echo "<li>📊 <code>evaluations</code> - Student evaluation responses storage</li>";
+    echo "</ul>";
+    
+    echo "<p><strong>New Features:</strong></p>";
+    echo "<ul>";
+    echo "<li>✅ Teacher profile images support</li>";
+    echo "<li>✅ MR. V. GORDON now has sirraiven.jpg as profile picture</li>";
+    echo "<li>✅ Ready to display teacher images in evaluation forms</li>";
     echo "</ul>";
     
     echo "<p><strong>Data Sources:</strong></p>";
     echo "<ul>";
     echo "<li>📑 <strong>Students:</strong> Google Sheets (Student_ID, Last_Name, First_Name, Section, Program, Username, Password)</li>";
-    echo "<li>👨‍🏫 <strong>Teachers:</strong> Database teacher_assignments table (now populated with all real data)</li>";
+    echo "<li>👨‍🏫 <strong>Teachers:</strong> Database teacher_assignments table (now populated with all real data + images)</li>";
     echo "<li>📊 <strong>Evaluations:</strong> Database evaluations table</li>";
     echo "</ul>";
     
     echo "<p><strong>Ready to use:</strong></p>";
     echo "<ol>";
     echo "<li>✅ All teacher assignments are loaded</li>";
-    echo "<li>✅ Your BSCS3M1 section should now show teachers</li>";
+    echo "<li>✅ Teacher images system is ready</li>";
+    echo "<li>✅ MR. V. GORDON has his profile picture</li>";
     echo "<li>✅ Students can now evaluate their assigned teachers</li>";
     echo "</ol>";
     echo "</div>";
