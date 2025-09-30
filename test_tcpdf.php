@@ -1,6 +1,6 @@
 <?php
 // test_tcpdf.php
-require_once 'tcpdf/tcpdf.php';
+require_once(__DIR__ . '/tcpdf/tcpdf.php');
 
 $pdf = new TCPDF();
 $pdf->AddPage();
