@@ -345,56 +345,56 @@ ob_end_clean(); // Clean the output buffer
     </div>
 
     <script>
-        // Generate Local PDF Reports
-        async function generateLocalReports() {
-            const resultDiv = document.getElementById('reportResult');
-            if (!resultDiv) {
-                // Create result div if it doesn't exist
-                const reportCard = document.querySelector('.card');
-                const newResultDiv = document.createElement('div');
-                newResultDiv.id = 'reportResult';
-                reportCard.appendChild(newResultDiv);
-                resultDiv = newResultDiv;
-            }
+    // Generate Local PDF Reports
+    async function generateLocalReports() {
+        let resultDiv = document.getElementById('reportResult');
+        if (!resultDiv) {
+            // Create result div if it doesn't exist
+            const reportCard = document.querySelector('.card');
+            const newResultDiv = document.createElement('div');
+            newResultDiv.id = 'reportResult';
+            reportCard.appendChild(newResultDiv);
+            resultDiv = newResultDiv; // Use let instead of const for reassignment
+        }
+        
+        resultDiv.innerHTML = '<p class="loading">🔄 Generating PDF reports... This may take a few minutes for large datasets.</p>';
+        
+        try {
+            const response = await fetch('local_reports_generator.php');
+            const data = await response.json();
             
-            resultDiv.innerHTML = '<p class="loading">🔄 Generating PDF reports... This may take a few minutes for large datasets.</p>';
-            
-            try {
-                const response = await fetch('local_reports_generator.php');
-                const data = await response.json();
+            if (data.success) {
+                let html = `<div class="result-box result-success">`;
+                html += `<p>✅ ${data.message}</p>`;
+                html += `<p><strong>Teachers Processed:</strong> ${data.teachers_processed}</p>`;
+                html += `<p><strong>Individual Reports:</strong> ${data.individual_reports}</p>`;
+                html += `<p><strong>Summary Reports:</strong> ${data.summary_reports}</p>`;
+                html += `<p><strong>Total Files:</strong> ${data.total_files}</p>`;
                 
-                if (data.success) {
-                    let html = `<div class="result-box result-success">`;
-                    html += `<p>✅ ${data.message}</p>`;
-                    html += `<p><strong>Teachers Processed:</strong> ${data.teachers_processed}</p>`;
-                    html += `<p><strong>Individual Reports:</strong> ${data.individual_reports}</p>`;
-                    html += `<p><strong>Summary Reports:</strong> ${data.summary_reports}</p>`;
-                    html += `<p><strong>Total Files:</strong> ${data.total_files}</p>`;
-                    
-                    if (data.zip_file) {
-                        html += `<p><a href="${data.zip_file}" class="btn btn-success" download>📥 Download All Reports (ZIP)</a></p>`;
-                        html += `<p><small>Save this file to your Desktop and extract to get the folder structure.</small></p>`;
-                    }
-                    
-                    html += `</div>`;
-                    resultDiv.innerHTML = html;
-                } else {
-                    resultDiv.innerHTML = `<div class="result-box result-error">Error: ${data.error}</div>`;
+                if (data.zip_file) {
+                    html += `<p><a href="${data.zip_file}" class="btn btn-success" download>📥 Download All Reports (ZIP)</a></p>`;
+                    html += `<p><small>Save this file to your Desktop and extract to get the folder structure.</small></p>`;
                 }
-            } catch (error) {
-                resultDiv.innerHTML = `<div class="result-box result-error">Network error: ${error.message}</div>`;
+                
+                html += `</div>`;
+                resultDiv.innerHTML = html;
+            } else {
+                resultDiv.innerHTML = `<div class="result-box result-error">Error: ${data.error}</div>`;
             }
+        } catch (error) {
+            resultDiv.innerHTML = `<div class="result-box result-error">Network error: ${error.message}</div>`;
         }
+    }
 
-        // Refresh evaluations
-        function refreshEvaluations() {
-            location.reload();
-        }
+    // Refresh evaluations
+    function refreshEvaluations() {
+        location.reload();
+    }
 
-        // Auto-refresh every 30 seconds to show new evaluations
-        setInterval(() => {
-            refreshEvaluations();
-        }, 30000);
-    </script>
+    // Auto-refresh every 30 seconds to show new evaluations
+    setInterval(() => {
+        refreshEvaluations();
+    }, 30000);
+</script>
 </body>
 </html>
