@@ -244,7 +244,7 @@ ob_end_clean();
             resultDiv.innerHTML = '<p class="loading">Checking database data...</p>';
             
             try {
-                const response = await fetch('check_database_data.php');
+                const response = await fetch('database_setup.php');
                 const html = await response.text();
                 resultDiv.innerHTML = `<div class="debug-details">${html}</div>`;
             } catch (error) {
