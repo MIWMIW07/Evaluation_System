@@ -16,21 +16,24 @@ try {
     // Total evaluations count
     $totalEvals = $pdo->query("SELECT COUNT(*) FROM evaluations")->fetchColumn();
     
-    // Recent evaluations (last 10)
+    // Recent evaluations (last 10) - FIXED QUERY
     $recentEvals = $pdo->query("
-        SELECT e.*, s.section, s.program 
-        FROM evaluations e 
-        ORDER BY e.submitted_at DESC 
+        SELECT * 
+        FROM evaluations 
+        ORDER BY submitted_at DESC 
         LIMIT 10
     ")->fetchAll(PDO::FETCH_ASSOC);
     
-    // Teacher statistics
+    // Teacher statistics - FIXED QUERY
     $teacherStats = $pdo->query("
-        SELECT teacher_name, program, COUNT(*) as eval_count,
-               AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
-                    q2_1 + q2_2 + q2_3 + q2_4 + 
-                    q3_1 + q3_2 + q3_3 + q3_4 + 
-                    q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20 * 100) as avg_score
+        SELECT 
+            teacher_name, 
+            program,
+            COUNT(*) as eval_count,
+            AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
+                 q2_1 + q2_2 + q2_3 + q2_4 + 
+                 q3_1 + q3_2 + q3_3 + q3_4 + 
+                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) * 100 as avg_score
         FROM evaluations 
         GROUP BY teacher_name, program 
         ORDER BY eval_count DESC
@@ -38,6 +41,7 @@ try {
     ")->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (Exception $e) {
+    error_log("Admin Dashboard Error: " . $e->getMessage());
     $totalEvals = 0;
     $recentEvals = [];
     $teacherStats = [];
@@ -227,6 +231,15 @@ ob_end_clean(); // Clean the output buffer
             border-radius: 8px;
             border: 1px solid #e9ecef;
         }
+        
+        .debug-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -235,6 +248,13 @@ ob_end_clean(); // Clean the output buffer
         <div class="header">
             <h1>🏫 Teacher Evaluation System - Admin Dashboard</h1>
             <p>Welcome, Administrator! Manage evaluations and generate reports.</p>
+        </div>
+
+        <!-- Debug Information -->
+        <div class="debug-info">
+            <strong>🔍 Debug Info:</strong> 
+            Total evaluations in database: <?php echo $totalEvals; ?> | 
+            Recent evaluations found: <?php echo count($recentEvals); ?>
         </div>
 
         <!-- Quick Stats -->
@@ -279,6 +299,13 @@ ob_end_clean(); // Clean the output buffer
             
             <?php if (empty($recentEvals)): ?>
                 <p class="loading">No evaluations found.</p>
+                <?php if ($totalEvals > 0): ?>
+                    <div class="debug-info">
+                        <strong>⚠️ Data Mismatch:</strong> 
+                        Database shows <?php echo $totalEvals; ?> evaluations but query returned 0.
+                        This might indicate a query issue.
+                    </div>
+                <?php endif; ?>
             <?php else: ?>
                 <table class="evaluation-table">
                     <thead>
@@ -300,11 +327,11 @@ ob_end_clean(); // Clean the output buffer
                             $avgScore = $totalScore / 20;
                         ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($eval['student_name']); ?></td>
-                            <td><?php echo htmlspecialchars($eval['teacher_name']); ?></td>
-                            <td><?php echo htmlspecialchars($eval['program']); ?></td>
-                            <td><?php echo htmlspecialchars($eval['section']); ?></td>
-                            <td><?php echo date('M j, g:i A', strtotime($eval['submitted_at'])); ?></td>
+                            <td><?php echo htmlspecialchars($eval['student_name'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($eval['teacher_name'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($eval['program'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($eval['section'] ?? 'N/A'); ?></td>
+                            <td><?php echo date('M j, g:i A', strtotime($eval['submitted_at'] ?? 'now')); ?></td>
                             <td><strong><?php echo number_format($avgScore, 1); ?>/5.0</strong></td>
                         </tr>
                         <?php endforeach; ?>
@@ -354,7 +381,7 @@ ob_end_clean(); // Clean the output buffer
             const newResultDiv = document.createElement('div');
             newResultDiv.id = 'reportResult';
             reportCard.appendChild(newResultDiv);
-            resultDiv = newResultDiv; // Use let instead of const for reassignment
+            resultDiv = newResultDiv;
         }
         
         resultDiv.innerHTML = '<p class="loading">🔄 Generating PDF reports... This may take a few minutes for large datasets.</p>';
