@@ -572,11 +572,11 @@ if ($is_view_mode && $existing_evaluation) {
             background-color: #fff9e6;
         }
 
-         .rating-options {
+        .rating-options {
             display: flex;
             justify-content: space-between;
             width: 100%;
-            color: #5E0C0C;
+            color: dark-maroon;
         }
 
         .rating-options label {
@@ -591,7 +591,7 @@ if ($is_view_mode && $existing_evaluation) {
             transform: scale(1.2);
             margin: 8px 0;
         }
-        
+
         textarea {
             width: 100%;
             height: 120px;
