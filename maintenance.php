@@ -130,7 +130,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     <div class="container">
         <!-- Back Button -->
         <div class="back-button">
-            <a href="admin_dashboard.php" class="btn">← Back to Dashboard</a>
+            <a href="admin.php" class="btn">← Back to Dashboard</a>
         </div>
 
         <!-- Header -->
