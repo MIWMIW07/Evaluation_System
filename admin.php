@@ -1,4 +1,6 @@
 <?php
+// Fix for header warning - add output buffering
+ob_start();
 session_start();
 require_once 'includes/db_connection.php';
 
@@ -40,6 +42,7 @@ try {
     $recentEvals = [];
     $teacherStats = [];
 }
+ob_end_clean(); // Clean the output buffer
 ?>
 
 <!DOCTYPE html>
@@ -224,18 +227,6 @@ try {
             border-radius: 8px;
             border: 1px solid #e9ecef;
         }
-        
-        .debug-details {
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            margin-top: 10px;
-            font-family: monospace;
-            font-size: 0.85em;
-            max-height: 200px;
-            overflow-y: auto;
-        }
     </style>
 </head>
 <body>
@@ -277,14 +268,6 @@ try {
             </button>
             <a href="maintenance.php" class="btn btn-warning">🔧 Maintenance</a>
             <a href="logout.php" class="btn btn-danger">🚪 Logout</a>
-        </div>
-
-        <!-- Report Generation Section -->
-        <div class="card">
-            <h3>📁 Generate Evaluation Reports</h3>
-            <p>Create comprehensive PDF reports for all teacher evaluations. Reports will be saved to your Desktop in a structured folder format.</p>
-            <button class="btn btn-success" onclick="generateLocalReports()">Generate Local PDF Reports</button>
-            <div id="reportResult"></div>
         </div>
 
         <!-- Recent Evaluations -->
@@ -365,6 +348,15 @@ try {
         // Generate Local PDF Reports
         async function generateLocalReports() {
             const resultDiv = document.getElementById('reportResult');
+            if (!resultDiv) {
+                // Create result div if it doesn't exist
+                const reportCard = document.querySelector('.card');
+                const newResultDiv = document.createElement('div');
+                newResultDiv.id = 'reportResult';
+                reportCard.appendChild(newResultDiv);
+                resultDiv = newResultDiv;
+            }
+            
             resultDiv.innerHTML = '<p class="loading">🔄 Generating PDF reports... This may take a few minutes for large datasets.</p>';
             
             try {
@@ -401,10 +393,7 @@ try {
 
         // Auto-refresh every 30 seconds to show new evaluations
         setInterval(() => {
-            // Only refresh if user is not actively generating reports
-            if (!document.getElementById('reportResult').innerHTML.includes('Generating')) {
-                refreshEvaluations();
-            }
+            refreshEvaluations();
         }, 30000);
     </script>
 </body>
