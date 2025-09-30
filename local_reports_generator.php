@@ -22,42 +22,73 @@ if (!file_exists('tcpdf/tcpdf.php')) {
     exit;
 }
 
-// TCPDF Configuration - ADD THIS BEFORE INCLUDING TCPDF
-define('K_TCPDF_EXTERNAL_CONFIG', true);
-define('PDF_PAGE_ORIENTATION', 'P');
-define('PDF_UNIT', 'mm');
-define('PDF_PAGE_FORMAT', 'A4');
-define('PDF_CREATOR', 'Teacher Evaluation System');
-define('PDF_AUTHOR', 'Admin');
+// CRITICAL: Define ALL constants BEFORE including TCPDF
+if (!defined('K_TCPDF_EXTERNAL_CONFIG')) {
+    define('K_TCPDF_EXTERNAL_CONFIG', true);
+    
+    // Page settings
+    define('PDF_PAGE_ORIENTATION', 'P');
+    define('PDF_UNIT', 'mm');
+    define('PDF_PAGE_FORMAT', 'A4');
+    define('PDF_CREATOR', 'Teacher Evaluation System');
+    define('PDF_AUTHOR', 'Admin');
+    
+    // Paths - Use absolute paths
+    define('K_PATH_MAIN', __DIR__ . '/tcpdf/');
+    define('K_PATH_URL', '/tcpdf/');
+    define('K_PATH_FONTS', K_PATH_MAIN . 'fonts/');
+    define('K_PATH_CACHE', sys_get_temp_dir() . '/');
+    define('K_PATH_IMAGES', K_PATH_MAIN . 'images/');
+    define('K_BLANK_IMAGE', K_PATH_IMAGES . '_blank.png');
+    
+    // Header settings
+    define('PDF_HEADER_TITLE', 'Teacher Evaluation System');
+    define('PDF_HEADER_STRING', 'Evaluation Reports');
+    define('PDF_HEADER_LOGO', '');
+    define('PDF_HEADER_LOGO_WIDTH', 0);
+    
+    // Margins
+    define('PDF_MARGIN_LEFT', 15);
+    define('PDF_MARGIN_TOP', 27);
+    define('PDF_MARGIN_RIGHT', 15);
+    define('PDF_MARGIN_BOTTOM', 25);
+    define('PDF_MARGIN_HEADER', 5);
+    define('PDF_MARGIN_FOOTER', 10);
+    
+    // Font settings
+    define('PDF_FONT_SIZE_MAIN', 10);
+    define('PDF_FONT_SIZE_DATA', 8);
+    define('PDF_FONT_NAME_MAIN', 'helvetica');
+    define('PDF_FONT_NAME_DATA', 'helvetica');
+    define('PDF_FONT_MONOSPACED', 'courier');
+    
+    // Image and cell settings
+    define('PDF_IMAGE_SCALE_RATIO', 1.25);
+    define('K_CELL_HEIGHT_RATIO', 1.25);
+    define('K_TITLE_MAGNIFICATION', 1.3);
+    define('K_SMALL_RATIO', 2/3);
+    
+    // Other settings
+    define('K_THAI_TOPCHARS', true);
+    define('K_TCPDF_CALLS_IN_HTML', false);
+    define('K_TIMEZONE', 'UTC');
+}
 
-// TCPDF Paths
-define('K_PATH_MAIN', __DIR__ . '/tcpdf/');
-define('K_PATH_FONTS', K_PATH_MAIN . 'fonts/');
-define('K_PATH_IMAGES', K_PATH_MAIN . 'images/');
-define('K_PATH_CACHE', sys_get_temp_dir() . '/');
-define('K_BLANK_IMAGE', K_PATH_IMAGES . '_blank.png');
-
-// Include TCPDF library
+// NOW include TCPDF
 require_once 'tcpdf/tcpdf.php';
 
 class EvaluationPDF extends TCPDF {
     // Page header
     public function Header() {
-        // Set font
         $this->SetFont('helvetica', 'B', 16);
-        // Title
         $this->Cell(0, 15, 'TEACHER EVALUATION SYSTEM', 0, false, 'C', 0, '', 0, false, 'M', 'M');
-        // Line break
         $this->Ln(10);
     }
 
     // Page footer
     public function Footer() {
-        // Position at 15 mm from bottom
         $this->SetY(-15);
-        // Set font
         $this->SetFont('helvetica', 'I', 8);
-        // Page number
         $this->Cell(0, 10, 'Page '.$this->getAliasNumPage().'/'.$this->getAliasNbPages(), 0, false, 'C', 0, '', 0, false, 'T', 'M');
     }
 }
@@ -323,19 +354,19 @@ function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPa
         $color = [];
         if ($overall_percentage >= 90) {
             $rating = 'EXCELLENT';
-            $color = [34, 139, 34]; // Green
+            $color = [34, 139, 34];
         } elseif ($overall_percentage >= 80) {
             $rating = 'VERY GOOD';
-            $color = [65, 105, 225]; // Blue
+            $color = [65, 105, 225];
         } elseif ($overall_percentage >= 70) {
             $rating = 'GOOD';
-            $color = [255, 165, 0]; // Orange
+            $color = [255, 165, 0];
         } elseif ($overall_percentage >= 60) {
             $rating = 'SATISFACTORY';
-            $color = [255, 140, 0]; // Dark Orange
+            $color = [255, 140, 0];
         } else {
             $rating = 'NEEDS IMPROVEMENT';
-            $color = [220, 20, 60]; // Red
+            $color = [220, 20, 60];
         }
 
         $pdf->Ln(5);
@@ -391,7 +422,6 @@ function createZip($source, $destination) {
         foreach ($files as $file) {
             $file = str_replace('\\', '/', $file);
 
-            // Skip directories and . / .. 
             if (in_array(substr($file, strrpos($file, '/') + 1), ['.', '..'])) {
                 continue;
             }
@@ -424,6 +454,7 @@ try {
     $combinations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (empty($combinations)) {
+        ob_clean();
         echo json_encode([
             'success' => false, 
             'error' => 'No evaluation data found to generate reports'
@@ -513,6 +544,9 @@ try {
     $zipFile = $basePath . 'All_Reports_' . date('Y-m-d_H-i-s') . '.zip';
     $zipCreated = createZip($baseReportsPath, $zipFile);
 
+    // Clean output buffer before sending JSON
+    ob_clean();
+
     // Prepare response
     $response = [
         'success' => true,
@@ -532,7 +566,7 @@ try {
     echo json_encode($response);
 
 } catch (Exception $e) {
-    // Ensure we only output JSON, even for errors
+    // Clean output buffer and ensure we only output JSON
     ob_clean();
     error_log("Error in local reports generator: " . $e->getMessage());
     echo json_encode([
