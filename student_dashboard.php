@@ -928,8 +928,9 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             <div class="logout-container">
     <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
     <p>Teacher Evaluation System - Student Dashboard</p>
-    <p style="margin-top: 10px;">
+    <p style="margin-top: 10px; font-weight: 600;">
         Developed By:
+        <br>
         <br>
         <span class="dev-logo" data-name="ISRAEL GABRIEL">I</span>
         <span class="dev-logo" data-name="TOQUE CHRISTOPHER GLEN">T</span>
