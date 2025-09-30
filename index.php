@@ -474,7 +474,6 @@ if (isset($_SESSION['user_id'])) {
         
         <div class="footer">
             <p>&copy; 2025 - Philippine Technological Institute of Science Arts and Trade - Central Inc.</p>
-            <p>Developed By - Toque, Christopher Glen / Israel, Gabriel /  Micosa, Mervin Leo</p>
         </div>
     </div>
 
