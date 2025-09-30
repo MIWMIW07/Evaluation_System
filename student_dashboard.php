@@ -336,7 +336,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         
         .stat-card h3 {
             color: #800000;
-            font-size: 2.5em;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
             margin-bottom: 10px;
         }
         
@@ -345,6 +345,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-size: clamp(0.8rem, 2vw, 1rem);
         }
         
         .progress-card {
@@ -382,9 +383,15 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             margin-top: 30px;
         }
         
+        .teachers-section h2 {
+            color: #800000;
+            margin-bottom: 15px;
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+        }
+        
         .teachers-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
@@ -396,6 +403,9 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             border-left: 5px solid #800000;
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
         
         .teacher-card:hover {
@@ -411,18 +421,22 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         .teacher-card h4 {
             color: #800000;
             margin-bottom: 10px;
-            font-size: 1.1em;
+            font-size: clamp(1rem, 2.5vw, 1.1em);
         }
         
         .teacher-card p {
             color: #500000;
             margin-bottom: 15px;
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
         }
         
         .evaluation-status {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-top: auto;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .status-badge {
@@ -491,81 +505,69 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             transform: translateY(-2px);
             color: #FFEC8B;
         }
+        
         .dev-logo {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: 42px;
-    height: 42px;
-    margin: 0 6px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #800000, #A52A2A);
-    color: #FFD700;
-    font-weight: bold;
-    font-size: 1.1em;
-    cursor: pointer;
-    position: relative;
-    transition: transform 0.3s ease, background 0.3s ease;
-}
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 42px;
+            height: 42px;
+            margin: 0 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #800000, #A52A2A);
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 1.1em;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
 
-.dev-logo:hover {
-    background: linear-gradient(135deg, #FFD700, #D4AF37);
-    color: #800000;
-    transform: scale(1.2);
-}
+        .dev-logo:hover {
+            background: linear-gradient(135deg, #FFD700, #D4AF37);
+            color: #800000;
+            transform: scale(1.2);
+        }
 
-.dev-logo::after {
-    content: attr(data-name);
-    visibility: hidden;
-    opacity: 0;
-    position: absolute;
-    bottom: 115%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #800000;
-    color: #FFD700;
-    padding: 6px 10px;
-    border-radius: 6px;
-    white-space: nowrap;
-    font-size: 0.85em;
-    font-weight: bold;
-    transition: opacity 0.3s ease;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-    z-index: 10;
-}
+        .dev-logo::after {
+            content: attr(data-name);
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 115%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #800000;
+            color: #FFD700;
+            padding: 6px 10px;
+            border-radius: 6px;
+            white-space: nowrap;
+            font-size: 0.85em;
+            font-weight: bold;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
 
-.dev-logo::before {
-    content: "";
-    position: absolute;
-    top: -6px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 6px;
-    border-style: solid;
-    border-color: transparent transparent #800000 transparent;
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
+        .dev-logo::before {
+            content: "";
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent transparent #800000 transparent;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
 
-.dev-logo:hover::after,
-.dev-logo:hover::before {
-    visibility: visible;
-    opacity: 1;
-}
-
-/* Mobile friendly: force tap instead of hover */
-@media (max-width: 768px) {
-    .dev-logo:hover::after,
-    .dev-logo:hover::before {
-        display: none; /* disable hover tooltip */
-    }
-    .dev-logo.active::after,
-    .dev-logo.active::before {
-        visibility: visible;
-        opacity: 1;
-    }
-}
+        .dev-logo:hover::after,
+        .dev-logo:hover::before {
+            visibility: visible;
+            opacity: 1;
+        }
 
         .no-program-message {
             text-align: center;
@@ -674,6 +676,36 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             }
         }
 
+        /* Mobile friendly: force tap instead of hover */
+        @media (max-width: 768px) {
+            .dev-logo:hover::after,
+            .dev-logo:hover::before {
+                display: none; /* disable hover tooltip */
+            }
+            .dev-logo.active::after,
+            .dev-logo.active::before {
+                visibility: visible;
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1200px) {
+            .container {
+                max-width: 95%;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .teachers-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -698,7 +730,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             }
             
             .teachers-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
             }
             
             .header h1 {
@@ -717,11 +749,29 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             .skeleton-teachers {
                 grid-template-columns: 1fr;
             }
+            
+            .teacher-card {
+                padding: 20px;
+            }
+            
+            .evaluation-status {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .evaluation-status .btn {
+                margin-top: 10px;
+            }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 576px) {
+            body {
+                padding: 10px;
+            }
+            
             .container {
                 padding: 15px;
+                border-radius: 10px;
             }
 
             .header h1 {
@@ -738,6 +788,70 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 width: 100%;
                 font-size: 0.9em;
                 padding: 12px;
+            }
+            
+            .user-info,
+            .change-section {
+                padding: 15px;
+            }
+            
+            .stat-card {
+                padding: 20px;
+            }
+            
+            .teacher-card {
+                padding: 15px;
+            }
+            
+            .evaluation-status {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .status-badge {
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .info-item {
+                padding: 10px;
+            }
+            
+            .teacher-card {
+                padding: 12px;
+            }
+            
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .dev-logo {
+                width: 35px;
+                height: 35px;
+                font-size: 0.9em;
+                margin: 0 4px;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 10px;
+            }
+            
+            .btn, .logout-btn, .change-section-form {
+                display: none;
             }
         }
     </style>
@@ -827,7 +941,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 
                 <?php if (!empty($available_sections)): ?>
                     <div style="margin-top: 15px; font-size: 0.9em; color: #500000;">
-                        
+                        Available sections for your program: <?php echo implode(', ', $available_sections); ?>
                     </div>
                 <?php else: ?>
                     <div style="margin-top: 15px; color: #800000;">
@@ -926,19 +1040,18 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             <?php endif; ?>
             
             <div class="logout-container">
-    <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
-    <p>Teacher Evaluation System - Student Dashboard</p>
-    <p style="margin-top: 10px; font-weight: 600;">
-        Developed By:
-        <br>
-        <br>
-        <span class="dev-logo" data-name="ISRAEL GABRIEL">I</span>
-        <span class="dev-logo" data-name="TOQUE CHRISTOPHER GLEN">T</span>
-        <span class="dev-logo" data-name="MERVIN LEO MICOSA">M</span>
-    </p>
-    <a href="logout.php" class="logout-btn">🚪 Logout</a>
-</div>
-
+                <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
+                <p>Teacher Evaluation System - Student Dashboard</p>
+                <p style="margin-top: 10px; font-weight: 600;">
+                    Developed By:
+                    <br>
+                    <br>
+                    <span class="dev-logo" data-name="ISRAEL GABRIEL">I</span>
+                    <span class="dev-logo" data-name="TOQUE CHRISTOPHER GLEN">T</span>
+                    <span class="dev-logo" data-name="MERVIN LEO MICOSA">M</span>
+                </p>
+                <a href="logout.php" class="logout-btn">🚪 Logout</a>
+            </div>
         </div>
     </div>
 
@@ -957,19 +1070,17 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 }
             });
 
-document.addEventListener('DOMContentLoaded', function() {
-    const devLogos = document.querySelectorAll('.dev-logo');
-
-    devLogos.forEach(logo => {
-        logo.addEventListener('click', function() {
-            // Sa mobile, toggle yung pangalan
-            if (window.innerWidth <= 768) {
-                devLogos.forEach(l => l.classList.remove('active')); // close iba
-                this.classList.toggle('active');
-            }
-        });
-    });
-});
+            // Developer logos interaction
+            const devLogos = document.querySelectorAll('.dev-logo');
+            devLogos.forEach(logo => {
+                logo.addEventListener('click', function() {
+                    // On mobile, toggle the name display
+                    if (window.innerWidth <= 768) {
+                        devLogos.forEach(l => l.classList.remove('active')); // close others
+                        this.classList.toggle('active');
+                    }
+                });
+            });
 
             // Add confirmation for section change
             const sectionForm = document.querySelector('.change-section-form');
@@ -1004,6 +1115,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         this.textContent = originalText;
                         this.style.pointerEvents = 'auto';
                     }, 1000);
+                });
+            });
+
+            // Handle responsive adjustments on window resize
+            window.addEventListener('resize', function() {
+                // Close all developer tooltips on resize
+                devLogos.forEach(logo => {
+                    logo.classList.remove('active');
                 });
             });
         });
