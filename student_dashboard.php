@@ -22,11 +22,11 @@ try {
 }
 
 // Get student information from session (already loaded from Google Sheets during login)
-$student_username = $_SESSION['username'];
-$student_full_name = $_SESSION['full_name'];
+$student_username = $_SESSION['username'] ?? '';
+$student_full_name = $_SESSION['name'] ?? 'Student';
 $student_program = $_SESSION['program'] ?? 'Not Set';
 $student_section = $_SESSION['section'] ?? 'Not Set';
-$student_id = $_SESSION['student_id'];
+$student_id = $_SESSION['user_id'] ?? '';
 
 // Handle section change
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_section'])) {
@@ -48,9 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_section'])) {
                 $_SESSION['section'] = $new_section;
                 $student_section = $new_section;
                 $success = "Section successfully changed to $new_section";
-                
-                // Clear evaluated teachers cache since section changed
-                $evaluated_teachers = [];
             } else {
                 $error = "Section '$new_section' is not available for your program ($student_program)";
             }
@@ -84,31 +81,26 @@ if ($student_program !== 'Not Set') {
 $teachers_result = [];
 $evaluated_teachers = [];
 
-// Get already evaluated teachers for this student
+// Get already evaluated teachers for this student using helper function
 try {
-    $stmt = $pdo->prepare("
-        SELECT teacher_name
-        FROM evaluations 
-        WHERE student_username = ? AND section = ?
-    ");
-    $stmt->execute([$student_username, $student_section]);
-    $evaluated_teachers = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $evaluations = getStudentEvaluations($student_username);
+    $evaluated_teachers = array_column($evaluations, 'teacher_name');
 } catch (Exception $e) {
     // Table might not exist yet or other error
     $evaluated_teachers = [];
 }
 
-// Get available teachers from teacher_assignments table
+// Get available teachers from teacher_assignments table using helper function
 if ($student_section !== 'Not Set' && $student_program !== 'Not Set') {
     try {
-        $stmt = $pdo->prepare("
-            SELECT teacher_name, program, section
-            FROM teacher_assignments 
-            WHERE section = ? AND program = ? AND is_active = true
-            ORDER BY teacher_name
-        ");
-        $stmt->execute([$student_section, $student_program]);
-        $teachers_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $all_assignments = getTeacherAssignments();
+        
+        // Filter by current section and program
+        foreach ($all_assignments as $assignment) {
+            if ($assignment['section'] === $student_section && $assignment['program'] === $student_program) {
+                $teachers_result[] = $assignment;
+            }
+        }
     } catch (Exception $e) {
         $error = "Could not load teachers: " . $e->getMessage();
         $teachers_result = [];
@@ -117,7 +109,14 @@ if ($student_section !== 'Not Set' && $student_program !== 'Not Set') {
 
 // Calculate statistics
 $total_teachers = count($teachers_result);
-$completed_evaluations = count($evaluated_teachers);
+$completed_evaluations = 0;
+
+foreach ($teachers_result as $teacher) {
+    if (hasEvaluatedTeacher($student_username, $teacher['teacher_name'])) {
+        $completed_evaluations++;
+    }
+}
+
 $remaining_evaluations = $total_teachers - $completed_evaluations;
 $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $total_teachers) * 100, 1) : 0;
 ?>
@@ -498,6 +497,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             transition: all 0.3s ease;
             margin-top: 15px;
+            cursor: pointer;
         }
         
         .logout-btn:hover {
@@ -995,7 +995,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                         <div class="teachers-grid">
                             <?php foreach($teachers_result as $teacher): ?>
                                 <?php 
-                                    $is_evaluated = in_array($teacher['teacher_name'], $evaluated_teachers); 
+                                    $is_evaluated = hasEvaluatedTeacher($student_username, $teacher['teacher_name']); 
                                 ?>
                                 <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
                                     <h4><?php echo htmlspecialchars($teacher['teacher_name']); ?></h4>
@@ -1011,7 +1011,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                                             </a>
                                         <?php else: ?>
                                             <span class="status-badge status-pending">⏳ Pending</span>
-                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>" 
+                                            <a href="evaluation_form.php?teacher=<?php echo urlencode($teacher['teacher_name']); ?>&section=<?php echo urlencode($teacher['section']); ?>&program=<?php echo urlencode($teacher['program']); ?>" 
                                                class="btn btn-small">
                                                 📝 Evaluate Teacher
                                             </a>
@@ -1050,10 +1050,114 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                     <span class="dev-logo" data-name="TOQUE CHRISTOPHER GLEN">T</span>
                     <span class="dev-logo" data-name="MERVIN LEO MICOSA">M</span>
                 </p>
-                <a href="logout.php" class="logout-btn">🚪 Logout</a>
+                <a href="#" class="logout-btn">🚪 Logout</a>
             </div>
         </div>
     </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <h2>🚪 Confirm Logout</h2>
+            <p>Are you sure you want to log out of the Teacher Evaluation System?</p>
+            <div class="modal-actions">
+                <button id="cancelLogout" class="btn btn-secondary">❌ Cancel</button>
+                <a href="logout.php" class="btn">✅ Yes, Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #fff 0%, #F5F5DC 100%);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            border: 3px solid #D4AF37;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+            position: relative;
+        }
+
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #800000 0%, #D4AF37 100%);
+            border-radius: 15px 15px 0 0;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 15px;
+            color: #800000;
+            font-size: 1.5em;
+        }
+
+        .modal-content p {
+            margin-bottom: 25px;
+            color: #500000;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modal-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .modal-actions .btn {
+                width: 100%;
+            }
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+    </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -1063,11 +1167,36 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 document.getElementById('main-content').style.display = 'block';
             }, 1000);
 
-            // Add confirmation for logout
-            document.querySelector('.logout-btn').addEventListener('click', function(e) {
-                if (!confirm('Are you sure you want to logout?')) {
-                    e.preventDefault();
-                }
+            // Logout Modal Functionality
+            const logoutBtn = document.querySelector('.logout-btn');
+            const modal = document.getElementById('logoutModal');
+            const cancelBtn = document.getElementById('cancelLogout');
+            const body = document.body;
+
+            function openModal() {
+                modal.style.display = 'flex';
+                body.classList.add('modal-open');
+                document.addEventListener('keydown', handleEscapeKey);
+            }
+
+            function closeModal() {
+                modal.style.display = 'none';
+                body.classList.remove('modal-open');
+                document.removeEventListener('keydown', handleEscapeKey);
+            }
+
+            function handleEscapeKey(event) {
+                if (event.key === 'Escape') closeModal();
+            }
+
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openModal();
+            });
+
+            cancelBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) closeModal();
             });
 
             // Developer logos interaction
