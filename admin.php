@@ -667,7 +667,7 @@ ob_end_clean(); // Clean the output buffer
         }
     }
 
-    // Refresh evaluations
+    
     function refreshEvaluations() {
         location.reload();
     }
