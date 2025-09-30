@@ -467,12 +467,12 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
             
-            <button type="submit" class="btn">
+            <button type="submit" class="btn" data-aos="fade-right" data-aos-delay="900">
                 <i class="fas fa-sign-in-alt"></i> Login
             </button>
         </form>
         
-        <div class="footer">
+        <div class="footer" data-aos="fade-right" data-aos-delay="1000">
             <p>&copy; 2025 - Philippine Technological Institute of Science Arts and Trade - Central Inc.</p>
         </div>
     </div>
