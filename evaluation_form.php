@@ -572,74 +572,26 @@ if ($is_view_mode && $existing_evaluation) {
             background-color: #fff9e6;
         }
 
-        /* Updated Radio Button Styles */
-.rating-options input[type="radio"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #9c6c6c;
-    border-radius: 50%;
-    outline: none;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.3s ease;
-    background-color: #fffaf0;
-}
+         .rating-options {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            color: #5E0C0C;
+        }
 
-.rating-options input[type="radio"]:checked {
-    background-color: #5E0C0C;
-    border-color: #5E0C0C;
-    box-shadow: 0 0 0 2px #fffaf0, 0 0 0 4px #5E0C0C;
-}
+        .rating-options label {
+            display: inline-block;
+            text-align: center;
+            width: 18%;
+            cursor: pointer;
+            color: #5E0C0C;
+        }
 
-.rating-options input[type="radio"]:hover {
-    border-color: #5E0C0C;
-    transform: scale(1.1);
-    box-shadow: 0 0 5px rgba(94, 12, 12, 0.5);
-}
-
-.rating-options input[type="radio"]:checked:hover {
-    background-color: #800000;
-    border-color: #800000;
-    box-shadow: 0 0 0 2px #fffaf0, 0 0 0 4px #800000, 0 0 8px rgba(128, 0, 0, 0.6);
-}
-
-.rating-options label {
-    display: inline-block;
-    text-align: center;
-    width: 18%;
-    cursor: pointer;
-    color: #5E0C0C;
-    transition: all 0.3s ease;
-    padding: 5px;
-    border-radius: 5px;
-}
-
-.rating-options label:hover {
-    background-color: rgba(94, 12, 12, 0.1);
-    transform: translateY(-2px);
-}
-
-/* Focus styles for accessibility */
-.rating-options input[type="radio"]:focus {
-    outline: 2px solid #DAA520;
-    outline-offset: 2px;
-}
-
-/* Responsive design for radio buttons */
-@media (max-width: 768px) {
-    .rating-options input[type="radio"] {
-        width: 18px;
-        height: 18px;
-    }
-    
-    .rating-options label {
-        padding: 3px;
-        margin-bottom: 8px;
-    }
-}
-
+        input[type="radio"] {
+            transform: scale(1.2);
+            margin: 8px 0;
+        }
+        
         textarea {
             width: 100%;
             height: 120px;
