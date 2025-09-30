@@ -1,5 +1,6 @@
 <?php
-//local_reports_generator.php
+// local_reports_generator.php
+ob_start(); // Fix for header issues
 session_start();
 require_once 'includes/db_connection.php';
 
@@ -406,19 +407,17 @@ try {
         exit;
     }
 
-    // Determine Desktop path
-    $desktopPath = '';
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        // Windows
-        $desktopPath = getenv('USERPROFILE') . '\\Desktop\\';
-    } else {
-        // Linux/Mac
-        $desktopPath = getenv('HOME') . '/Desktop/';
-    }
-
-    $baseReportsPath = $desktopPath . 'Teacher Evaluation Reports/Reports/';
+    // For Railway deployment, use a writable directory in the project
+    $basePath = __DIR__ . '/reports/';
     
     // Create base directory
+    if (!is_dir($basePath)) {
+        mkdir($basePath, 0777, true);
+    }
+
+    $baseReportsPath = $basePath . 'Teacher Evaluation Reports/Reports/';
+    
+    // Create reports directory
     if (!is_dir($baseReportsPath)) {
         mkdir($baseReportsPath, 0777, true);
     }
@@ -428,9 +427,9 @@ try {
     $summaryReports = 0;
 
     foreach ($combinations as $combo) {
-        $teacherName = $combo['teacher_name'];
-        $program = $combo['program'];
-        $section = $combo['section'];
+        $teacherName = preg_replace('/[^a-zA-Z0-9-_\.]/', '_', $combo['teacher_name']);
+        $program = preg_replace('/[^a-zA-Z0-9-_\.]/', '_', $combo['program']);
+        $section = preg_replace('/[^a-zA-Z0-9-_\.]/', '_', $combo['section']);
 
         // Create teacher directory
         $teacherDir = $baseReportsPath . $teacherName . '/';
@@ -446,12 +445,13 @@ try {
         }
 
         // Generate individual reports
+        $individualFilename = "Individual Report - " . $combo['teacher_name'] . " - " . $combo['program'] . " " . $combo['section'] . ".pdf";
         $individualSuccess = generateIndividualReport(
             $pdo, 
-            $teacherName, 
-            $program, 
-            $section, 
-            $programDir . "Individual Report - $teacherName - $program $section.pdf"
+            $combo['teacher_name'], 
+            $combo['program'], 
+            $combo['section'], 
+            $programDir . $individualFilename
         );
 
         if ($individualSuccess) {
@@ -459,12 +459,13 @@ try {
         }
 
         // Generate summary report
+        $summaryFilename = "Summary Report FOR " . $combo['program'] . " - " . $combo['teacher_name'] . ".pdf";
         $summarySuccess = generateSummaryReport(
             $pdo,
-            $teacherName,
-            $program,
-            $section,
-            $programDir . "Summary Report FOR $program - $teacherName.pdf"
+            $combo['teacher_name'],
+            $combo['program'],
+            $combo['section'],
+            $programDir . $summaryFilename
         );
 
         if ($summarySuccess) {
@@ -475,7 +476,7 @@ try {
     $totalFiles = $individualReports + $summaryReports;
 
     // Create ZIP file of all reports
-    $zipFile = $desktopPath . 'Teacher Evaluation Reports/All_Reports_' . date('Y-m-d_H-i-s') . '.zip';
+    $zipFile = $basePath . 'All_Reports_' . date('Y-m-d_H-i-s') . '.zip';
     $zipCreated = createZip($baseReportsPath, $zipFile);
 
     // Prepare response
@@ -486,11 +487,12 @@ try {
         'individual_reports' => $individualReports,
         'summary_reports' => $summaryReports,
         'total_files' => $totalFiles,
-        'base_path' => $baseReportsPath
+        'base_path' => $baseReportsPath,
+        'web_path' => '/reports/Teacher Evaluation Reports/Reports/'
     ];
 
-    if ($zipCreated) {
-        $response['zip_file'] = $zipFile;
+    if ($zipCreated && file_exists($zipFile)) {
+        $response['zip_file'] = '/reports/' . basename($zipFile);
         $response['zip_message'] = 'All reports have been bundled into a ZIP file for easy download.';
     }
 
@@ -503,4 +505,5 @@ try {
         'error' => 'Failed to generate reports: ' . $e->getMessage()
     ]);
 }
+ob_end_flush();
 ?>
