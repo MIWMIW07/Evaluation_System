@@ -914,31 +914,7 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 </div>
             </div>
 
-            <!-- Change Section Feature -->
-            <div class="change-section">
-                <h3>🔄 Change Section</h3>
-                <p style="color: #800000; margin-bottom: 15px;">
-                    Select a different section for back subject to evaluate the teachers assigned to that subject.
-                </p>
-                
-                <form method="post" action="" class="change-section-form">
-                    <div class="form-group">
-                        <label for="new_section">Select New Section:</label>
-                        <select name="new_section" id="new_section" class="form-control" required>
-                            <option value="">-- Select Section --</option>
-                            <?php foreach($available_sections as $section): ?>
-                                <option value="<?php echo htmlspecialchars($section); ?>" 
-                                    <?php echo $section === $student_section ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($section); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <button type="submit" name="change_section" class="btn">
-                        🔄 Change Section
-                    </button>
-                </form>
-            </div>
+           
             
             <?php if (!empty($success)): ?>
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
