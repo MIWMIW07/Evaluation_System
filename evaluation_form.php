@@ -304,21 +304,9 @@ if ($is_view_mode && $existing_evaluation) {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        :root {
-            --maroon: #800000;
-            --dark-maroon: #5E0C0C;
-            --gold: #DAA520;
-            --light-gold: #FFD700;
-            --pale-gold: #fff9e6;
-            --cream: #fffaf0;
-            --white: #ffffff;
-            --light-gray: #f5f5f5;
-            --shadow: rgba(94, 12, 12, 0.1);
-        }
-
         body {
-            background-color: var(--cream);
-            color: var(--dark-maroon);
+            background-color: #f9f5eb;
+            color: #5E0C0C;
             line-height: 1.6;
             padding: 20px;
             padding-top: 70px;
@@ -327,12 +315,11 @@ if ($is_view_mode && $existing_evaluation) {
         .container {
             max-width: 1100px;
             margin: 0 auto;
-            background: var(--white);
+            background: #fffaf0;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 0 20px var(--shadow);
+            box-shadow: 0 0 20px rgba(94, 12, 12, 0.1);
             position: relative;
-            border: 1px solid var(--gold);
         }
 
         /* Skeleton Loading Styles */
@@ -342,7 +329,7 @@ if ($is_view_mode && $existing_evaluation) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: var(--cream);
+            background: #f9f5eb;
             z-index: 9999;
             display: flex;
             flex-direction: column;
@@ -413,7 +400,7 @@ if ($is_view_mode && $existing_evaluation) {
             width: 50px;
             height: 50px;
             border: 5px solid #f0f0f0;
-            border-top: 5px solid var(--gold);
+            border-top: 5px solid #800000;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-top: 20px;
@@ -441,71 +428,44 @@ if ($is_view_mode && $existing_evaluation) {
             opacity: 0;
         }
 
-        /* Header and Institution Styles */
+        /* Rest of your existing styles remain the same */
         header {
             text-align: center;
             margin-bottom: 30px;
+            border-bottom: 2px solid #800000;
             padding-bottom: 20px;
-            border-bottom: 2px solid var(--gold);
-            background: linear-gradient(135deg, var(--maroon) 0%, var(--dark-maroon) 100%);
-            color: var(--white);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px var(--shadow);
         }
 
         h1 {
-            color: var(--gold);
+            color: #800000;
             margin-bottom: 10px;
-            font-size: 1.8em;
         }
 
         h2 {
-            color: var(--maroon);
+            color: #800000;
             margin: 25px 0 15px;
             padding-bottom: 5px;
-            border-bottom: 2px solid var(--gold);
-            font-size: 1.4em;
-        }
-
-        h3 {
-            color: var(--maroon);
-            margin: 15px 0 10px;
-            font-size: 1.2em;
+            border-bottom: 1px solid #d4af37;
         }
 
         .institution-name {
             font-weight: bold;
             font-size: 1.4em;
-            color: var(--gold);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            color: #800000;
         }
 
         .address {
             font-style: italic;
-            color: var(--pale-gold);
+            color: #9c6c6c;
             margin-bottom: 15px;
         }
 
         .teacher-info {
-            background: linear-gradient(135deg, var(--pale-gold) 0%, var(--cream) 100%);
+            background: linear-gradient(135deg, #fff9e6 0%, #f9eeca 100%);
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 25px;
-            border-left: 5px solid var(--gold);
-            box-shadow: 0 2px 5px var(--shadow);
-        }
-
-        .teacher-info h3 {
-            color: var(--maroon);
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-        }
-
-        .teacher-info h3:before {
-            content: "👨‍🏫";
-            margin-right: 10px;
+            border-left: 5px solid #800000;
         }
 
         .language-toggle {
@@ -515,42 +475,42 @@ if ($is_view_mode && $existing_evaluation) {
         }
 
         .language-toggle button {
-            padding: 10px 20px;
+            padding: 8px 15px;
             margin: 0 5px;
-            background-color: var(--pale-gold);
-            border: 2px solid var(--gold);
+            background-color: #f1dca0;
+            border: none;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s;
-            color: var(--maroon);
+            color: #5E0C0C;
         }
 
         .language-toggle button.active {
-            background-color: var(--maroon);
-            color: var(--gold);
-            border-color: var(--maroon);
+            background-color: #800000;
+            color: white;
         }
 
-        .language-toggle button:hover:not(.active) {
-            background-color: var(--gold);
-            color: var(--white);
+        .language-toggle button:hover {
+            background-color: #5E0C0C;
+            color: white;
         }
 
+        /* MAROON PROGRESS BAR */
         .progress-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            background-color: var(--maroon);
+            background-color: #fffaf0;
             padding: 10px 20px;
-            box-shadow: 0 2px 5px var(--shadow);
+            box-shadow: 0 2px 5px rgba(94, 12, 12, 0.1);
             z-index: 2000;
         }
 
         .progress-bar {
             height: 8px;
-            background-color: var(--pale-gold);
+            background-color: #f1dca0;
             border-radius: 4px;
             margin: 10px 0;
             overflow: hidden;
@@ -558,7 +518,7 @@ if ($is_view_mode && $existing_evaluation) {
 
         .progress {
             height: 100%;
-            background: linear-gradient(90deg, var(--gold) 0%, var(--light-gold) 100%);
+            background: linear-gradient(90deg, #5E0C0C, #800000, #A52A2A);
             width: 0%;
             transition: width 0.5s ease;
             border-radius: 4px;
@@ -567,17 +527,16 @@ if ($is_view_mode && $existing_evaluation) {
         .progress-text {
             text-align: center;
             font-weight: bold;
-            color: var(--gold);
+            color: #800000;
             margin-bottom: 5px;
         }
 
         .instructions {
-            background-color: var(--pale-gold);
+            background-color: #f9f5eb;
             padding: 15px;
-            border-left: 4px solid var(--gold);
+            border-left: 4px solid #800000;
             margin-bottom: 25px;
             border-radius: 0 5px 5px 0;
-            box-shadow: 0 2px 4px var(--shadow);
         }
 
         .rating-scale {
@@ -585,50 +544,42 @@ if ($is_view_mode && $existing_evaluation) {
             justify-content: space-between;
             margin: 20px 0;
             padding: 15px;
-            background: linear-gradient(to right, var(--dark-maroon), var(--maroon), var(--gold), var(--light-gold), var(--pale-gold));
+            background: linear-gradient(to right, #5E0C0C, #800000, #A52A2A, #DAA520, #f1dca0);
             border-radius: 5px;
             color: white;
             font-weight: bold;
             text-align: center;
-            box-shadow: 0 2px 4px var(--shadow);
         }
 
         .rating-item {
             text-align: center;
             flex: 1;
             font-size: 16px;
-            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 25px;
-            box-shadow: 0 2px 5px var(--shadow);
-            border-radius: 8px;
-            overflow: hidden;
         }
 
         th, td {
             padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid var(--pale-gold);
+            border-bottom: 1px solid #f1dca0;
         }
 
         th {
-            background: linear-gradient(135deg, var(--maroon) 0%, var(--dark-maroon) 100%);
+            background-color: #f9f5eb;
             font-weight: 600;
-            color: var(--gold);
-        }
-
-        tr:nth-child(even) {
-            background-color: var(--light-gray);
+            color: #5E0C0C;
         }
 
         tr:hover {
-            background-color: var(--pale-gold);
+            background-color: #fff9e6;
         }
 
+        /* MAROON RADIO BUTTONS */
         .rating-options {
             display: flex;
             justify-content: space-between;
@@ -640,107 +591,96 @@ if ($is_view_mode && $existing_evaluation) {
             text-align: center;
             width: 18%;
             cursor: pointer;
-            color: var(--dark-maroon);
-            font-weight: 500;
-            transition: all 0.2s;
-            padding: 5px;
+            color: #5E0C0C;
+            position: relative;
+            padding: 5px 0;
+            transition: all 0.3s ease;
             border-radius: 4px;
         }
 
         .rating-options label:hover {
-            background-color: var(--pale-gold);
+            background-color: #f9f5eb;
         }
 
-        /* Custom Radio Button Styling */
-        input[type="radio"] {
-            /* Hide default radio */
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
+        /* Hide default radio buttons */
+        .rating-options input[type="radio"] {
+            display: none;
+        }
+
+        /* Custom radio buttons */
+        .rating-options label::before {
+            content: '';
+            display: block;
             width: 20px;
             height: 20px;
-            border: 2px solid var(--maroon);
+            border: 2px solid #800000;
             border-radius: 50%;
-            outline: none;
-            cursor: pointer;
-            position: relative;
-            margin: 8px 0;
-            display: inline-block;
-            vertical-align: middle;
+            background-color: white;
+            margin: 0 auto 5px;
+            transition: all 0.3s ease;
         }
 
-        input[type="radio"]:checked {
-            background-color: var(--maroon);
-            border-color: var(--maroon);
+        /* Checked state */
+        .rating-options input[type="radio"]:checked + label::before {
+            background-color: #800000;
+            box-shadow: inset 0 0 0 3px white;
         }
 
-        input[type="radio"]:checked::before {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 8px;
-            height: 8px;
-            background-color: var(--gold);
-            border-radius: 50%;
+        /* Selected label style */
+        .rating-options input[type="radio"]:checked + label {
+            color: #800000;
+            font-weight: bold;
+            background-color: #f9f5eb;
         }
 
-        input[type="radio"]:focus {
-            box-shadow: 0 0 0 3px rgba(218, 165, 32, 0.3);
+        /* Focus state for accessibility */
+        .rating-options input[type="radio"]:focus + label::before {
+            box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.3);
         }
 
         textarea {
             width: 100%;
             height: 120px;
             padding: 15px;
-            border: 2px solid var(--pale-gold);
+            border: 1px solid #f1dca0;
             border-radius: 5px;
             resize: vertical;
             font-size: 16px;
-            background-color: var(--white);
-            color: var(--dark-maroon);
-            transition: border 0.3s;
+            background-color: #fffaf0;
+            color: #5E0C0C;
+            transition: border 0.3s ease;
         }
 
         textarea:focus {
-            border-color: var(--gold);
+            border-color: #800000;
             outline: none;
-            box-shadow: 0 0 0 3px rgba(218, 165, 32, 0.2);
+            box-shadow: 0 0 0 2px rgba(128, 0, 0, 0.1);
         }
 
         .submit-btn {
             display: block;
-            width: 220px;
+            width: 200px;
             margin: 30px auto 10px;
-            padding: 14px;
-            background: linear-gradient(135deg, var(--maroon) 0%, var(--dark-maroon) 100%);
-            color: var(--gold);
+            padding: 12px;
+            background: linear-gradient(135deg, #800000, #5E0C0C);
+            color: white;
             border: none;
             border-radius: 5px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 6px var(--shadow);
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(128, 0, 0, 0.2);
         }
 
         .submit-btn:hover {
-            background: linear-gradient(135deg, var(--dark-maroon) 0%, var(--maroon) 100%);
+            background: linear-gradient(135deg, #5E0C0C, #800000);
             transform: translateY(-2px);
-            box-shadow: 0 6px 8px var(--shadow);
-        }
-
-        .submit-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px var(--shadow);
+            box-shadow: 0 6px 8px rgba(128, 0, 0, 0.3);
         }
 
         .submit-btn:disabled {
-            background: #cccccc;
-            color: #666666;
+            background: #9c6c6c;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
@@ -753,7 +693,6 @@ if ($is_view_mode && $existing_evaluation) {
             border-radius: 10px;
             margin-bottom: 25px;
             border-left: 5px solid #28a745;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .error-message {
@@ -763,17 +702,15 @@ if ($is_view_mode && $existing_evaluation) {
             border-radius: 10px;
             margin-bottom: 25px;
             border-left: 5px solid #dc3545;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .evaluation-status {
-            background: linear-gradient(135deg, var(--pale-gold) 0%, var(--cream) 100%);
-            color: var(--dark-maroon);
+            background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+            color: #155724;
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 25px;
-            border-left: 5px solid var(--gold);
-            box-shadow: 0 2px 5px var(--shadow);
+            border-left: 5px solid #28a745;
         }
 
         .tagalog {
@@ -783,29 +720,23 @@ if ($is_view_mode && $existing_evaluation) {
         footer {
             text-align: center;
             margin-top: 20px;
-            color: var(--maroon);
+            color: #9c6c6c;
             font-size: 0.9em;
-            padding-top: 20px;
-            border-top: 1px solid var(--pale-gold);
         }
 
         .back-link {
-            background: var(--maroon);
-            color: var(--gold);
+            background: #800000;
+            color: white;
             padding: 10px 20px;
             text-decoration: none;
             border-radius: 5px;
             display: inline-block;
             margin-top: 15px;
-            font-weight: bold;
-            transition: all 0.3s;
-            box-shadow: 0 2px 4px var(--shadow);
+            transition: background 0.3s ease;
         }
 
         .back-link:hover {
-            background: var(--dark-maroon);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px var(--shadow);
+            background: #5E0C0C;
         }
 
         /* Responsive design */
@@ -818,7 +749,13 @@ if ($is_view_mode && $existing_evaluation) {
                 width: 100%;
                 text-align: left;
                 margin-bottom: 5px;
-                padding: 8px;
+                padding: 8px 10px;
+            }
+
+            .rating-options label::before {
+                display: inline-block;
+                margin-right: 10px;
+                vertical-align: middle;
             }
 
             th, td {
@@ -850,57 +787,6 @@ if ($is_view_mode && $existing_evaluation) {
             .skeleton-card {
                 width: 95%;
             }
-
-            .submit-btn {
-                width: 100%;
-                max-width: 300px;
-            }
-        }
-
-        /* Additional decorative elements */
-        .section-divider {
-            height: 3px;
-            background: linear-gradient(90deg, transparent, var(--gold), transparent);
-            margin: 30px 0;
-            border: none;
-        }
-
-        .decorative-corner {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-        }
-
-        .corner-tl {
-            top: 0;
-            left: 0;
-            border-top: 3px solid var(--gold);
-            border-left: 3px solid var(--gold);
-            border-top-left-radius: 10px;
-        }
-
-        .corner-tr {
-            top: 0;
-            right: 0;
-            border-top: 3px solid var(--gold);
-            border-right: 3px solid var(--gold);
-            border-top-right-radius: 10px;
-        }
-
-        .corner-bl {
-            bottom: 0;
-            left: 0;
-            border-bottom: 3px solid var(--gold);
-            border-left: 3px solid var(--gold);
-            border-bottom-left-radius: 10px;
-        }
-
-        .corner-br {
-            bottom: 0;
-            right: 0;
-            border-bottom: 3px solid var(--gold);
-            border-right: 3px solid var(--gold);
-            border-bottom-right-radius: 10px;
         }
     </style>
 </head>
@@ -927,12 +813,6 @@ if ($is_view_mode && $existing_evaluation) {
     </div>
 
     <div class="container">
-        <!-- Decorative corners -->
-        <div class="decorative-corner corner-tl"></div>
-        <div class="decorative-corner corner-tr"></div>
-        <div class="decorative-corner corner-bl"></div>
-        <div class="decorative-corner corner-br"></div>
-        
         <header>
             <div class="institution-name">PHILTECH GMA</div>
             <div class="institution-name">PHILIPPINE TECHNOLOGICAL INSTITUTE OF SCIENCE ARTS AND TRADE CENTRAL INC.</div>
@@ -942,7 +822,7 @@ if ($is_view_mode && $existing_evaluation) {
 
             <?php if ($teacher_info): ?>
             <div class="teacher-info">
-                <h3>Evaluating: <?php echo safe_display($teacher_info['name']); ?></h3>
+                <h3 style="color: #800000; margin-bottom: 10px;">👨‍🏫 Evaluating: <?php echo safe_display($teacher_info['name']); ?></h3>
                 <p style="margin: 5px 0;"><strong>Department:</strong> <?php echo safe_display($teacher_info['display_department']); ?></p>
                 <p style="margin: 5px 0;"><strong>Student:</strong> <?php echo safe_display($_SESSION['full_name'] ?? ''); ?> (<?php echo safe_display($_SESSION['student_id'] ?? $_SESSION['username']); ?>)</p>
                 <p style="margin: 5px 0;"><strong>Student Program:</strong> <?php echo safe_display($_SESSION['program'] ?? ''); ?></p>
@@ -1024,7 +904,8 @@ if ($is_view_mode && $existing_evaluation) {
                                     <?php 
                                     $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" required> <?php echo $i; ?></label>
+                                        <input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" id="<?php echo $name.'_'.$i; ?>" required>
+                                        <label for="<?php echo $name.'_'.$i; ?>"><?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -1032,8 +913,6 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                
-                <hr class="section-divider">
                 
                 <h2>2. Management Skills</h2>
                 <table>
@@ -1052,7 +931,8 @@ if ($is_view_mode && $existing_evaluation) {
                                     <?php 
                                     $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" required> <?php echo $i; ?></label>
+                                        <input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" id="<?php echo $name.'_'.$i; ?>" required>
+                                        <label for="<?php echo $name.'_'.$i; ?>"><?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -1060,8 +940,6 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                
-                <hr class="section-divider">
                 
                 <h2>3. Guidance Skills</h2>
                 <table>
@@ -1080,7 +958,8 @@ if ($is_view_mode && $existing_evaluation) {
                                     <?php 
                                     $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" required> <?php echo $i; ?></label>
+                                        <input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" id="<?php echo $name.'_'.$i; ?>" required>
+                                        <label for="<?php echo $name.'_'.$i; ?>"><?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -1088,8 +967,6 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                
-                <hr class="section-divider">
                 
                 <h2>4. Personal and Social Qualities/Skills</h2>
                 <table>
@@ -1108,7 +985,8 @@ if ($is_view_mode && $existing_evaluation) {
                                     <?php 
                                     $name = "rating" . str_replace('.', '_', $key);
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" required> <?php echo $i; ?></label>
+                                        <input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" id="<?php echo $name.'_'.$i; ?>" required>
+                                        <label for="<?php echo $name.'_'.$i; ?>"><?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -1116,8 +994,6 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                
-                <hr class="section-divider">
                 
                 <div class="comments-section">
                     <h2>5. Comments</h2>
@@ -1146,9 +1022,10 @@ if ($is_view_mode && $existing_evaluation) {
                             <td>
                                 <div class="rating-options">
                                     <?php 
-                                    $name = "rating" . str_replace('.', '_', $key);
+                                    $name = "rating" . str_replace('.', '_', $key) . "_tl";
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>_tl" value="<?php echo $i; ?>"> <?php echo $i; ?></label>
+                                        <input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" id="<?php echo $name.'_'.$i; ?>">
+                                        <label for="<?php echo $name.'_'.$i; ?>"><?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -1156,8 +1033,6 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                
-                <hr class="section-divider">
                 
                 <h2>2. Kasanayan sa pamamahala</h2>
                 <table>
@@ -1174,9 +1049,10 @@ if ($is_view_mode && $existing_evaluation) {
                             <td>
                                 <div class="rating-options">
                                     <?php 
-                                    $name = "rating" . str_replace('.', '_', $key);
+                                    $name = "rating" . str_replace('.', '_', $key) . "_tl";
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>_tl" value="<?php echo $i; ?>"> <?php echo $i; ?></label>
+                                        <input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" id="<?php echo $name.'_'.$i; ?>">
+                                        <label for="<?php echo $name.'_'.$i; ?>"><?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -1184,8 +1060,6 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                
-                <hr class="section-divider">
                 
                 <h2>3. Mga kasanayan sa Paggabay</h2>
                 <table>
@@ -1202,9 +1076,10 @@ if ($is_view_mode && $existing_evaluation) {
                             <td>
                                 <div class="rating-options">
                                     <?php 
-                                    $name = "rating" . str_replace('.', '_', $key);
+                                    $name = "rating" . str_replace('.', '_', $key) . "_tl";
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>_tl" value="<?php echo $i; ?>"> <?php echo $i; ?></label>
+                                        <input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" id="<?php echo $name.'_'.$i; ?>">
+                                        <label for="<?php echo $name.'_'.$i; ?>"><?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -1212,8 +1087,6 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                
-                <hr class="section-divider">
                 
                 <h2>4. Personal at panlipunang katangian</h2>
                 <table>
@@ -1230,9 +1103,10 @@ if ($is_view_mode && $existing_evaluation) {
                             <td>
                                 <div class="rating-options">
                                     <?php 
-                                    $name = "rating" . str_replace('.', '_', $key);
+                                    $name = "rating" . str_replace('.', '_', $key) . "_tl";
                                     for ($i = 5; $i >= 1; $i--): ?>
-                                        <label><input type="radio" name="<?php echo $name; ?>_tl" value="<?php echo $i; ?>"> <?php echo $i; ?></label>
+                                        <input type="radio" name="<?php echo $name; ?>" value="<?php echo $i; ?>" id="<?php echo $name.'_'.$i; ?>">
+                                        <label for="<?php echo $name.'_'.$i; ?>"><?php echo $i; ?></label>
                                     <?php endfor; ?>
                                 </div>
                             </td>
@@ -1240,8 +1114,6 @@ if ($is_view_mode && $existing_evaluation) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                
-                <hr class="section-divider">
                 
                 <div class="comments-section">
                     <h2>5. Komento</h2>
