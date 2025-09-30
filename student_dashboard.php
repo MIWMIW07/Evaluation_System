@@ -506,69 +506,95 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             color: #FFEC8B;
         }
         
-        .dev-logo {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            width: 42px;
-            height: 42px;
-            margin: 0 6px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #800000, #A52A2A);
-            color: #FFD700;
-            font-weight: bold;
-            font-size: 1.1em;
-            cursor: pointer;
-            position: relative;
-            transition: transform 0.3s ease, background 0.3s ease;
-        }
+        /* Base container */
+.logout-container {
+    text-align: center;
+    padding: 20px;
+}
 
-        .dev-logo:hover {
-            background: linear-gradient(135deg, #FFD700, #D4AF37);
-            color: #800000;
-            transform: scale(1.2);
-        }
+/* Developer circle logo */
+.dev-logo {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 42px;
+    height: 42px;
+    margin: 0 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #800000, #A52A2A);
+    color: #FFD700;
+    font-weight: bold;
+    font-size: 1.1em;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.3s ease, background 0.3s ease;
+}
 
-        .dev-logo::after {
-            content: attr(data-name);
-            visibility: hidden;
-            opacity: 0;
-            position: absolute;
-            bottom: 115%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #800000;
-            color: #FFD700;
-            padding: 6px 10px;
-            border-radius: 6px;
-            white-space: nowrap;
-            font-size: 0.85em;
-            font-weight: bold;
-            transition: opacity 0.3s ease;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-            z-index: 10;
-        }
+/* Hover effect (desktop) */
+.dev-logo:hover {
+    background: linear-gradient(135deg, #FFD700, #D4AF37);
+    color: #800000;
+    transform: scale(1.2);
+}
 
-        .dev-logo::before {
-            content: "";
-            position: absolute;
-            top: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 6px;
-            border-style: solid;
-            border-color: transparent transparent #800000 transparent;
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
+/* Tooltip */
+.dev-logo::after {
+    content: attr(data-name);
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 115%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #800000;
+    color: #FFD700;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    font-size: 0.85em;
+    font-weight: bold;
+    transition: opacity 0.3s ease;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    z-index: 10;
+}
 
-        .dev-logo:hover::after,
-        .dev-logo:hover::before {
-            visibility: visible;
-            opacity: 1;
-        }
+.dev-logo::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent #800000 transparent;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
 
+/* Show tooltip on hover (desktop) */
+.dev-logo:hover::after,
+.dev-logo:hover::before {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Mobile active state (click) */
+.dev-logo.active::after,
+.dev-logo.active::before {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dev-logo {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2em;
+        margin: 6px;
+    }
+}
         .no-program-message {
             text-align: center;
             padding: 40px;
@@ -1040,18 +1066,17 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             <?php endif; ?>
             
             <div class="logout-container">
-                <p><strong>© 2025 Philippine Technological Institute of Science Arts and Trade, Inc.</strong></p>
-                <p>Teacher Evaluation System - Student Dashboard</p>
-                <p style="margin-top: 10px; font-weight: 600;">
-                    Developed By:
-                    <br>
-                    <br>
-                    <span class="dev-logo" data-name="ISRAEL GABRIEL">I</span>
-                    <span class="dev-logo" data-name="TOQUE CHRISTOPHER GLEN">T</span>
-                    <span class="dev-logo" data-name="MERVIN LEO MICOSA">M</span>
-                </p>
-                <a href="logout.php" class="logout-btn">🚪 Logout</a>
-            </div>
+    <p><strong>© 2025 - Philippine Technological Institute of Science Arts and Trade - Central Inc.</strong></p>
+    <p>Teacher Evaluation System - Student Dashboard</p>
+    <p style="margin-top: 10px; font-weight: 600;">
+        Developed By:
+        <br><br>
+        <span class="dev-logo" data-name="ISRAEL GABRIEL">I</span>
+        <span class="dev-logo" data-name="TOQUE CHRISTOPHER GLEN">T</span>
+        <span class="dev-logo" data-name="MERVIN LEO MICOSA">M</span>
+    </p>
+    <a href="logout.php" class="logout-btn">🚪 Logout</a>
+</div>
         </div>
     </div>
 
@@ -1063,12 +1088,21 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 document.getElementById('main-content').style.display = 'block';
             }, 1000);
 
+            // Developer logos interaction for mobile
+            window.addEventListener('resize', function() {
+        devLogos.forEach(logo => {
+            logo.classList.remove('active');
+        });
+    });
+            
             // Add confirmation for logout
-            document.querySelector('.logout-btn').addEventListener('click', function(e) {
-                if (!confirm('Are you sure you want to logout?')) {
-                    e.preventDefault();
-                }
-            });
+          document.addEventListener('DOMContentLoaded', function() {
+    // Logout confirmation
+    document.querySelector('.logout-btn').addEventListener('click', function(e) {
+        if (!confirm('Are you sure you want to logout?')) {
+            e.preventDefault();
+        }
+    });
 
             // Developer logos interaction
             const devLogos = document.querySelectorAll('.dev-logo');
