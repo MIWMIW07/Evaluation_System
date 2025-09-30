@@ -156,7 +156,7 @@ if ($show_preloader && $redirect_url) {
         .logo-image {
             width: 100px;
             height: 100px;
-            border-radius: 50%;
+           
             position: absolute;
             top: 50%;
             left: 50%;
