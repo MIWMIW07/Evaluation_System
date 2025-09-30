@@ -102,7 +102,7 @@ try {
 if ($student_section !== 'Not Set' && $student_program !== 'Not Set') {
     try {
         $stmt = $pdo->prepare("
-            SELECT teacher_name, teacher_image, program, section
+            SELECT teacher_name, program, section
             FROM teacher_assignments 
             WHERE section = ? AND program = ? AND is_active = true
             ORDER BY teacher_name
@@ -384,8 +384,8 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
         
         .teachers-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
             margin-top: 20px;
         }
         
@@ -396,8 +396,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             border-left: 5px solid #800000;
             transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
         }
         
         .teacher-card:hover {
@@ -410,57 +408,14 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             background: linear-gradient(135deg, #FFEC8B 0%, #FFD700 100%);
         }
         
-        .teacher-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .teacher-image {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #800000;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-            flex-shrink: 0;
-        }
-        
-        .teacher-image-placeholder {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #800000, #A52A2A);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #FFD700;
-            font-size: 1.8em;
-            font-weight: bold;
-            border: 3px solid #800000;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-            flex-shrink: 0;
-        }
-        
-        .teacher-info {
-            flex: 1;
-        }
-        
         .teacher-card h4 {
             color: #800000;
-            margin-bottom: 5px;
-            font-size: 1.2em;
-            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
         }
         
         .teacher-card p {
             color: #500000;
-            margin-bottom: 8px;
-            font-size: 0.9em;
-        }
-        
-        .teacher-details {
             margin-bottom: 15px;
         }
         
@@ -468,9 +423,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: auto;
-            padding-top: 15px;
-            border-top: 1px solid rgba(128, 0, 0, 0.2);
         }
         
         .status-badge {
@@ -758,18 +710,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 text-align: center;
             }
             
-            .teacher-header {
-                flex-direction: column;
-                text-align: center;
-                gap: 10px;
-            }
-            
-            .teacher-image,
-            .teacher-image-placeholder {
-                width: 70px;
-                height: 70px;
-            }
-            
             .skeleton-stats {
                 grid-template-columns: 1fr;
             }
@@ -798,20 +738,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 width: 100%;
                 font-size: 0.9em;
                 padding: 12px;
-            }
-            
-            .teacher-card {
-                padding: 20px;
-            }
-            
-            .evaluation-status {
-                flex-direction: column;
-                gap: 10px;
-                align-items: stretch;
-            }
-            
-            .btn-small {
-                width: 100%;
             }
         }
     </style>
@@ -956,32 +882,11 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                             <?php foreach($teachers_result as $teacher): ?>
                                 <?php 
                                     $is_evaluated = in_array($teacher['teacher_name'], $evaluated_teachers); 
-                                    $teacher_initials = getInitials($teacher['teacher_name']);
                                 ?>
                                 <div class="teacher-card <?php echo $is_evaluated ? 'evaluated' : ''; ?>">
-                                    <div class="teacher-header">
-                                        <?php if (!empty($teacher['teacher_image'])): ?>
-                                            <img src="images/teachers/<?php echo htmlspecialchars($teacher['teacher_image']); ?>" 
-                                                 alt="<?php echo htmlspecialchars($teacher['teacher_name']); ?>" 
-                                                 class="teacher-image"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                            <div class="teacher-image-placeholder" style="display: none;">
-                                                <?php echo $teacher_initials; ?>
-                                            </div>
-                                        <?php else: ?>
-                                            <div class="teacher-image-placeholder">
-                                                <?php echo $teacher_initials; ?>
-                                            </div>
-                                        <?php endif; ?>
-                                        
-                                        <div class="teacher-info">
-                                            <h4><?php echo htmlspecialchars($teacher['teacher_name']); ?></h4>
-                                            <div class="teacher-details">
-                                                <p><strong>Section:</strong> <?php echo htmlspecialchars($teacher['section']); ?></p>
-                                                <p><strong>Program:</strong> <?php echo htmlspecialchars($teacher['program']); ?></p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <h4><?php echo htmlspecialchars($teacher['teacher_name']); ?></h4>
+                                    <p><strong>Section:</strong> <?php echo htmlspecialchars($teacher['section']); ?></p>
+                                    <p><strong>Program:</strong> <?php echo htmlspecialchars($teacher['program']); ?></p>
                                     
                                     <div class="evaluation-status">
                                         <?php if ($is_evaluated): ?>
@@ -1052,28 +957,19 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
                 }
             });
 
-            // Handle image loading errors
-            document.querySelectorAll('.teacher-image').forEach(img => {
-                img.addEventListener('error', function() {
-                    this.style.display = 'none';
-                    const placeholder = this.nextElementSibling;
-                    if (placeholder && placeholder.classList.contains('teacher-image-placeholder')) {
-                        placeholder.style.display = 'flex';
-                    }
-                });
-            });
+document.addEventListener('DOMContentLoaded', function() {
+    const devLogos = document.querySelectorAll('.dev-logo');
 
-            // Developer logo functionality
-            const devLogos = document.querySelectorAll('.dev-logo');
-            devLogos.forEach(logo => {
-                logo.addEventListener('click', function() {
-                    // Sa mobile, toggle yung pangalan
-                    if (window.innerWidth <= 768) {
-                        devLogos.forEach(l => l.classList.remove('active')); // close iba
-                        this.classList.toggle('active');
-                    }
-                });
-            });
+    devLogos.forEach(logo => {
+        logo.addEventListener('click', function() {
+            // Sa mobile, toggle yung pangalan
+            if (window.innerWidth <= 768) {
+                devLogos.forEach(l => l.classList.remove('active')); // close iba
+                this.classList.toggle('active');
+            }
+        });
+    });
+});
 
             // Add confirmation for section change
             const sectionForm = document.querySelector('.change-section-form');
@@ -1114,23 +1010,3 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
     </script>
 </body>
 </html>
-
-<?php
-// Helper function to get initials from teacher name
-function getInitials($name) {
-    $name = trim($name);
-    $name = str_replace(['MR.', 'MS.', 'MRS.', 'DR.', 'PROF.'], '', $name);
-    $name = trim($name);
-    
-    $words = explode(' ', $name);
-    $initials = '';
-    
-    foreach ($words as $word) {
-        if (!empty(trim($word))) {
-            $initials .= strtoupper(substr(trim($word), 0, 1));
-        }
-    }
-    
-    return !empty($initials) ? $initials : 'T';
-}
-?>
