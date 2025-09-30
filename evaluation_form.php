@@ -1,3 +1,295 @@
+<?php
+// evaluation_form.php - Fixed version
+session_start();
+
+// Check if user is logged in and is a student
+if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
+    header('Location: index.php');
+    exit;
+}
+
+// Include database connection
+require_once 'includes/db_connection.php';
+
+$success = '';
+$error = '';
+$teacher_info = null;
+$is_view_mode = false;
+$existing_evaluation = null;
+
+// Get teacher name and subject from URL parameters
+$teacher_name = isset($_GET['teacher']) ? trim($_GET['teacher']) : '';
+
+// Validate parameters
+if (empty($teacher_name)) {
+    $error = "Missing teacher information. Please select a teacher from your dashboard.";
+} else {
+    try {
+        $pdo = getPDO();
+        
+        // Get student information from session
+        $student_username = $_SESSION['username'];
+        $student_program = $_SESSION['program'] ?? 'COLLEGE';
+        $student_section = $_SESSION['section'] ?? '';
+
+        // Verify this teacher assignment exists for this student's section
+        $stmt = $pdo->prepare("
+            SELECT teacher_name, section, program 
+            FROM teacher_assignments 
+            WHERE teacher_name = ? AND section = ? AND program = ? AND is_active = true
+        ");
+        $stmt->execute([$teacher_name, $student_section, $student_program]);
+        $teacher_assignment = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$teacher_assignment) {
+            $error = "This teacher assignment was not found for your section. Please contact your administrator.";
+        } else {
+            // Create teacher_info structure for compatibility with existing code
+            $teacher_info = [
+                'name' => $teacher_name,
+                'department' => $student_program,
+                'display_department' => $student_program === 'COLLEGE' ? 'College Department' : 'Senior High School Department'
+            ];
+
+            // Check if student has already evaluated this teacher for this subject
+            $check_stmt = $pdo->prepare("
+                SELECT * FROM evaluations 
+                WHERE student_username = ? AND teacher_name = ? AND section = ?
+            ");
+            $check_stmt->execute([$student_username, $teacher_name, $student_section]);
+            $existing_evaluation = $check_stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing_evaluation) {
+                $is_view_mode = true;
+            }
+        }
+
+    } catch (Exception $e) {
+        $error = "Database error: " . $e->getMessage();
+    }
+}
+
+// Simple CSRF token generation
+function generate_csrf_token() {
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+// Handle form submission (only if not in view mode)
+if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode && $teacher_info) {
+    try {
+        // Validate all required fields
+        $ratings = [];
+
+        // Section 1: Teaching Competence (6 questions)
+        for ($i = 1; $i <= 6; $i++) {
+            $rating = intval($_POST["rating1_$i"] ?? 0);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 1.$i");
+            }
+            $ratings["q1_$i"] = $rating;
+        }
+
+        // Section 2: Management Skills (4 questions)
+        for ($i = 1; $i <= 4; $i++) {
+            $rating = intval($_POST["rating2_$i"] ?? 0);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 2.$i");
+            }
+            $ratings["q2_$i"] = $rating;
+        }
+
+        // Section 3: Guidance Skills (4 questions)
+        for ($i = 1; $i <= 4; $i++) {
+            $rating = intval($_POST["rating3_$i"] ?? 0);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 3.$i");
+            }
+            $ratings["q3_$i"] = $rating;
+        }
+
+        // Section 4: Personal and Social Characteristics (6 questions)
+        for ($i = 1; $i <= 6; $i++) {
+            $rating = intval($_POST["rating4_$i"] ?? 0);
+            if ($rating < 1 || $rating > 5) {
+                throw new Exception("Invalid rating for question 4.$i");
+            }
+            $ratings["q4_$i"] = $rating;
+        }
+
+        // Get comments
+        $positive = trim($_POST['q5-positive-en'] ?? $_POST['q5-positive-tl'] ?? '');
+        $negative = trim($_POST['q5-negative-en'] ?? $_POST['q5-negative-tl'] ?? '');
+        $comments = "Positive: $positive\nNegative: $negative";
+
+        // Insert evaluation using the updated table structure
+        $insert_sql = "INSERT INTO evaluations (
+    student_username, student_name, teacher_name, section, program,
+    q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
+    q2_1, q2_2, q2_3, q2_4,
+    q3_1, q3_2, q3_3, q3_4,
+    q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
+    comments
+) VALUES (
+    ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?,
+    ?
+)";
+
+        $params = [
+            $_SESSION['username'],
+            $_SESSION['full_name'] ?? '',
+            $teacher_name,
+            $_SESSION['section'] ?? '',
+            $_SESSION['program'] ?? '',
+            $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
+            $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
+            $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
+            $ratings['q4_1'], $ratings['q4_2'], $ratings['q4_3'], $ratings['q4_4'], $ratings['q4_5'], $ratings['q4_6'],
+            $comments
+        ];
+
+        $stmt = $pdo->prepare($insert_sql);
+        $result = $stmt->execute($params);
+
+        if ($result) {
+            $success = "Evaluation submitted successfully! Thank you for your feedback.";
+            // Reload to show in view mode
+            $check_stmt = $pdo->prepare("
+                SELECT * FROM evaluations 
+                WHERE student_username = ? AND teacher_name =  ? AND section = ?
+            ");
+            $check_stmt->execute([$student_username, $teacher_name, $student_section]);
+            $existing_evaluation = $check_stmt->fetch(PDO::FETCH_ASSOC);
+            $is_view_mode = true;
+        } else {
+            throw new Exception("Database error occurred while saving your evaluation.");
+        }
+
+    } catch (Exception $e) {
+        $error = "Error: " . $e->getMessage();
+    }
+}
+
+// Helper function to safely display values
+function safe_display($value, $default = 'Not Available') {
+    return !empty($value) && $value !== null ? htmlspecialchars($value) : $default;
+}
+
+// Define questions for both languages
+$section1_questions = [
+    '1.1' => 'Analyses and elaborates lesson without reading textbook in class.',
+    '1.2' => 'Uses audio visual and devices to support and facilitate instructions.',
+    '1.3' => 'Present ideas/ concepts clearly and convincingly from related fields and integrate subject matter with actual experience.',
+    '1.4' => 'Make the students apply concepts to demonstrate understanding of the lesson.',
+    '1.5' => 'Gives fair test and examination and return test results within the reasonable period.',
+    '1.6' => 'Shows good command of the language of instruction.'
+];
+
+$section2_questions = [
+    '2.1' => 'Maintains responsive, disciplined and safe classroom atmosphere that is conducive to learning.',
+    '2.2' => 'Follow the schematic way.',
+    '2.3' => 'Stimulate students respect regard for the teacher.',
+    '2.4' => 'Allow the students to express their opinions and views.'
+];
+
+$section3_questions = [
+    '3.1' => 'Accepts students as they are by recognizing their strength and weakness as individuals.',
+    '3.2' => 'Inspires students to be self-reliant and self- disciplined.',
+    '3.3' => 'Handles class and student\'s problem with fairness and understanding.',
+    '3.4' => 'Shows genuine concern for the personal and other problems presented by the students outside classroom activities.'
+];
+
+$section4_questions = [
+    '4.1' => 'Maintains emotional balance; neither over critical nor over-sensitive.',
+    '4.2' => 'Is free from mannerisms that distract the teaching and learning process.',
+    '4.3' => 'Is well groomed; clothes are clean and neat (Uses appropriate clothes that are becoming of a teacher).',
+    '4.4' => 'Shows no favoritism.',
+    '4.5' => 'Has good sense of humor and shows enthusiasm in teaching.',
+    '4.6' => 'Has good diction, clear and modulated voice.'
+];
+
+// Tagalog questions
+$section1_tagalog = [
+    '1.1' => 'Nasuri at-naipaliwanag ang araling nang hindi binabasa ang aklat sa klase.',
+    '1.2' => 'Gumugamit ng audio-visual at mga device upang suportahan at mapadali ang pagtuturo',
+    '1.3' => 'Nagpapakita ng mga ideya/konsepto nang malinaw at nakukumbinsi mula sa mga kaugnay na larangan at isama ang subject matter sa aktwal na karanasan.',
+    '1.4' => 'Hinahayaan ang mga mag-aaral na gumamit ng mga konsepto upang ipakita ang pag-unawa sa mga aralin',
+    '1.5' => 'Nagbibigay ng patas na pagsusulit at pagsusuri at ibalik ang mga result ang pagsusulit sa loob ng makatawirang panahon.',
+    '1.6' => 'Naguutos nang maayos sa pagtuturo gamit ang maayos na pananalita.'
+];
+
+$section2_tagalog = [
+    '2.1' => 'Pinapanatiling maayos, disiplinado at ligtas ang silid-aralan upang magkaraon ng maayos na pagaaral.',
+    '2.2' => 'Sumusunod sa sistematikong iskedyul ng mga klase at iba pang pangaraw-araw na gawain.',
+    '2.3' => 'Hinuhubog sa mga mag-aaral ang respeto at paggalang sa mga guro.',
+    '2.4' => 'Pinahihinlulutan ang mga mag-aaral na ipahayag ang kanilang mga opinyon at mga pananaw.'
+];
+
+$section3_tagalog = [
+    '3.1' => 'Pagtanggap sa mga mag-aaral bilang indibidwal na may kalakasan at kahinaan.',
+    '3.2' => 'Pagpapakita ng tiwala at kaayusan sa sarili',
+    '3.3' => 'Pinangangasiwaan ang problema ng klase at mga mag-aaral nang may patas at pang-unawa.',
+    '3.4' => 'Nagpapakita ng tunay na pagmamalasakit sa mga personal at iba pang problemang ipinakita ng mga mag-aaral.'
+];
+
+$section4_tagalog = [
+    '4.1' => 'Nagpapanatili ng emosyonal na balanse: hindi masyadong kritikal o sobrang sensitibo.',
+    '4.2' => 'Malaya sa nakasanayang galaw na nakakagambala sa proseso ng pagtuturo at pagkatuto.',
+    '4.3' => 'Maayos at presentable; Malinis at maayos ang mga damit.',
+    '4.4' => 'Hindi nagpapakita ng paboritismo',
+    '4.5' => 'May magandang sense of humor at nagpapakita ng sigla sa pagtuturo.',
+    '4.6' => 'May magandang diction, malinaw at maayos na timpla ng boses.'
+];
+
+// Calculate average rating if in view mode
+$average_rating = 0;
+$performance_level = '';
+if ($is_view_mode && $existing_evaluation) {
+    $total_rating = 0;
+    $total_questions = 0;
+
+    // Sum all ratings safely
+    for ($i = 1; $i <= 6; $i++) {
+        $total_rating += intval($existing_evaluation["q1_$i"] ?? 0);
+        $total_questions++;
+    }
+    for ($i = 1; $i <= 4; $i++) {
+        $total_rating += intval($existing_evaluation["q2_$i"] ?? 0);
+        $total_questions++;
+    }
+    for ($i = 1; $i <= 4; $i++) {
+        $total_rating += intval($existing_evaluation["q3_$i"] ?? 0);
+        $total_questions++;
+    }
+    for ($i = 1; $i <= 6; $i++) {
+        $total_rating += intval($existing_evaluation["q4_$i"] ?? 0);
+        $total_questions++;
+    }
+
+    if ($total_questions > 0) {
+        $average_rating = round($total_rating / $total_questions, 2);
+
+        if ($average_rating >= 4.5) {
+            $performance_level = 'Outstanding';
+        } else if ($average_rating >= 4.0) {
+            $performance_level = 'Very Satisfactory';
+        } else if ($average_rating >= 3.5) {
+            $performance_level = 'Good/Satisfactory';
+        } else if ($average_rating >= 2.5) {
+            $performance_level = 'Fair';
+        } else {
+            $performance_level = 'Needs Improvement';
+        }
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
