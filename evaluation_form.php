@@ -576,6 +576,7 @@ if ($is_view_mode && $existing_evaluation) {
             display: flex;
             justify-content: space-between;
             width: 100%;
+            color: dark-maroon;
         }
 
         .rating-options label {
@@ -583,7 +584,7 @@ if ($is_view_mode && $existing_evaluation) {
             text-align: center;
             width: 18%;
             cursor: pointer;
-            color: maroon;
+            color: #5E0C0C;
         }
 
         input[type="radio"] {
