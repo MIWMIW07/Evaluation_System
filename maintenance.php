@@ -1,5 +1,6 @@
 <?php
-//maintenance.php
+// Fix for header warning
+ob_start();
 session_start();
 require_once 'includes/db_connection.php';
 
@@ -7,6 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     header('Location: login.php');
     exit;
 }
+ob_end_clean();
 ?>
 
 <!DOCTYPE html>
@@ -153,7 +155,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
             <p>Test and manage Google Sheets and Drive integration:</p>
             <button class="btn btn-info" onclick="testGoogleConnection()">Test Google Connection</button>
             <button class="btn btn-warning" onclick="syncGoogleData()">Sync Google Sheets Data</button>
-            <button class="btn btn-danger" onclick="cleanupGoogleDrive()">Cleanup Google Drive</button>
             <div id="googleResult"></div>
         </div>
 
@@ -221,19 +222,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
                 }
             } catch (error) {
                 resultDiv.innerHTML = `<div class="result-box result-error">Network error: ${error.message}</div>`;
-            }
-        }
-
-        async function cleanupGoogleDrive() {
-            const resultDiv = document.getElementById('googleResult');
-            resultDiv.innerHTML = '<p class="loading">Cleaning up Google Drive...</p>';
-            
-            try {
-                const response = await fetch('cleanup_drive.php');
-                const html = await response.text();
-                resultDiv.innerHTML = `<div class="debug-details">${html}</div>`;
-            } catch (error) {
-                resultDiv.innerHTML = `<div class="result-box result-error">Error: ${error.message}</div>`;
             }
         }
 
