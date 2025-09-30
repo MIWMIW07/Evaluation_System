@@ -138,8 +138,12 @@ if ($show_preloader && $redirect_url) {
         }
         
         .logo-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
-            margin-bottom: 30px;
+            z-index: 100000;
         }
         
         .circle-border {
@@ -156,15 +160,14 @@ if ($show_preloader && $redirect_url) {
             align-items: center;
             animation: spinBorder 3s linear infinite, glow 2s ease-in-out infinite alternate;
             box-shadow: 0 0 20px goldenrod, 0 0 40px maroon;
-            margin: 0 auto 20px;
             position: relative;
         }
         
         .circle-border img {
             width: 100px;
             height: 100px;
-            animation: spinLogo 5s linear infinite;
             border-radius: 50%;
+            /* Remove the rotation from the logo itself */
         }
         
         .logo-placeholder {
@@ -179,13 +182,13 @@ if ($show_preloader && $redirect_url) {
             font-weight: bold;
             font-size: 14px;
             text-align: center;
-            animation: spinLogo 5s linear infinite;
             box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
         
         .loading-content {
             text-align: center;
             color: white;
+            margin-top: 200px; /* Push content below the centered logo */
         }
         
         .welcome-message {
@@ -234,11 +237,6 @@ if ($show_preloader && $redirect_url) {
             100% { transform: rotate(360deg); }
         }
         
-        @keyframes spinLogo {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(-360deg); }
-        }
-        
         @keyframes glow {
             0% { 
                 box-shadow: 0 0 10px goldenrod, 0 0 20px maroon;
@@ -268,18 +266,15 @@ if ($show_preloader && $redirect_url) {
 </head>
 <body>
     <div class="preloader-overlay" id="preloader">
-        <div class="loading-content">
-            <div class="logo-container">
-                <div class="circle-border pulse">
-                    <!-- Logo with fallback -->
-                    <img src="assets/logo.png" alt="School Logo" id="school-logo" 
-                         onerror="this.style.display='none'; document.getElementById('logo-placeholder').style.display='flex';">
-                    <div id="logo-placeholder" class="logo-placeholder" style="display: none;">
-                        SCHOOL<br>LOGO
-                    </div>
-                </div>
+        <div class="logo-container">
+            <div class="circle-border pulse">
+                <!-- Logo with fallback -->
+                <img src="logo.png" alt="School Logo" id="school-logo" 
+                     onerror="this.style.display='none'; document.getElementById('logo-placeholder').style.display='flex';">
             </div>
-            
+        </div>
+        
+        <div class="loading-content">
             <div class="welcome-message">Login Successful!</div>
             <div class="user-info">Welcome, <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'User'); ?>!</div>
             <div class="loading-text">Loading your dashboard...</div>
