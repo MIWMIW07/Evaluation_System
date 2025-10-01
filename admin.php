@@ -16,7 +16,7 @@ try {
     // Total evaluations count
     $totalEvals = $pdo->query("SELECT COUNT(*) FROM evaluations")->fetchColumn();
     
-    // Recent evaluations (last 10) - FIXED QUERY
+    // Recent evaluations (last 10) - WITH COMMENTS
     $recentEvals = $pdo->query("
         SELECT * 
         FROM evaluations 
@@ -71,7 +71,7 @@ ob_end_clean(); // Clean the output buffer
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             background: white;
             padding: 30px;
@@ -169,22 +169,51 @@ ob_end_clean(); // Clean the output buffer
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
+            font-size: 0.9em;
         }
         
         .evaluation-table th,
         .evaluation-table td {
             border: 1px solid #ddd;
-            padding: 12px;
+            padding: 10px;
             text-align: left;
         }
         
         .evaluation-table th {
             background: #34495e;
             color: white;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
         }
         
         .evaluation-table tr:nth-child(even) {
             background: #f8f9fa;
+        }
+        
+        .evaluation-table tr:hover {
+            background: #e9ecef;
+        }
+        
+        .comment-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 0.85em;
+        }
+        
+        .comment-cell:hover {
+            white-space: normal;
+            overflow: visible;
+        }
+        
+        .positive-comment {
+            color: #28a745;
+        }
+        
+        .negative-comment {
+            color: #dc3545;
         }
         
         .loading {
@@ -239,6 +268,11 @@ ob_end_clean(); // Clean the output buffer
             padding: 10px;
             margin: 10px 0;
             font-size: 0.9em;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 15px;
         }
     </style>
 </head>
@@ -308,36 +342,52 @@ ob_end_clean(); // Clean the output buffer
                     </div>
                 <?php endif; ?>
             <?php else: ?>
-                <table class="evaluation-table">
-                    <thead>
-                        <tr>
-                            <th>Student</th>
-                            <th>Teacher</th>
-                            <th>Program</th>
-                            <th>Section</th>
-                            <th>Date</th>
-                            <th>Avg Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recentEvals as $eval): 
-                            $totalScore = $eval['q1_1'] + $eval['q1_2'] + $eval['q1_3'] + $eval['q1_4'] + $eval['q1_5'] + $eval['q1_6'] +
-                                        $eval['q2_1'] + $eval['q2_2'] + $eval['q2_3'] + $eval['q2_4'] +
-                                        $eval['q3_1'] + $eval['q3_2'] + $eval['q3_3'] + $eval['q3_4'] +
-                                        $eval['q4_1'] + $eval['q4_2'] + $eval['q4_3'] + $eval['q4_4'] + $eval['q4_5'] + $eval['q4_6'];
-                            $avgScore = $totalScore / 20;
-                        ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($eval['student_name'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($eval['teacher_name'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($eval['program'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($eval['section'] ?? 'N/A'); ?></td>
-                            <td><?php echo date('M j, g:i A', strtotime($eval['submitted_at'] ?? 'now')); ?></td>
-                            <td><strong><?php echo number_format($avgScore, 1); ?>/5.0</strong></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                <div class="table-wrapper">
+                    <table class="evaluation-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Teacher</th>
+                                <th>Program</th>
+                                <th>Section</th>
+                                <th>Positive Comment</th>
+                                <th>Negative Comment</th>
+                                <th>Date</th>
+                                <th>Avg Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($recentEvals as $eval): 
+                                $totalScore = $eval['q1_1'] + $eval['q1_2'] + $eval['q1_3'] + $eval['q1_4'] + $eval['q1_5'] + $eval['q1_6'] +
+                                            $eval['q2_1'] + $eval['q2_2'] + $eval['q2_3'] + $eval['q2_4'] +
+                                            $eval['q3_1'] + $eval['q3_2'] + $eval['q3_3'] + $eval['q3_4'] +
+                                            $eval['q4_1'] + $eval['q4_2'] + $eval['q4_3'] + $eval['q4_4'] + $eval['q4_5'] + $eval['q4_6'];
+                                $avgScore = $totalScore / 20;
+                            ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($eval['student_name'] ?? 'N/A'); ?></td>
+                                <td><?php echo htmlspecialchars($eval['teacher_name'] ?? 'N/A'); ?></td>
+                                <td><?php echo htmlspecialchars($eval['program'] ?? 'N/A'); ?></td>
+                                <td><?php echo htmlspecialchars($eval['section'] ?? 'N/A'); ?></td>
+                                <td class="comment-cell positive-comment" title="<?php echo htmlspecialchars($eval['positive_comment'] ?? ''); ?>">
+                                    <?php 
+                                    $positiveComment = $eval['positive_comment'] ?? '';
+                                    echo !empty($positiveComment) ? htmlspecialchars($positiveComment) : '-';
+                                    ?>
+                                </td>
+                                <td class="comment-cell negative-comment" title="<?php echo htmlspecialchars($eval['negative_comment'] ?? ''); ?>">
+                                    <?php 
+                                    $negativeComment = $eval['negative_comment'] ?? '';
+                                    echo !empty($negativeComment) ? htmlspecialchars($negativeComment) : '-';
+                                    ?>
+                                </td>
+                                <td><?php echo date('M j, g:i A', strtotime($eval['submitted_at'] ?? 'now')); ?></td>
+                                <td><strong><?php echo number_format($avgScore, 1); ?>/5.0</strong></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             <?php endif; ?>
         </div>
 
@@ -398,12 +448,8 @@ ob_end_clean(); // Clean the output buffer
                 html += `<p><strong>Individual Reports:</strong> ${data.individual_reports}</p>`;
                 html += `<p><strong>Summary Reports:</strong> ${data.summary_reports}</p>`;
                 html += `<p><strong>Total Files:</strong> ${data.total_files}</p>`;
-                
-                if (data.zip_file) {
-                    html += `<p><a href="${data.zip_file}" class="btn btn-success" download>📥 Download All Reports (ZIP)</a></p>`;
-                    html += `<p><small>Save this file to your Desktop and extract to get the folder structure.</small></p>`;
-                }
-                
+                html += `<p><strong>Reports Location:</strong> ${data.reports_location}</p>`;
+                html += `<p><a href="admin_download_reports.php" class="btn btn-success">📥 View & Download Reports</a></p>`;
                 html += `</div>`;
                 resultDiv.innerHTML = html;
             } else {
