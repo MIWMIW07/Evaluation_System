@@ -8,9 +8,43 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     exit;
 }
 
+// Handle direct file download
+if (isset($_GET['download'])) {
+    $file = basename($_GET['download']); // Security: only filename, no paths
+    $filePath = __DIR__ . '/reports/' . $file;
+    
+    if (file_exists($filePath) && pathinfo($file, PATHINFO_EXTENSION) === 'zip') {
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $file . '"');
+        header('Content-Length: ' . filesize($filePath));
+        readfile($filePath);
+        exit;
+    } else {
+        $error = "File not found or invalid file type.";
+    }
+}
+
+// Handle PDF download from nested folders
+if (isset($_GET['pdf'])) {
+    $relativePath = $_GET['pdf'];
+    // Security: prevent directory traversal
+    $relativePath = str_replace(['../', '..\\'], '', $relativePath);
+    $filePath = __DIR__ . '/reports/Teacher Evaluation Reports/Reports/' . $relativePath;
+    
+    if (file_exists($filePath) && pathinfo($filePath, PATHINFO_EXTENSION) === 'pdf') {
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . basename($filePath) . '"');
+        header('Content-Length: ' . filesize($filePath));
+        readfile($filePath);
+        exit;
+    } else {
+        $error = "PDF file not found.";
+    }
+}
+
 $reportsDir = __DIR__ . '/reports/';
 $zipFiles = [];
-$reportFolders = [];
+$teacherReports = [];
 
 // Get all ZIP files
 if (is_dir($reportsDir)) {
@@ -19,7 +53,6 @@ if (is_dir($reportsDir)) {
         if (pathinfo($file, PATHINFO_EXTENSION) === 'zip') {
             $zipFiles[] = [
                 'name' => $file,
-                'path' => 'reports/' . $file,
                 'size' => filesize($reportsDir . $file),
                 'date' => filemtime($reportsDir . $file)
             ];
@@ -32,13 +65,35 @@ if (is_dir($reportsDir)) {
     });
 }
 
-// Check if report folders exist
+// Browse teacher folders and their PDF files
 $teacherReportsPath = $reportsDir . 'Teacher Evaluation Reports/Reports/';
 if (is_dir($teacherReportsPath)) {
     $teachers = scandir($teacherReportsPath);
     foreach ($teachers as $teacher) {
         if ($teacher !== '.' && $teacher !== '..' && is_dir($teacherReportsPath . $teacher)) {
-            $reportFolders[] = $teacher;
+            $teacherReports[$teacher] = [];
+            
+            // Get programs for this teacher
+            $teacherDir = $teacherReportsPath . $teacher . '/';
+            $programs = scandir($teacherDir);
+            
+            foreach ($programs as $program) {
+                if ($program !== '.' && $program !== '..' && is_dir($teacherDir . $program)) {
+                    $programDir = $teacherDir . $program . '/';
+                    $pdfFiles = array_diff(scandir($programDir), ['.', '..']);
+                    
+                    foreach ($pdfFiles as $pdf) {
+                        if (pathinfo($pdf, PATHINFO_EXTENSION) === 'pdf') {
+                            $teacherReports[$teacher][] = [
+                                'name' => $pdf,
+                                'program' => $program,
+                                'path' => $teacher . '/' . $program . '/' . $pdf,
+                                'size' => filesize($programDir . $pdf)
+                            ];
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -102,6 +157,7 @@ function formatBytes($bytes) {
             text-decoration: none;
             border-radius: 5px;
             transition: background 0.3s;
+            font-weight: 500;
         }
 
         .back-btn:hover {
@@ -127,7 +183,7 @@ function formatBytes($bytes) {
             list-style: none;
         }
 
-        .zip-item {
+        .zip-item, .pdf-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -138,23 +194,23 @@ function formatBytes($bytes) {
             transition: all 0.3s;
         }
 
-        .zip-item:hover {
+        .zip-item:hover, .pdf-item:hover {
             background: #f8f9ff;
             border-color: #667eea;
             transform: translateX(5px);
         }
 
-        .zip-info {
+        .file-info {
             flex: 1;
         }
 
-        .zip-name {
+        .file-name {
             font-weight: bold;
             color: #333;
             margin-bottom: 5px;
         }
 
-        .zip-meta {
+        .file-meta {
             font-size: 0.9em;
             color: #666;
         }
@@ -167,33 +223,36 @@ function formatBytes($bytes) {
             border-radius: 5px;
             transition: background 0.3s;
             display: inline-block;
+            font-weight: 500;
         }
 
         .download-btn:hover {
             background: #218838;
         }
 
-        .folder-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .folder-item {
+        .teacher-section {
+            margin-bottom: 30px;
             padding: 20px;
             background: #f8f9ff;
-            border: 2px solid #667eea;
             border-radius: 8px;
-            text-align: center;
-            color: #333;
-            font-weight: 500;
+            border-left: 4px solid #667eea;
         }
 
-        .folder-item::before {
-            content: "📁";
-            display: block;
-            font-size: 2em;
-            margin-bottom: 10px;
+        .teacher-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .program-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #667eea;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-right: 10px;
         }
 
         .empty-state {
@@ -226,6 +285,39 @@ function formatBytes($bytes) {
             border: 1px solid #ffeaa7;
             color: #856404;
         }
+
+        .alert-danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -235,7 +327,37 @@ function formatBytes($bytes) {
             <a href="admin.php" class="back-btn">← Back to Dashboard</a>
         </div>
 
-        <?php if (empty($zipFiles) && empty($reportFolders)): ?>
+        <?php if (isset($error)): ?>
+        <div class="alert alert-danger">
+            <strong>❌ Error:</strong> <?php echo htmlspecialchars($error); ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Statistics -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number"><?php echo count($zipFiles); ?></div>
+                <div class="stat-label">ZIP Files Available</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number"><?php echo count($teacherReports); ?></div>
+                <div class="stat-label">Teachers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">
+                    <?php 
+                    $totalPDFs = 0;
+                    foreach ($teacherReports as $reports) {
+                        $totalPDFs += count($reports);
+                    }
+                    echo $totalPDFs;
+                    ?>
+                </div>
+                <div class="stat-label">Total PDF Reports</div>
+            </div>
+        </div>
+
+        <?php if (empty($zipFiles) && empty($teacherReports)): ?>
         <div class="section">
             <div class="empty-state">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -251,20 +373,20 @@ function formatBytes($bytes) {
         <div class="section">
             <h2>📦 ZIP Files (All Reports Bundled)</h2>
             <div class="alert alert-info">
-                <strong>💡 Tip:</strong> Download the ZIP file for all reports in one package!
+                <strong>💡 Recommended:</strong> Download the ZIP file to get all reports in one package!
             </div>
             <ul class="zip-list">
                 <?php foreach ($zipFiles as $zip): ?>
                 <li class="zip-item">
-                    <div class="zip-info">
-                        <div class="zip-name"><?php echo htmlspecialchars($zip['name']); ?></div>
-                        <div class="zip-meta">
+                    <div class="file-info">
+                        <div class="file-name">📦 <?php echo htmlspecialchars($zip['name']); ?></div>
+                        <div class="file-meta">
                             Size: <?php echo formatBytes($zip['size']); ?> | 
                             Created: <?php echo date('F j, Y g:i A', $zip['date']); ?>
                         </div>
                     </div>
-                    <a href="<?php echo htmlspecialchars($zip['path']); ?>" class="download-btn" download>
-                        ⬇ Download
+                    <a href="?download=<?php echo urlencode($zip['name']); ?>" class="download-btn">
+                        ⬇ Download ZIP
                     </a>
                 </li>
                 <?php endforeach; ?>
@@ -272,19 +394,38 @@ function formatBytes($bytes) {
         </div>
         <?php endif; ?>
 
-        <?php if (!empty($reportFolders)): ?>
+        <?php if (!empty($teacherReports)): ?>
         <div class="section">
-            <h2>👥 Individual Teacher Reports</h2>
+            <h2>👥 Individual PDF Reports by Teacher</h2>
             <div class="alert alert-warning">
-                <strong>⚠️ Note:</strong> Individual files are organized by teacher. Use ZIP download for convenience.
+                <strong>ℹ️ Note:</strong> You can download individual PDF files below, or use the ZIP file above for all reports at once.
             </div>
-            <div class="folder-list">
-                <?php foreach ($reportFolders as $teacher): ?>
-                <div class="folder-item">
-                    <?php echo htmlspecialchars($teacher); ?>
+            
+            <?php foreach ($teacherReports as $teacher => $reports): ?>
+                <?php if (!empty($reports)): ?>
+                <div class="teacher-section">
+                    <div class="teacher-name">👨‍🏫 <?php echo htmlspecialchars($teacher); ?></div>
+                    <ul class="zip-list">
+                        <?php foreach ($reports as $report): ?>
+                        <li class="pdf-item">
+                            <div class="file-info">
+                                <div class="file-name">
+                                    📄 <?php echo htmlspecialchars($report['name']); ?>
+                                </div>
+                                <div class="file-meta">
+                                    <span class="program-badge"><?php echo htmlspecialchars($report['program']); ?></span>
+                                    Size: <?php echo formatBytes($report['size']); ?>
+                                </div>
+                            </div>
+                            <a href="?pdf=<?php echo urlencode($report['path']); ?>" class="download-btn">
+                                ⬇ Download PDF
+                            </a>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
                 </div>
-                <?php endforeach; ?>
-            </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
         </div>
         <?php endif; ?>
     </div>
