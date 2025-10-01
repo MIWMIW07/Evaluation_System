@@ -1,264 +1,5 @@
 <?php
-// local_reports_generator.php
-ob_start(); // Fix for header issues
-session_start();
-require_once 'includes/db_connection.php';
-
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'error' => 'Unauthorized access']);
-    exit;
-}
-
-// Set headers for JSON response
-header('Content-Type: application/json');
-
-// Check if TCPDF exists
-if (!file_exists('tcpdf/tcpdf.php')) {
-    echo json_encode([
-        'success' => false,
-        'error' => 'TCPDF library not found. Please ensure tcpdf folder exists in your project root.'
-    ]);
-    exit;
-}
-
-// CRITICAL: Define ALL constants BEFORE including TCPDF
-if (!defined('K_TCPDF_EXTERNAL_CONFIG')) {
-    define('K_TCPDF_EXTERNAL_CONFIG', true);
-    
-    // Page settings
-    define('PDF_PAGE_ORIENTATION', 'P');
-    define('PDF_UNIT', 'mm');
-    define('PDF_PAGE_FORMAT', 'A4');
-    define('PDF_CREATOR', 'Teacher Evaluation System');
-    define('PDF_AUTHOR', 'Admin');
-    
-    // Paths - Use absolute paths
-    define('K_PATH_MAIN', __DIR__ . '/tcpdf/');
-    define('K_PATH_URL', '/tcpdf/');
-    define('K_PATH_FONTS', K_PATH_MAIN . 'fonts/');
-    define('K_PATH_CACHE', sys_get_temp_dir() . '/');
-    define('K_PATH_IMAGES', K_PATH_MAIN . 'images/');
-    define('K_BLANK_IMAGE', K_PATH_IMAGES . '_blank.png');
-    
-    // Header settings
-    define('PDF_HEADER_TITLE', 'Teacher Evaluation System');
-    define('PDF_HEADER_STRING', 'Evaluation Reports');
-    define('PDF_HEADER_LOGO', '');
-    define('PDF_HEADER_LOGO_WIDTH', 0);
-    
-    // Margins
-    define('PDF_MARGIN_LEFT', 15);
-    define('PDF_MARGIN_TOP', 27);
-    define('PDF_MARGIN_RIGHT', 15);
-    define('PDF_MARGIN_BOTTOM', 25);
-    define('PDF_MARGIN_HEADER', 5);
-    define('PDF_MARGIN_FOOTER', 10);
-    
-    // Font settings
-    define('PDF_FONT_SIZE_MAIN', 10);
-    define('PDF_FONT_SIZE_DATA', 8);
-    define('PDF_FONT_NAME_MAIN', 'helvetica');
-    define('PDF_FONT_NAME_DATA', 'helvetica');
-    define('PDF_FONT_MONOSPACED', 'courier');
-    
-    // Image and cell settings
-    define('PDF_IMAGE_SCALE_RATIO', 1.25);
-    define('K_CELL_HEIGHT_RATIO', 1.25);
-    define('K_TITLE_MAGNIFICATION', 1.3);
-    define('K_SMALL_RATIO', 2/3);
-    
-    // Other settings
-    define('K_THAI_TOPCHARS', true);
-    define('K_TCPDF_CALLS_IN_HTML', false);
-    define('K_TIMEZONE', 'UTC');
-}
-
-// NOW include TCPDF
-require_once 'tcpdf/tcpdf.php';
-
-class EvaluationPDF extends TCPDF {
-    // Page header
-    public function Header() {
-        $this->SetFont('helvetica', 'B', 16);
-        $this->Cell(0, 15, 'TEACHER EVALUATION SYSTEM', 0, false, 'C', 0, '', 0, false, 'M', 'M');
-        $this->Ln(10);
-    }
-
-    // Page footer
-    public function Footer() {
-        $this->SetY(-15);
-        $this->SetFont('helvetica', 'I', 8);
-        $this->Cell(0, 10, 'Page '.$this->getAliasNumPage().'/'.$this->getAliasNbPages(), 0, false, 'C', 0, '', 0, false, 'T', 'M');
-    }
-}
-
-function generateIndividualReport($pdo, $teacherName, $program, $section, $outputPath) {
-    try {
-        // Get evaluations for this teacher, program, and section
-        $stmt = $pdo->prepare("
-            SELECT * FROM evaluations 
-            WHERE teacher_name = ? AND program = ? AND section = ?
-            ORDER BY student_name
-        ");
-        $stmt->execute([$teacherName, $program, $section]);
-        $evaluations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        if (empty($evaluations)) {
-            return false;
-        }
-
-        // Create new PDF document
-        $pdf = new EvaluationPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-
-        // Set document information
-        $pdf->SetCreator(PDF_CREATOR);
-        $pdf->SetAuthor(PDF_AUTHOR);
-        $pdf->SetTitle("Individual Report - $teacherName - $program $section");
-        $pdf->SetSubject('Teacher Evaluation Report');
-
-        // Set default header data
-        $pdf->SetHeaderData('', 0, "TEACHER EVALUATION SYSTEM", "Individual Evaluation Report\n$teacherName - $program $section");
-
-        // Set margins
-        $pdf->SetMargins(15, 25, 15);
-        $pdf->SetHeaderMargin(10);
-        $pdf->SetFooterMargin(10);
-
-        // Set auto page breaks
-        $pdf->SetAutoPageBreak(TRUE, 15);
-
-        foreach ($evaluations as $eval) {
-            $pdf->AddPage();
-
-            // Student Information
-            $pdf->SetFont('helvetica', 'B', 12);
-            $pdf->Cell(0, 10, "STUDENT INFORMATION", 0, 1, 'L');
-            $pdf->SetFont('helvetica', '', 10);
-            $pdf->Cell(0, 6, "Student Name: " . ($eval['student_name'] ?? 'N/A'), 0, 1);
-            $pdf->Cell(0, 6, "Teacher: " . ($eval['teacher_name'] ?? 'N/A'), 0, 1);
-            $pdf->Cell(0, 6, "Program: " . ($eval['program'] ?? 'N/A'), 0, 1);
-            $pdf->Cell(0, 6, "Section: " . ($eval['section'] ?? 'N/A'), 0, 1);
-            $pdf->Cell(0, 6, "Date: " . date('F j, Y', strtotime($eval['submitted_at'] ?? 'now')), 0, 1);
-            $pdf->Ln(10);
-
-            // Evaluation Scores
-            $pdf->SetFont('helvetica', 'B', 12);
-            $pdf->Cell(0, 10, "EVALUATION SCORES", 0, 1, 'L');
-            $pdf->SetFont('helvetica', '', 10);
-
-            // Category 1: Teaching for Independent Learning
-            $pdf->SetFont('helvetica', 'B', 11);
-            $pdf->Cell(0, 8, "1. TEACHING FOR INDEPENDENT LEARNING", 0, 1);
-            $pdf->SetFont('helvetica', '', 10);
-            
-            $q1_1 = $eval['q1_1'] ?? 0; $q1_2 = $eval['q1_2'] ?? 0; $q1_3 = $eval['q1_3'] ?? 0;
-            $q1_4 = $eval['q1_4'] ?? 0; $q1_5 = $eval['q1_5'] ?? 0; $q1_6 = $eval['q1_6'] ?? 0;
-            
-            $cat1_avg = ($q1_1 + $q1_2 + $q1_3 + $q1_4 + $q1_5 + $q1_6) / 6;
-            
-            $pdf->Cell(0, 6, "1.1 Creates classroom environment: " . number_format($q1_1, 1), 0, 1);
-            $pdf->Cell(0, 6, "1.2 Sets learning targets: " . number_format($q1_2, 1), 0, 1);
-            $pdf->Cell(0, 6, "1.3 Communicates learning: " . number_format($q1_3, 1), 0, 1);
-            $pdf->Cell(0, 6, "1.4 Encourages creative thinking: " . number_format($q1_4, 1), 0, 1);
-            $pdf->Cell(0, 6, "1.5 Promotes collaboration: " . number_format($q1_5, 1), 0, 1);
-            $pdf->Cell(0, 6, "1.6 Uses varied activities: " . number_format($q1_6, 1), 0, 1);
-            $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(0, 6, "Category 1 Average: " . number_format($cat1_avg, 2), 0, 1);
-            $pdf->Ln(5);
-
-            // Category 2: Teaching for Meaningful Learning
-            $pdf->SetFont('helvetica', 'B', 11);
-            $pdf->Cell(0, 8, "2. TEACHING FOR MEANINGFUL LEARNING", 0, 1);
-            $pdf->SetFont('helvetica', '', 10);
-            
-            $q2_1 = $eval['q2_1'] ?? 0; $q2_2 = $eval['q2_2'] ?? 0; $q2_3 = $eval['q2_3'] ?? 0; $q2_4 = $eval['q2_4'] ?? 0;
-            
-            $cat2_avg = ($q2_1 + $q2_2 + $q2_3 + $q2_4) / 4;
-            
-            $pdf->Cell(0, 6, "2.1 Connects lessons to life: " . number_format($q2_1, 1), 0, 1);
-            $pdf->Cell(0, 6, "2.2 Integrates technology: " . number_format($q2_2, 1), 0, 1);
-            $pdf->Cell(0, 6, "2.3 Uses varied strategies: " . number_format($q2_3, 1), 0, 1);
-            $pdf->Cell(0, 6, "2.4 Provides meaningful feedback: " . number_format($q2_4, 1), 0, 1);
-            $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(0, 6, "Category 2 Average: " . number_format($cat2_avg, 2), 0, 1);
-            $pdf->Ln(5);
-
-            // Category 3: Assessment and Evaluation
-            $pdf->SetFont('helvetica', 'B', 11);
-            $pdf->Cell(0, 8, "3. ASSESSMENT AND EVALUATION", 0, 1);
-            $pdf->SetFont('helvetica', '', 10);
-            
-            $q3_1 = $eval['q3_1'] ?? 0; $q3_2 = $eval['q3_2'] ?? 0; $q3_3 = $eval['q3_3'] ?? 0; $q3_4 = $eval['q3_4'] ?? 0;
-            
-            $cat3_avg = ($q3_1 + $q3_2 + $q3_3 + $q3_4) / 4;
-            
-            $pdf->Cell(0, 6, "3.1 Uses varied assessment: " . number_format($q3_1, 1), 0, 1);
-            $pdf->Cell(0, 6, "3.2 Provides timely feedback: " . number_format($q3_2, 1), 0, 1);
-            $pdf->Cell(0, 6, "3.3 Assessment aligns with objectives: " . number_format($q3_3, 1), 0, 1);
-            $pdf->Cell(0, 6, "3.4 Encourages self-assessment: " . number_format($q3_4, 1), 0, 1);
-            $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(0, 6, "Category 3 Average: " . number_format($cat3_avg, 2), 0, 1);
-            $pdf->Ln(5);
-
-            // Category 4: Professional Development
-            $pdf->SetFont('helvetica', 'B', 11);
-            $pdf->Cell(0, 8, "4. PROFESSIONAL DEVELOPMENT", 0, 1);
-            $pdf->SetFont('helvetica', '', 10);
-            
-            $q4_1 = $eval['q4_1'] ?? 0; $q4_2 = $eval['q4_2'] ?? 0; $q4_3 = $eval['q4_3'] ?? 0; 
-            $q4_4 = $eval['q4_4'] ?? 0; $q4_5 = $eval['q4_5'] ?? 0; $q4_6 = $eval['q4_6'] ?? 0;
-            
-            $cat4_avg = ($q4_1 + $q4_2 + $q4_3 + $q4_4 + $q4_5 + $q4_6) / 6;
-            
-            $pdf->Cell(0, 6, "4.1 Demonstrates mastery: " . number_format($q4_1, 1), 0, 1);
-            $pdf->Cell(0, 6, "4.2 Shows enthusiasm: " . number_format($q4_2, 1), 0, 1);
-            $pdf->Cell(0, 6, "4.3 Maintains professionalism: " . number_format($q4_3, 1), 0, 1);
-            $pdf->Cell(0, 6, "4.4 Shows care for students: " . number_format($q4_4, 1), 0, 1);
-            $pdf->Cell(0, 6, "4.5 Maintains positive attitude: " . number_format($q4_5, 1), 0, 1);
-            $pdf->Cell(0, 6, "4.6 Adheres to ethical standards: " . number_format($q4_6, 1), 0, 1);
-            $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(0, 6, "Category 4 Average: " . number_format($cat4_avg, 2), 0, 1);
-            $pdf->Ln(10);
-
-            // Overall Score
-            $total_score = $q1_1 + $q1_2 + $q1_3 + $q1_4 + $q1_5 + $q1_6 +
-                         $q2_1 + $q2_2 + $q2_3 + $q2_4 +
-                         $q3_1 + $q3_2 + $q3_3 + $q3_4 +
-                         $q4_1 + $q4_2 + $q4_3 + $q4_4 + $q4_5 + $q4_6;
-            
-            $overall_avg = $total_score / 20;
-            $percentage = ($overall_avg / 5) * 100;
-
-            $pdf->SetFont('helvetica', 'B', 12);
-            $pdf->Cell(0, 10, "OVERALL EVALUATION", 0, 1, 'C');
-            $pdf->SetFont('helvetica', 'B', 14);
-            $pdf->Cell(0, 8, "Overall Score: " . number_format($overall_avg, 2) . " / 5.00", 0, 1, 'C');
-            $pdf->Cell(0, 8, "Percentage: " . number_format($percentage, 1) . "%", 0, 1, 'C');
-            
-            // Rating
-            $rating = '';
-            if ($percentage >= 90) $rating = 'EXCELLENT';
-            elseif ($percentage >= 80) $rating = 'VERY GOOD';
-            elseif ($percentage >= 70) $rating = 'GOOD';
-            elseif ($percentage >= 60) $rating = 'SATISFACTORY';
-            else $rating = 'NEEDS IMPROVEMENT';
-            
-            $pdf->SetTextColor(255, 255, 255);
-            $pdf->SetFillColor(70, 130, 180);
-            $pdf->Cell(0, 10, "RATING: $rating", 0, 1, 'C', true);
-            $pdf->SetTextColor(0, 0, 0);
-        }
-
-        // Save PDF file
-        $pdf->Output($outputPath, 'F');
-        return true;
-
-    } catch (Exception $e) {
-        error_log("Error generating individual report: " . $e->getMessage());
-        return false;
-    }
-}
+// This replaces the generateSummaryReport function in local_reports_generator.php
 
 function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPath) {
     try {
@@ -274,122 +15,190 @@ function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPa
             return false;
         }
 
-        // Calculate averages
+        // Calculate detailed statistics
         $totalStudents = count($evaluations);
-        $category1_avg = 0; $category2_avg = 0; $category3_avg = 0; $category4_avg = 0;
-        $overall_avg = 0;
+        
+        // Individual question averages
+        $questions = [
+            'q1_1' => ['sum' => 0, 'label' => 'Nasuri at naipaliwanag ang aralin nang hindi binabasa ang aklat sa klase'],
+            'q1_2' => ['sum' => 0, 'label' => 'Gumagamit ng audio-visual at mga device upang suportahan ang pagtuturo'],
+            'q1_3' => ['sum' => 0, 'label' => 'Nagpapakita ng mga ideya/konsepto nang malinaw at nakakakumbinsi'],
+            'q1_4' => ['sum' => 0, 'label' => 'Hinahayaan ang mga mag-aaral na gumamit ng mga konsepto'],
+            'q1_5' => ['sum' => 0, 'label' => 'Nagbibigay ng patas na pagsusulit at ibalik ang mga resulta'],
+            'q1_6' => ['sum' => 0, 'label' => 'Naguutos nang maayos sa pagtuturo gamit ang maayos na pananalta'],
+            
+            'q2_1' => ['sum' => 0, 'label' => 'Pinapanatiling maayos, disiplinado at ligtas ang silid-aralan'],
+            'q2_2' => ['sum' => 0, 'label' => 'Sumusunod sa sistematikong iskedyul ng mga klase'],
+            'q2_3' => ['sum' => 0, 'label' => 'Hinuhubog sa mga mag-aaral ang respeto at paggalang'],
+            'q2_4' => ['sum' => 0, 'label' => 'Pinahihintulutan ang mga mag-aaral na ipahayag ang kanilang opinyon'],
+            
+            'q3_1' => ['sum' => 0, 'label' => 'Pagtanggap sa mga mag-aaral bilang indibidwal'],
+            'q3_2' => ['sum' => 0, 'label' => 'Pagpapakita ng tiwala at kaayusan sa sarili'],
+            'q3_3' => ['sum' => 0, 'label' => 'Pinangangasiwaan ang problema ng klase at Mga mag-aaral'],
+            'q3_4' => ['sum' => 0, 'label' => 'Nagpapakita ng tunay na pagmamalasakit sa mga personal'],
+            
+            'q4_1' => ['sum' => 0, 'label' => 'Nagpapanatili ng emosyonal na balanse; hindi masyadong kritikal'],
+            'q4_2' => ['sum' => 0, 'label' => 'Malaya sa nakasanayang galaw na nakakagambala sa proseso'],
+            'q4_3' => ['sum' => 0, 'label' => 'Maayos at presentable; Malinis at maayos ang mga damit'],
+            'q4_4' => ['sum' => 0, 'label' => 'Hindi pagpapakita ng paboritismo'],
+            'q4_5' => ['sum' => 0, 'label' => 'May magandang sense of humor at nagpapakita ng sigla'],
+            'q4_6' => ['sum' => 0, 'label' => 'May magandang diction, malinaw at maayos na timpla ng boses'],
+        ];
 
+        // Calculate sums
         foreach ($evaluations as $eval) {
-            $cat1 = (($eval['q1_1'] ?? 0) + ($eval['q1_2'] ?? 0) + ($eval['q1_3'] ?? 0) + ($eval['q1_4'] ?? 0) + ($eval['q1_5'] ?? 0) + ($eval['q1_6'] ?? 0)) / 6;
-            $cat2 = (($eval['q2_1'] ?? 0) + ($eval['q2_2'] ?? 0) + ($eval['q2_3'] ?? 0) + ($eval['q2_4'] ?? 0)) / 4;
-            $cat3 = (($eval['q3_1'] ?? 0) + ($eval['q3_2'] ?? 0) + ($eval['q3_3'] ?? 0) + ($eval['q3_4'] ?? 0)) / 4;
-            $cat4 = (($eval['q4_1'] ?? 0) + ($eval['q4_2'] ?? 0) + ($eval['q4_3'] ?? 0) + ($eval['q4_4'] ?? 0) + ($eval['q4_5'] ?? 0) + ($eval['q4_6'] ?? 0)) / 6;
-            $total = ($cat1 + $cat2 + $cat3 + $cat4) / 4;
-
-            $category1_avg += $cat1;
-            $category2_avg += $cat2;
-            $category3_avg += $cat3;
-            $category4_avg += $cat4;
-            $overall_avg += $total;
+            foreach ($questions as $key => $data) {
+                $questions[$key]['sum'] += ($eval[$key] ?? 0);
+            }
         }
 
-        $category1_avg /= $totalStudents;
-        $category2_avg /= $totalStudents;
-        $category3_avg /= $totalStudents;
-        $category4_avg /= $totalStudents;
-        $overall_avg /= $totalStudents;
-        $overall_percentage = ($overall_avg / 5) * 100;
+        // Calculate averages
+        foreach ($questions as $key => $data) {
+            $questions[$key]['avg'] = $data['sum'] / $totalStudents;
+        }
+
+        // Category averages
+        $cat1_avg = 0;
+        $cat2_avg = 0;
+        $cat3_avg = 0;
+        $cat4_avg = 0;
+
+        foreach ($evaluations as $eval) {
+            $cat1 = (($eval['q1_1'] ?? 0) + ($eval['q1_2'] ?? 0) + ($eval['q1_3'] ?? 0) + 
+                    ($eval['q1_4'] ?? 0) + ($eval['q1_5'] ?? 0) + ($eval['q1_6'] ?? 0)) / 6;
+            $cat2 = (($eval['q2_1'] ?? 0) + ($eval['q2_2'] ?? 0) + ($eval['q2_3'] ?? 0) + 
+                    ($eval['q2_4'] ?? 0)) / 4;
+            $cat3 = (($eval['q3_1'] ?? 0) + ($eval['q3_2'] ?? 0) + ($eval['q3_3'] ?? 0) + 
+                    ($eval['q3_4'] ?? 0)) / 4;
+            $cat4 = (($eval['q4_1'] ?? 0) + ($eval['q4_2'] ?? 0) + ($eval['q4_3'] ?? 0) + 
+                    ($eval['q4_4'] ?? 0) + ($eval['q4_5'] ?? 0) + ($eval['q4_6'] ?? 0)) / 6;
+
+            $cat1_avg += $cat1;
+            $cat2_avg += $cat2;
+            $cat3_avg += $cat3;
+            $cat4_avg += $cat4;
+        }
+
+        $cat1_avg /= $totalStudents;
+        $cat2_avg /= $totalStudents;
+        $cat3_avg /= $totalStudents;
+        $cat4_avg /= $totalStudents;
+
+        $overall_avg = ($cat1_avg + $cat2_avg + $cat3_avg + $cat4_avg) / 4;
 
         // Create PDF
-        $pdf = new EvaluationPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf = new EvaluationPDF('P', 'mm', 'A4', true, 'UTF-8', false);
 
-        // Set document information
         $pdf->SetCreator(PDF_CREATOR);
         $pdf->SetAuthor(PDF_AUTHOR);
         $pdf->SetTitle("Summary Report - $teacherName - $program $section");
 
-        // Set header
-        $pdf->SetHeaderData('', 0, "TEACHER EVALUATION SYSTEM", "Summary Evaluation Report\n$teacherName - $program $section");
+        $pdf->SetHeaderData('', 0, "PHILIPPINE TECHNOLOGICAL INSTITUTE", 
+                           "GMA-BRANCH [2nd Semester 2024-2025]\nFACULTY EVALUATION CRITERIA");
 
-        // Set margins
-        $pdf->SetMargins(15, 25, 15);
+        $pdf->SetMargins(10, 30, 10);
         $pdf->SetHeaderMargin(10);
         $pdf->SetFooterMargin(10);
         $pdf->SetAutoPageBreak(TRUE, 15);
 
         $pdf->AddPage();
 
-        // Teacher Information
-        $pdf->SetFont('helvetica', 'B', 14);
-        $pdf->Cell(0, 10, "TEACHER SUMMARY REPORT", 0, 1, 'C');
-        $pdf->Ln(5);
-
+        // Header Information
         $pdf->SetFont('helvetica', 'B', 12);
-        $pdf->Cell(0, 8, "TEACHER INFORMATION", 0, 1);
-        $pdf->SetFont('helvetica', '', 11);
-        $pdf->Cell(0, 6, "Teacher Name: " . $teacherName, 0, 1);
-        $pdf->Cell(0, 6, "Program: " . $program, 0, 1);
-        $pdf->Cell(0, 6, "Section: " . $section, 0, 1);
-        $pdf->Cell(0, 6, "Total Students Evaluated: " . $totalStudents, 0, 1);
-        $pdf->Cell(0, 6, "Report Date: " . date('F j, Y'), 0, 1);
-        $pdf->Ln(10);
-
-        // Summary Statistics
-        $pdf->SetFont('helvetica', 'B', 12);
-        $pdf->Cell(0, 8, "SUMMARY STATISTICS", 0, 1);
-        $pdf->SetFont('helvetica', '', 11);
-
-        $pdf->Cell(0, 6, "1. Teaching for Independent Learning: " . number_format($category1_avg, 2) . " / 5.00", 0, 1);
-        $pdf->Cell(0, 6, "2. Teaching for Meaningful Learning: " . number_format($category2_avg, 2) . " / 5.00", 0, 1);
-        $pdf->Cell(0, 6, "3. Assessment and Evaluation: " . number_format($category3_avg, 2) . " / 5.00", 0, 1);
-        $pdf->Cell(0, 6, "4. Professional Development: " . number_format($category4_avg, 2) . " / 5.00", 0, 1);
-        $pdf->Ln(5);
-
-        $pdf->SetFont('helvetica', 'B', 13);
-        $pdf->Cell(0, 8, "Overall Average Score: " . number_format($overall_avg, 2) . " / 5.00", 0, 1);
-        $pdf->Cell(0, 8, "Overall Percentage: " . number_format($overall_percentage, 1) . "%", 0, 1);
-
-        // Rating
-        $rating = '';
-        $color = [];
-        if ($overall_percentage >= 90) {
-            $rating = 'EXCELLENT';
-            $color = [34, 139, 34];
-        } elseif ($overall_percentage >= 80) {
-            $rating = 'VERY GOOD';
-            $color = [65, 105, 225];
-        } elseif ($overall_percentage >= 70) {
-            $rating = 'GOOD';
-            $color = [255, 165, 0];
-        } elseif ($overall_percentage >= 60) {
-            $rating = 'SATISFACTORY';
-            $color = [255, 140, 0];
-        } else {
-            $rating = 'NEEDS IMPROVEMENT';
-            $color = [220, 20, 60];
-        }
-
-        $pdf->Ln(5);
-        $pdf->SetTextColor(255, 255, 255);
-        $pdf->SetFillColor($color[0], $color[1], $color[2]);
-        $pdf->SetFont('helvetica', 'B', 16);
-        $pdf->Cell(0, 12, "OVERALL RATING: $rating", 0, 1, 'C', true);
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->Ln(10);
-
-        // Student List
-        $pdf->SetFont('helvetica', 'B', 12);
-        $pdf->Cell(0, 8, "STUDENTS EVALUATED", 0, 1);
+        $pdf->Cell(0, 6, "Name: " . strtoupper($teacherName), 0, 1);
         $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(0, 5, "Program: $program | Section: $section", 0, 1);
+        $pdf->Cell(0, 5, "Total Students Evaluated: $totalStudents", 0, 1);
+        $pdf->Ln(5);
 
-        foreach ($evaluations as $eval) {
-            $total_score = (($eval['q1_1'] ?? 0) + ($eval['q1_2'] ?? 0) + ($eval['q1_3'] ?? 0) + ($eval['q1_4'] ?? 0) + ($eval['q1_5'] ?? 0) + ($eval['q1_6'] ?? 0) +
-                          ($eval['q2_1'] ?? 0) + ($eval['q2_2'] ?? 0) + ($eval['q2_3'] ?? 0) + ($eval['q2_4'] ?? 0) +
-                          ($eval['q3_1'] ?? 0) + ($eval['q3_2'] ?? 0) + ($eval['q3_3'] ?? 0) + ($eval['q3_4'] ?? 0) +
-                          ($eval['q4_1'] ?? 0) + ($eval['q4_2'] ?? 0) + ($eval['q4_3'] ?? 0) + ($eval['q4_4'] ?? 0) + ($eval['q4_5'] ?? 0) + ($eval['q4_6'] ?? 0)) / 20;
-            
-            $pdf->Cell(0, 6, "• " . ($eval['student_name'] ?? 'Unknown Student') . " - " . number_format($total_score, 2) . " / 5.00", 0, 1);
+        // Table Header
+        $pdf->SetFillColor(200, 200, 200);
+        $pdf->SetFont('helvetica', 'B', 9);
+        
+        // Category 1: KAKAYAHAN SA PAGTUTURO
+        $pdf->SetFillColor(220, 220, 220);
+        $pdf->Cell(10, 7, '', 1, 0, 'C', true);
+        $pdf->Cell(145, 7, 'KAKAYAHAN SA PAGTUTURO', 1, 0, 'L', true);
+        $pdf->Cell(25, 7, 'MARKA', 1, 1, 'C', true);
+
+        $pdf->SetFont('helvetica', '', 8);
+        $counter = 1;
+        foreach (['q1_1', 'q1_2', 'q1_3', 'q1_4', 'q1_5', 'q1_6'] as $q) {
+            $pdf->Cell(10, 6, '1.' . $counter, 1, 0, 'C');
+            $pdf->MultiCell(145, 6, $questions[$q]['label'], 1, 'L');
+            $pdf->SetXY($pdf->GetX() + 155, $pdf->GetY() - 6);
+            $pdf->Cell(25, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            $counter++;
         }
+
+        // Category 2: KASANAYAN SA PAMAMAHALA
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->SetFillColor(220, 220, 220);
+        $pdf->Cell(10, 7, '', 1, 0, 'C', true);
+        $pdf->Cell(145, 7, 'KASANAYAN SA PAMAMAHALA', 1, 0, 'L', true);
+        $pdf->Cell(25, 7, '', 1, 1, 'C', true);
+
+        $pdf->SetFont('helvetica', '', 8);
+        $counter = 1;
+        foreach (['q2_1', 'q2_2', 'q2_3', 'q2_4'] as $q) {
+            $pdf->Cell(10, 6, '2.' . $counter, 1, 0, 'C');
+            $pdf->MultiCell(145, 6, $questions[$q]['label'], 1, 'L');
+            $pdf->SetXY($pdf->GetX() + 155, $pdf->GetY() - 6);
+            $pdf->Cell(25, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            $counter++;
+        }
+
+        // Category 3: MGA KASANAYAN SA PAGGABAY
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->SetFillColor(220, 220, 220);
+        $pdf->Cell(10, 7, '', 1, 0, 'C', true);
+        $pdf->Cell(145, 7, 'MGA KASANAYAN SA PAGGABAY', 1, 0, 'L', true);
+        $pdf->Cell(25, 7, '', 1, 1, 'C', true);
+
+        $pdf->SetFont('helvetica', '', 8);
+        $counter = 1;
+        foreach (['q3_1', 'q3_2', 'q3_3', 'q3_4'] as $q) {
+            $pdf->Cell(10, 6, '3.' . $counter, 1, 0, 'C');
+            $pdf->MultiCell(145, 6, $questions[$q]['label'], 1, 'L');
+            $pdf->SetXY($pdf->GetX() + 155, $pdf->GetY() - 6);
+            $pdf->Cell(25, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            $counter++;
+        }
+
+        // Category 4: PERSONAL AT PANLIPUNANG KATANGIAN
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->SetFillColor(220, 220, 220);
+        $pdf->Cell(10, 7, '', 1, 0, 'C', true);
+        $pdf->Cell(145, 7, 'PERSONAL AT PANLIPUNANG KATANGIAN', 1, 0, 'L', true);
+        $pdf->Cell(25, 7, '', 1, 1, 'C', true);
+
+        $pdf->SetFont('helvetica', '', 8);
+        $counter = 1;
+        foreach (['q4_1', 'q4_2', 'q4_3', 'q4_4', 'q4_5', 'q4_6'] as $q) {
+            $pdf->Cell(10, 6, '4.' . $counter, 1, 0, 'C');
+            $pdf->MultiCell(145, 6, $questions[$q]['label'], 1, 'L');
+            $pdf->SetXY($pdf->GetX() + 155, $pdf->GetY() - 6);
+            $pdf->Cell(25, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            $counter++;
+        }
+
+        // TOTAL
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->SetFillColor(255, 200, 150);
+        $pdf->Cell(155, 8, 'TOTAL', 1, 0, 'R', true);
+        $pdf->Cell(25, 8, number_format($overall_avg, 2), 1, 1, 'C', true);
+
+        $pdf->Ln(5);
+
+        // Rating Legend
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->Cell(0, 6, 'RATING SCALE:', 0, 1);
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(0, 5, '4.50 - 5.00 = Outstanding', 0, 1);
+        $pdf->Cell(0, 5, '3.50 - 4.49 = Very Satisfactory', 0, 1);
+        $pdf->Cell(0, 5, '2.50 - 3.49 = Satisfactory', 0, 1);
+        $pdf->Cell(0, 5, '1.50 - 2.49 = Fair', 0, 1);
+        $pdf->Cell(0, 5, '1.00 - 1.49 = Poor', 0, 1);
 
         // Save PDF
         $pdf->Output($outputPath, 'F');
@@ -400,181 +209,4 @@ function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPa
         return false;
     }
 }
-
-function createZip($source, $destination) {
-    if (!extension_loaded('zip') || !file_exists($source)) {
-        return false;
-    }
-
-    $zip = new ZipArchive();
-    if (!$zip->open($destination, ZipArchive::CREATE)) {
-        return false;
-    }
-
-    $source = str_replace('\\', '/', realpath($source));
-
-    if (is_dir($source) === true) {
-        $files = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($source),
-            RecursiveIteratorIterator::SELF_FIRST
-        );
-
-        foreach ($files as $file) {
-            $file = str_replace('\\', '/', $file);
-
-            if (in_array(substr($file, strrpos($file, '/') + 1), ['.', '..'])) {
-                continue;
-            }
-
-            $file = realpath($file);
-
-            if (is_dir($file) === true) {
-                $zip->addEmptyDir(str_replace($source . '/', '', $file . '/'));
-            } else if (is_file($file) === true) {
-                $zip->addFromString(str_replace($source . '/', '', $file), file_get_contents($file));
-            }
-        }
-    } else if (is_file($source) === true) {
-        $zip->addFromString(basename($source), file_get_contents($source));
-    }
-
-    return $zip->close();
-}
-
-// Main execution
-try {
-    $pdo = getPDO();
-    
-    // Get all unique teacher-program-section combinations
-    $stmt = $pdo->query("
-        SELECT DISTINCT teacher_name, program, section 
-        FROM evaluations 
-        ORDER BY teacher_name, program, section
-    ");
-    $combinations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    if (empty($combinations)) {
-        ob_clean();
-        echo json_encode([
-            'success' => false, 
-            'error' => 'No evaluation data found to generate reports'
-        ]);
-        exit;
-    }
-
-    // For Railway deployment, use a writable directory in the project
-    $basePath = __DIR__ . '/reports/';
-    
-    // Create base directory
-    if (!is_dir($basePath)) {
-        if (!mkdir($basePath, 0777, true)) {
-            throw new Exception("Failed to create reports directory: " . $basePath);
-        }
-    }
-
-    $baseReportsPath = $basePath . 'Teacher Evaluation Reports/Reports/';
-    
-    // Create reports directory
-    if (!is_dir($baseReportsPath)) {
-        if (!mkdir($baseReportsPath, 0777, true)) {
-            throw new Exception("Failed to create reports subdirectory: " . $baseReportsPath);
-        }
-    }
-
-    $teachersProcessed = 0;
-    $individualReports = 0;
-    $summaryReports = 0;
-
-    foreach ($combinations as $combo) {
-        $teacherName = $combo['teacher_name'];
-        $program = $combo['program'];
-        $section = $combo['section'];
-
-        // Create teacher directory
-        $teacherDir = $baseReportsPath . $teacherName . '/';
-        if (!is_dir($teacherDir)) {
-            if (!mkdir($teacherDir, 0777, true)) {
-                error_log("Failed to create teacher directory: " . $teacherDir);
-                continue;
-            }
-            $teachersProcessed++;
-        }
-
-        // Create program directory
-        $programDir = $teacherDir . $program . '/';
-        if (!is_dir($programDir)) {
-            if (!mkdir($programDir, 0777, true)) {
-                error_log("Failed to create program directory: " . $programDir);
-                continue;
-            }
-        }
-
-        // Generate individual reports
-        $individualFilename = "Individual Report - " . $teacherName . " - " . $program . " " . $section . ".pdf";
-        $individualSuccess = generateIndividualReport(
-            $pdo, 
-            $teacherName, 
-            $program, 
-            $section, 
-            $programDir . $individualFilename
-        );
-
-        if ($individualSuccess) {
-            $individualReports++;
-        }
-
-        // Generate summary report
-        $summaryFilename = "Summary Report FOR " . $program . " - " . $teacherName . ".pdf";
-        $summarySuccess = generateSummaryReport(
-            $pdo,
-            $teacherName,
-            $program,
-            $section,
-            $programDir . $summaryFilename
-        );
-
-        if ($summarySuccess) {
-            $summaryReports++;
-        }
-    }
-
-    $totalFiles = $individualReports + $summaryReports;
-
-    // Create ZIP file of all reports
-    $zipFile = $basePath . 'All_Reports_' . date('Y-m-d_H-i-s') . '.zip';
-    $zipCreated = createZip($baseReportsPath, $zipFile);
-
-    // Clean output buffer before sending JSON
-    ob_clean();
-
-    // Prepare response
-    $response = [
-        'success' => true,
-        'message' => 'PDF reports generated successfully!',
-        'teachers_processed' => $teachersProcessed,
-        'individual_reports' => $individualReports,
-        'summary_reports' => $summaryReports,
-        'total_files' => $totalFiles,
-        'base_path' => $baseReportsPath
-    ];
-
-    if ($zipCreated && file_exists($zipFile)) {
-        $response['zip_file'] = 'reports/' . basename($zipFile);
-        $response['zip_message'] = 'All reports have been bundled into a ZIP file for easy download.';
-    }
-
-    echo json_encode($response);
-
-} catch (Exception $e) {
-    // Clean output buffer and ensure we only output JSON
-    ob_clean();
-    error_log("Error in local reports generator: " . $e->getMessage());
-    echo json_encode([
-        'success' => false,
-        'error' => 'Failed to generate reports: ' . $e->getMessage()
-    ]);
-}
-
-ob_end_flush();
-exit;
 ?>
