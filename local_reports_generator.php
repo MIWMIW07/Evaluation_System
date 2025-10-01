@@ -18,29 +18,45 @@ try {
         require_once __DIR__ . 'tcpdf/tcpdf.php';
     }
     
-    // TCPDF Class Extension
-    class EvaluationPDF extends TCPDF {
-        public function Header() {
-            // Add logo
-            $logoPath = __DIR__ . 'logo.png';
-            if (file_exists($logoPath)) {
-                $this->Image($logoPath, 15, 10, 25, 0, '', '', 'T', false, 300, '', false, false, 0, false, false, false);
+    // TCPDF Class Extension with fixed logo path
+class EvaluationPDF extends TCPDF {
+    private $rootDir;
+    
+    public function __construct($orientation='P', $unit='mm', $format='A4', $unicode=true, $encoding='UTF-8', $diskcache=false, $pdfa=false) {
+        parent::__construct($orientation, $unit, $format, $unicode, $encoding, $diskcache, $pdfa);
+        // Store the actual project root directory
+        $this->rootDir = dirname(__FILE__); // This gets the directory of local_reports_generator.php
+    }
+    
+    public function Header() {
+        // Use the stored root directory for logo path
+        $logoPath = $this->rootDir . '/logo.png';
+        
+        // Check if logo exists and try to add it
+        if (file_exists($logoPath)) {
+            try {
+                // Suppress TCPDF warnings/errors for image loading
+                @$this->Image($logoPath, 15, 10, 25, 0, '', '', 'T', false, 300, '', false, false, 0, false, false, false);
+            } catch (Exception $e) {
+                // If image fails to load (alpha channel issue), just skip it silently
+                error_log("Logo could not be loaded: " . $e->getMessage());
             }
-            
-            $this->SetFont('helvetica', 'B', 14);
-            $this->Cell(0, 10, 'PHILIPPINE TECHNOLOGICAL INSTITUTE', 0, 1, 'C');
-            $this->SetFont('helvetica', '', 10);
-            $this->Cell(0, 5, 'GMA-BRANCH [2nd Semester 2024-2025]', 0, 1, 'C');
-            $this->Cell(0, 5, 'FACULTY EVALUATION CRITERIA', 0, 1, 'C');
-            $this->Ln(5);
         }
         
-        public function Footer() {
-            $this->SetY(-15);
-            $this->SetFont('helvetica', 'I', 8);
-            $this->Cell(0, 10, 'Page ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(), 0, 0, 'C');
-        }
+        $this->SetFont('helvetica', 'B', 14);
+        $this->Cell(0, 10, 'PHILIPPINE TECHNOLOGICAL INSTITUTE', 0, 1, 'C');
+        $this->SetFont('helvetica', '', 10);
+        $this->Cell(0, 5, 'GMA-BRANCH [2nd Semester 2024-2025]', 0, 1, 'C');
+        $this->Cell(0, 5, 'FACULTY EVALUATION CRITERIA', 0, 1, 'C');
+        $this->Ln(5);
     }
+    
+    public function Footer() {
+        $this->SetY(-15);
+        $this->SetFont('helvetica', 'I', 8);
+        $this->Cell(0, 10, 'Page ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(), 0, 0, 'C');
+    }
+}
 
     $pdo = getPDO();
     
