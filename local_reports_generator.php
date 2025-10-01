@@ -1,6 +1,239 @@
 <?php
-// This replaces the generateSummaryReport function in local_reports_generator.php
+// local_reports_generator.php
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display errors to output (breaks JSON)
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/error_log.txt');
 
+header('Content-Type: application/json');
+
+require_once 'includes/db_connection.php';
+require_once 'vendor/autoload.php';
+
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
+// TCPDF Class Extension
+class EvaluationPDF extends TCPDF {
+    public function Header() {
+        $this->SetFont('helvetica', 'B', 14);
+        $this->Cell(0, 10, 'PHILIPPINE TECHNOLOGICAL INSTITUTE', 0, 1, 'C');
+        $this->SetFont('helvetica', '', 10);
+        $this->Cell(0, 5, 'GMA-BRANCH [2nd Semester 2024-2025]', 0, 1, 'C');
+        $this->Cell(0, 5, 'FACULTY EVALUATION CRITERIA', 0, 1, 'C');
+        $this->Ln(5);
+    }
+    
+    public function Footer() {
+        $this->SetY(-15);
+        $this->SetFont('helvetica', 'I', 8);
+        $this->Cell(0, 10, 'Page ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(), 0, 0, 'C');
+    }
+}
+
+try {
+    $pdo = getPDO();
+    
+    // Create reports directory structure
+    $reportsDir = __DIR__ . '/reports/Teacher Evaluation Reports/Reports/';
+    if (!file_exists($reportsDir)) {
+        mkdir($reportsDir, 0777, true);
+    }
+
+    // Get unique teacher-program-section combinations
+    $stmt = $pdo->query("
+        SELECT DISTINCT 
+            teacher_name, 
+            program, 
+            section 
+        FROM evaluations 
+        ORDER BY teacher_name, program, section
+    ");
+    $combinations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $teachersProcessed = [];
+    $individualReports = 0;
+    $summaryReports = 0;
+    $totalFiles = 0;
+
+    foreach ($combinations as $combo) {
+        $teacherName = $combo['teacher_name'];
+        $program = $combo['program'];
+        $section = $combo['section'];
+
+        // Create teacher folder
+        $teacherDir = $reportsDir . $teacherName . '/';
+        if (!file_exists($teacherDir)) {
+            mkdir($teacherDir, 0777, true);
+        }
+
+        // Create program folder
+        $programDir = $teacherDir . $program . '/';
+        if (!file_exists($programDir)) {
+            mkdir($programDir, 0777, true);
+        }
+
+        // Track teachers
+        if (!in_array($teacherName, $teachersProcessed)) {
+            $teachersProcessed[] = $teacherName;
+        }
+
+        // Generate individual reports
+        $evalStmt = $pdo->prepare("
+            SELECT * FROM evaluations 
+            WHERE teacher_name = ? AND program = ? AND section = ?
+        ");
+        $evalStmt->execute([$teacherName, $program, $section]);
+        $evaluations = $evalStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($evaluations as $eval) {
+            $filename = $programDir . 'Individual_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $eval['student_name']) . '.pdf';
+            if (generateIndividualReport($eval, $filename)) {
+                $individualReports++;
+                $totalFiles++;
+            }
+        }
+
+        // Generate summary report
+        $summaryFilename = $programDir . 'Summary_' . $program . '_' . $section . '.pdf';
+        if (generateSummaryReport($pdo, $teacherName, $program, $section, $summaryFilename)) {
+            $summaryReports++;
+            $totalFiles++;
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Reports generated successfully!',
+        'teachers_processed' => count($teachersProcessed),
+        'individual_reports' => $individualReports,
+        'summary_reports' => $summaryReports,
+        'total_files' => $totalFiles,
+        'reports_location' => 'reports/Teacher Evaluation Reports/Reports/'
+    ]);
+
+} catch (Exception $e) {
+    error_log("Report Generation Error: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'error' => $e->getMessage()
+    ]);
+}
+
+// Function to generate individual student evaluation report
+function generateIndividualReport($evaluation, $outputPath) {
+    try {
+        $pdf = new EvaluationPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        
+        $pdf->SetCreator(PDF_CREATOR);
+        $pdf->SetAuthor(PDF_AUTHOR);
+        $pdf->SetTitle("Evaluation - " . $evaluation['student_name']);
+        
+        $pdf->SetHeaderData('', 0, "PHILIPPINE TECHNOLOGICAL INSTITUTE", 
+                           "GMA-BRANCH [2nd Semester 2024-2025]\nFACULTY EVALUATION CRITERIA");
+        
+        $pdf->SetMargins(10, 30, 10);
+        $pdf->SetHeaderMargin(10);
+        $pdf->SetFooterMargin(10);
+        $pdf->SetAutoPageBreak(TRUE, 15);
+        
+        $pdf->AddPage();
+        
+        // Header Information
+        $pdf->SetFont('helvetica', 'B', 12);
+        $pdf->Cell(0, 6, "Name: " . strtoupper($evaluation['teacher_name']), 0, 1);
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(0, 5, "Student: " . $evaluation['student_name'], 0, 1);
+        $pdf->Cell(0, 5, "Program: " . $evaluation['program'] . " | Section: " . $evaluation['section'], 0, 1);
+        $pdf->Cell(0, 5, "Date: " . date('F j, Y', strtotime($evaluation['submitted_at'])), 0, 1);
+        $pdf->Ln(5);
+
+        // Questions and answers
+        $questions = [
+            'KAKAYAHAN SA PAGTUTURO' => [
+                'q1_1' => 'Nasuri at naipaliwanag ang aralin nang hindi binabasa ang aklat sa klase',
+                'q1_2' => 'Gumagamit ng audio-visual at mga device upang suportahan ang pagtuturo',
+                'q1_3' => 'Nagpapakita ng mga ideya/konsepto nang malinaw at nakakakumbinsi',
+                'q1_4' => 'Hinahayaan ang mga mag-aaral na gumamit ng mga konsepto',
+                'q1_5' => 'Nagbibigay ng patas na pagsusulit at ibalik ang mga resulta',
+                'q1_6' => 'Naguutos nang maayos sa pagtuturo gamit ang maayos na pananalta',
+            ],
+            'KASANAYAN SA PAMAMAHALA' => [
+                'q2_1' => 'Pinapanatiling maayos, disiplinado at ligtas ang silid-aralan',
+                'q2_2' => 'Sumusunod sa sistematikong iskedyul ng mga klase',
+                'q2_3' => 'Hinuhubog sa mga mag-aaral ang respeto at paggalang',
+                'q2_4' => 'Pinahihintulutan ang mga mag-aaral na ipahayag ang kanilang opinyon',
+            ],
+            'MGA KASANAYAN SA PAGGABAY' => [
+                'q3_1' => 'Pagtanggap sa mga mag-aaral bilang indibidwal',
+                'q3_2' => 'Pagpapakita ng tiwala at kaayusan sa sarili',
+                'q3_3' => 'Pinangangasiwaan ang problema ng klase at Mga mag-aaral',
+                'q3_4' => 'Nagpapakita ng tunay na pagmamalasakit sa mga personal',
+            ],
+            'PERSONAL AT PANLIPUNANG KATANGIAN' => [
+                'q4_1' => 'Nagpapanatili ng emosyonal na balanse; hindi masyadong kritikal',
+                'q4_2' => 'Malaya sa nakasanayang galaw na nakakagambala sa proseso',
+                'q4_3' => 'Maayos at presentable; Malinis at maayos ang mga damit',
+                'q4_4' => 'Hindi pagpapakita ng paboritismo',
+                'q4_5' => 'May magandang sense of humor at nagpapakita ng sigla',
+                'q4_6' => 'May magandang diction, malinaw at maayos na timpla ng boses',
+            ]
+        ];
+
+        $categoryNum = 1;
+        $totalScore = 0;
+        $questionCount = 0;
+
+        foreach ($questions as $category => $categoryQuestions) {
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->SetFillColor(220, 220, 220);
+            $pdf->Cell(0, 7, $category, 1, 1, 'L', true);
+            
+            $pdf->SetFont('helvetica', '', 9);
+            $qNum = 1;
+            foreach ($categoryQuestions as $key => $question) {
+                $score = $evaluation[$key] ?? 0;
+                $totalScore += $score;
+                $questionCount++;
+                
+                $pdf->Cell(10, 6, "$categoryNum.$qNum", 1, 0, 'C');
+                $pdf->Cell(155, 6, $question, 1, 0, 'L');
+                $pdf->Cell(25, 6, $score, 1, 1, 'C');
+                $qNum++;
+            }
+            $categoryNum++;
+            $pdf->Ln(2);
+        }
+
+        // Total Score
+        $averageScore = $questionCount > 0 ? $totalScore / $questionCount : 0;
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->SetFillColor(255, 200, 150);
+        $pdf->Cell(165, 8, 'AVERAGE SCORE', 1, 0, 'R', true);
+        $pdf->Cell(25, 8, number_format($averageScore, 2), 1, 1, 'C', true);
+
+        $pdf->Ln(5);
+
+        // Rating Legend
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->Cell(0, 6, 'RATING SCALE:', 0, 1);
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(0, 5, '4.50 - 5.00 = Outstanding', 0, 1);
+        $pdf->Cell(0, 5, '3.50 - 4.49 = Very Satisfactory', 0, 1);
+        $pdf->Cell(0, 5, '2.50 - 3.49 = Satisfactory', 0, 1);
+        $pdf->Cell(0, 5, '1.50 - 2.49 = Fair', 0, 1);
+        $pdf->Cell(0, 5, '1.00 - 1.49 = Poor', 0, 1);
+
+        $pdf->Output($outputPath, 'F');
+        return true;
+
+    } catch (Exception $e) {
+        error_log("Error generating individual report: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Function to generate summary report
 function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPath) {
     try {
         // Get all evaluations for this teacher, program, and section
