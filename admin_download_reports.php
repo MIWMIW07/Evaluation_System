@@ -9,28 +9,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
 }
 
 $reportsDir = __DIR__ . '/reports/';
-$zipFiles = [];
 $teachers = [];
-
-// Get all ZIP files
-if (is_dir($reportsDir)) {
-    $files = scandir($reportsDir);
-    foreach ($files as $file) {
-        if (pathinfo($file, PATHINFO_EXTENSION) === 'zip') {
-            $zipFiles[] = [
-                'name' => $file,
-                'path' => 'reports/' . $file,
-                'size' => filesize($reportsDir . $file),
-                'date' => filemtime($reportsDir . $file)
-            ];
-        }
-    }
-    
-    // Sort by date, newest first
-    usort($zipFiles, function($a, $b) {
-        return $b['date'] - $a['date'];
-    });
-}
 
 // Get teacher folders with their PDFs
 $teacherReportsPath = $reportsDir . 'Teacher Evaluation Reports/Reports/';
@@ -175,42 +154,6 @@ function formatBytes($bytes) {
             border-bottom: 2px solid #667eea;
         }
 
-        .zip-list {
-            list-style: none;
-        }
-
-        .zip-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            transition: all 0.3s;
-        }
-
-        .zip-item:hover {
-            background: #f8f9ff;
-            border-color: #667eea;
-            transform: translateX(5px);
-        }
-
-        .zip-info {
-            flex: 1;
-        }
-
-        .zip-name {
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .zip-meta {
-            font-size: 0.9em;
-            color: #666;
-        }
-
         .download-btn {
             padding: 10px 20px;
             background: #28a745;
@@ -352,12 +295,6 @@ function formatBytes($bytes) {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
             <div style="background: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
                 <div style="font-size: 2.5em; font-weight: bold; color: #667eea;">
-                    <?php echo count($zipFiles); ?>
-                </div>
-                <div style="color: #666; margin-top: 5px;">ZIP Files Available</div>
-            </div>
-            <div style="background: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <div style="font-size: 2.5em; font-weight: bold; color: #667eea;">
                     <?php echo count($teachers); ?>
                 </div>
                 <div style="color: #666; margin-top: 5px;">Teachers</div>
@@ -377,17 +314,6 @@ function formatBytes($bytes) {
                 <div style="color: #666; margin-top: 5px;">Total PDF Reports</div>
             </div>
         </div>
-
-        <?php if (empty($zipFiles) && empty($teachers)): ?>
-        <div class="section">
-            <div class="empty-state">
-                <h3>📄 No Reports Available</h3>
-                <p>Generate reports first from the admin dashboard.</p>
-            </div>
-        </div>
-        <?php endif; ?>
-
-
 
         <?php if (!empty($teachers)): ?>
         <div class="section">
