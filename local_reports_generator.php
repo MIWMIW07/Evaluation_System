@@ -22,7 +22,7 @@ try {
     class EvaluationPDF extends TCPDF {
         public function Header() {
             // Add logo
-            $logoPath = __DIR__ . '/logo.png';
+            $logoPath = __DIR__ . 'logo.png';
             if (file_exists($logoPath)) {
                 $this->Image($logoPath, 15, 10, 25, 0, '', '', 'T', false, 300, '', false, false, 0, false, false, false);
             }
