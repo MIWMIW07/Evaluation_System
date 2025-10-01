@@ -85,7 +85,7 @@ function insertAllTeacherAssignments($pdo) {
         'BSOA-3M1' => ['MR. MATILA', 'MR. ELLO', 'MS. IGHARAS', 'MR. CALCEÑA', 'MR. V. GORDON'],
         'BSOA-4N1' => ['MR. CALCEÑA', 'MS. IGHARAS'],
         'BSOA-1SC' => ['MR. VELE', 'MS. DIMAPILIS', 'MR. RODRIGUEZ', 'MS. IGHARAS', 'MS. GENTEROY'],
-        'BSOA-2SC' => ['MR. ICABANDE', 'MS. GENTEROY' 'MS. DIMAPILIS', 'MS. OCTAVO'],
+        'BSOA-2SC' => ['MR. ICABANDE', 'MS. GENTEROY', 'MS. DIMAPILIS', 'MS. OCTAVO'],
         
         // EDUC Programs
         'EDUC-1M1' => ['MR. VELE', 'MR. MATILA', 'MR. V. GORDON', 'MS. TESORO', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. RENDORA', 'MR. ATIENZA'],
@@ -426,6 +426,7 @@ try {
     exit(1);
 }
 ?>
+
 
 
 
