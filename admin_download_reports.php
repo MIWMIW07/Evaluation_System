@@ -54,6 +54,14 @@ if (is_dir($teacherReportsPath)) {
     }
 }
 
+// Count total PDFs and teachers
+$totalPDFs = 0;
+foreach ($teachers as $programs) {
+    foreach ($programs as $pdfs) {
+        $totalPDFs += count($pdfs);
+    }
+}
+
 function formatBytes($bytes) {
     if ($bytes >= 1073741824) {
         return number_format($bytes / 1073741824, 2) . ' GB';
@@ -131,12 +139,30 @@ function formatBytes($bytes) {
             background: #5568d3;
         }
 
-        .btn-success {
-            background: #28a745;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
-        .btn-success:hover {
-            background: #218838;
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
         }
 
         .section {
@@ -152,20 +178,6 @@ function formatBytes($bytes) {
             margin-bottom: 15px;
             padding-bottom: 10px;
             border-bottom: 2px solid #667eea;
-        }
-
-        .download-btn {
-            padding: 10px 20px;
-            background: #28a745;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s;
-            display: inline-block;
-        }
-
-        .download-btn:hover {
-            background: #218838;
         }
 
         .teacher-section {
@@ -208,6 +220,9 @@ function formatBytes($bytes) {
             color: #667eea;
             margin-bottom: 10px;
             font-size: 1.05em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .pdf-list {
@@ -241,6 +256,21 @@ function formatBytes($bytes) {
             color: #666;
         }
 
+        .download-btn {
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+        }
+
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -263,12 +293,6 @@ function formatBytes($bytes) {
             color: #0c5460;
         }
 
-        .alert-warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-        }
-
         .toggle-icon {
             transition: transform 0.3s;
         }
@@ -280,6 +304,20 @@ function formatBytes($bytes) {
         .teacher-content.hidden {
             display: none;
         }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .badge-blue {
+            background: #007bff;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -287,39 +325,34 @@ function formatBytes($bytes) {
         <div class="header">
             <h1>📥 Download Evaluation Reports</h1>
             <div class="header-actions">
-                <a href="admin_dashboard.php" class="btn btn-primary">← Back to Dashboard</a>
+                <a href="admin.php" class="btn btn-primary">← Back to Dashboard</a>
             </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
-            <div style="background: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <div style="font-size: 2.5em; font-weight: bold; color: #667eea;">
-                    <?php echo count($teachers); ?>
-                </div>
-                <div style="color: #666; margin-top: 5px;">Teachers</div>
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number"><?php echo count($teachers); ?></div>
+                <div class="stat-label">Teachers</div>
             </div>
-            <div style="background: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <div style="font-size: 2.5em; font-weight: bold; color: #667eea;">
-                    <?php 
-                    $totalPDFs = 0;
-                    foreach ($teachers as $programs) {
-                        foreach ($programs as $pdfs) {
-                            $totalPDFs += count($pdfs);
-                        }
-                    }
-                    echo $totalPDFs;
-                    ?>
-                </div>
-                <div style="color: #666; margin-top: 5px;">Total PDF Reports</div>
+            <div class="stat-card">
+                <div class="stat-number"><?php echo $totalPDFs; ?></div>
+                <div class="stat-label">Total PDF Reports</div>
             </div>
         </div>
 
-        <?php if (!empty($teachers)): ?>
+        <?php if (empty($teachers)): ?>
         <div class="section">
-            <h2>👥 Individual PDF Reports by Teacher</h2>
+            <div class="empty-state">
+                <h3>📄 No Reports Available</h3>
+                <p>Generate reports first from the admin dashboard.</p>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="section">
+            <h2>👥 Teacher Evaluation Reports</h2>
             <div class="alert alert-info">
-                <strong>ℹ️ Note:</strong> Click on a teacher's name to view and download their individual reports.
+                <strong>ℹ️ Note:</strong> Click on a teacher's name to view and download their reports by program.
             </div>
             
             <?php foreach ($teachers as $teacherName => $programs): ?>
@@ -331,7 +364,10 @@ function formatBytes($bytes) {
                 <div class="teacher-content hidden">
                     <?php foreach ($programs as $programName => $pdfs): ?>
                     <div class="program-section">
-                        <div class="program-title">📖 <?php echo htmlspecialchars($programName); ?></div>
+                        <div class="program-title">
+                            📖 <?php echo htmlspecialchars($programName); ?>
+                            <span class="badge badge-blue"><?php echo count($pdfs); ?> file<?php echo count($pdfs) > 1 ? 's' : ''; ?></span>
+                        </div>
                         <ul class="pdf-list">
                             <?php foreach ($pdfs as $pdf): ?>
                             <li class="pdf-item">
@@ -340,7 +376,7 @@ function formatBytes($bytes) {
                                     <div class="pdf-size"><?php echo formatBytes($pdf['size']); ?></div>
                                 </div>
                                 <a href="<?php echo htmlspecialchars($pdf['path']); ?>" class="download-btn" download>
-                                    ⬇ Download
+                                    ⬇ Download PDF
                                 </a>
                             </li>
                             <?php endforeach; ?>
