@@ -287,6 +287,7 @@ ob_end_clean(); // Clean the output buffer
                 🔄 Refresh Evaluations
             </button>
             <a href="maintenance.php" class="btn btn-warning">🔧 Maintenance</a>
+            <a href="admin_download_reports.php" class="btn">📥 Download Generated Reports</a>
             <a href="logout.php" class="btn btn-danger">🚪 Logout</a>
         </div>
 
