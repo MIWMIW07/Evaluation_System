@@ -1,11 +1,10 @@
 <?php
 // local_reports_generator.php
-error_reporting(0); // Suppress all errors from output
+error_reporting(0);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/error_log.txt');
 
-// Start output buffering to catch any stray output
 ob_start();
 
 try {
@@ -13,60 +12,34 @@ try {
     
     require_once 'includes/db_connection.php';
     
-    // Check if TCPDF is available
     if (!class_exists('TCPDF')) {
-        require_once __DIR__ . 'tcpdf/tcpdf.php';
+        require_once __DIR__ . '/tcpdf/tcpdf.php';
     }
     
-    // TCPDF Class Extension with fixed logo path
-class EvaluationPDF extends TCPDF {
-    private $rootDir;
-    
-    public function __construct($orientation='P', $unit='mm', $format='A4', $unicode=true, $encoding='UTF-8', $diskcache=false, $pdfa=false) {
-        parent::__construct($orientation, $unit, $format, $unicode, $encoding, $diskcache, $pdfa);
-        // Store the actual project root directory
-        $this->rootDir = dirname(__FILE__); // This gets the directory of local_reports_generator.php
-    }
-    
-    public function Header() {
-        // Use the stored root directory for logo path
-        $logoPath = $this->rootDir . '/logo.png';
-        
-        // Check if logo exists and try to add it
-        if (file_exists($logoPath)) {
-            try {
-                // Suppress TCPDF warnings/errors for image loading
-                @$this->Image($logoPath, 15, 10, 25, 0, '', '', 'T', false, 300, '', false, false, 0, false, false, false);
-            } catch (Exception $e) {
-                // If image fails to load (alpha channel issue), just skip it silently
-                error_log("Logo could not be loaded: " . $e->getMessage());
-            }
+    class EvaluationPDF extends TCPDF {
+        public function Header() {
+            $this->SetFont('helvetica', 'B', 14);
+            $this->Cell(0, 10, 'PHILIPPINE TECHNOLOGICAL INSTITUTE', 0, 1, 'C');
+            $this->SetFont('helvetica', '', 10);
+            $this->Cell(0, 5, 'GMA-BRANCH [2nd Semester 2024-2025]', 0, 1, 'C');
+            $this->Cell(0, 5, 'FACULTY EVALUATION CRITERIA', 0, 1, 'C');
+            $this->Ln(5);
         }
         
-        $this->SetFont('helvetica', 'B', 14);
-        $this->Cell(0, 10, 'PHILIPPINE TECHNOLOGICAL INSTITUTE', 0, 1, 'C');
-        $this->SetFont('helvetica', '', 10);
-        $this->Cell(0, 5, 'GMA-BRANCH [2nd Semester 2024-2025]', 0, 1, 'C');
-        $this->Cell(0, 5, 'FACULTY EVALUATION CRITERIA', 0, 1, 'C');
-        $this->Ln(5);
+        public function Footer() {
+            $this->SetY(-15);
+            $this->SetFont('helvetica', 'I', 8);
+            $this->Cell(0, 10, 'Page ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(), 0, 0, 'C');
+        }
     }
-    
-    public function Footer() {
-        $this->SetY(-15);
-        $this->SetFont('helvetica', 'I', 8);
-        $this->Cell(0, 10, 'Page ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(), 0, 0, 'C');
-    }
-}
 
     $pdo = getPDO();
     
-    // Create reports directory structure
     $reportsDir = __DIR__ . '/reports/Teacher Evaluation Reports/Reports/';
     if (!file_exists($reportsDir)) {
         mkdir($reportsDir, 0777, true);
     }
 
-    // Get unique teacher-program-section combinations for individual reports
     $stmt = $pdo->query("
         SELECT DISTINCT 
             teacher_name, 
@@ -77,7 +50,6 @@ class EvaluationPDF extends TCPDF {
     ");
     $combinations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get unique teacher-program combinations for summary reports
     $summaryStmt = $pdo->query("
         SELECT DISTINCT 
             teacher_name, 
@@ -92,30 +64,25 @@ class EvaluationPDF extends TCPDF {
     $summaryReports = 0;
     $totalFiles = 0;
 
-    // Generate individual reports by section
     foreach ($combinations as $combo) {
         $teacherName = $combo['teacher_name'];
         $program = $combo['program'];
         $section = $combo['section'];
 
-        // Create teacher folder
         $teacherDir = $reportsDir . $teacherName . '/';
         if (!file_exists($teacherDir)) {
             mkdir($teacherDir, 0777, true);
         }
 
-        // Create program folder
         $programDir = $teacherDir . $program . '/';
         if (!file_exists($programDir)) {
             mkdir($programDir, 0777, true);
         }
 
-        // Track teachers
         if (!in_array($teacherName, $teachersProcessed)) {
             $teachersProcessed[] = $teacherName;
         }
 
-        // Generate individual reports
         $evalStmt = $pdo->prepare("
             SELECT * FROM evaluations 
             WHERE teacher_name = ? AND program = ? AND section = ?
@@ -132,7 +99,6 @@ class EvaluationPDF extends TCPDF {
         }
     }
 
-    // Generate summary reports by program (entire program, all sections combined)
     foreach ($summaryCombinations as $combo) {
         $teacherName = $combo['teacher_name'];
         $program = $combo['program'];
@@ -140,7 +106,6 @@ class EvaluationPDF extends TCPDF {
         $teacherDir = $reportsDir . $teacherName . '/';
         $programDir = $teacherDir . $program . '/';
 
-        // Generate summary report for entire program
         $summaryFilename = $programDir . 'Summary_' . $program . '_ALL_SECTIONS.pdf';
         if (generateSummaryReport($pdo, $teacherName, $program, $summaryFilename)) {
             $summaryReports++;
@@ -148,7 +113,6 @@ class EvaluationPDF extends TCPDF {
         }
     }
 
-    // Clear any buffered output before sending JSON
     ob_end_clean();
     
     echo json_encode([
@@ -162,7 +126,6 @@ class EvaluationPDF extends TCPDF {
     ]);
 
 } catch (Exception $e) {
-    // Clear any buffered output
     ob_end_clean();
     
     error_log("Report Generation Error: " . $e->getMessage());
@@ -176,7 +139,6 @@ class EvaluationPDF extends TCPDF {
     ]);
 }
 
-// Function to generate individual student evaluation report
 function generateIndividualReport($evaluation, $outputPath) {
     try {
         $pdf = new EvaluationPDF('P', 'mm', 'A4', true, 'UTF-8', false);
@@ -192,7 +154,6 @@ function generateIndividualReport($evaluation, $outputPath) {
         
         $pdf->AddPage();
         
-        // Header Information
         $pdf->SetFont('helvetica', 'B', 12);
         $pdf->Cell(0, 6, "Name: " . strtoupper($evaluation['teacher_name']), 0, 1);
         $pdf->SetFont('helvetica', '', 10);
@@ -201,7 +162,6 @@ function generateIndividualReport($evaluation, $outputPath) {
         $pdf->Cell(0, 5, "Date: " . date('F j, Y', strtotime($evaluation['submitted_at'])), 0, 1);
         $pdf->Ln(5);
 
-        // Questions and answers
         $questions = [
             'KAKAYAHAN SA PAGTUTURO' => [
                 'q1_1' => 'Nasuri at naipaliwanag ang aralin nang hindi binabasa ang aklat sa klase',
@@ -258,7 +218,6 @@ function generateIndividualReport($evaluation, $outputPath) {
             $pdf->Ln(2);
         }
 
-        // Total Score
         $averageScore = $questionCount > 0 ? $totalScore / $questionCount : 0;
         $pdf->SetFont('helvetica', 'B', 11);
         $pdf->SetFillColor(255, 200, 150);
@@ -267,7 +226,6 @@ function generateIndividualReport($evaluation, $outputPath) {
 
         $pdf->Ln(5);
 
-        // Comments Section
         if (!empty($evaluation['positive_comment']) || !empty($evaluation['negative_comment'])) {
             $pdf->SetFont('helvetica', 'B', 10);
             $pdf->Cell(0, 6, 'STUDENT COMMENTS:', 0, 1);
@@ -290,7 +248,6 @@ function generateIndividualReport($evaluation, $outputPath) {
             }
         }
 
-        // Rating Legend
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 6, 'RATING SCALE:', 0, 1);
         $pdf->SetFont('helvetica', '', 9);
@@ -309,10 +266,8 @@ function generateIndividualReport($evaluation, $outputPath) {
     }
 }
 
-// Function to generate summary report for ENTIRE PROGRAM (all sections combined)
 function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
     try {
-        // Get ALL evaluations for this teacher and program (all sections)
         $stmt = $pdo->prepare("
             SELECT * FROM evaluations 
             WHERE teacher_name = ? AND program = ?
@@ -324,15 +279,12 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
             return false;
         }
 
-        // Get all sections for this program
         $sections = array_unique(array_column($evaluations, 'section'));
         sort($sections);
         $sectionsText = implode(', ', $sections);
 
-        // Calculate detailed statistics
         $totalStudents = count($evaluations);
         
-        // Individual question averages
         $questions = [
             'q1_1' => ['sum' => 0, 'label' => 'Nasuri at naipaliwanag ang aralin nang hindi binabasa ang aklat sa klase'],
             'q1_2' => ['sum' => 0, 'label' => 'Gumagamit ng audio-visual at mga device upang suportahan ang pagtuturo'],
@@ -359,19 +311,16 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
             'q4_6' => ['sum' => 0, 'label' => 'May magandang diction, malinaw at maayos na timpla ng boses'],
         ];
 
-        // Calculate sums
         foreach ($evaluations as $eval) {
             foreach ($questions as $key => $data) {
                 $questions[$key]['sum'] += ($eval[$key] ?? 0);
             }
         }
 
-        // Calculate averages
         foreach ($questions as $key => $data) {
             $questions[$key]['avg'] = $data['sum'] / $totalStudents;
         }
 
-        // Category averages
         $cat1_avg = 0;
         $cat2_avg = 0;
         $cat3_avg = 0;
@@ -400,7 +349,6 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
 
         $overall_avg = ($cat1_avg + $cat2_avg + $cat3_avg + $cat4_avg) / 4;
 
-        // Create PDF
         $pdf = new EvaluationPDF('P', 'mm', 'A4', true, 'UTF-8', false);
 
         $pdf->SetCreator(PDF_CREATOR);
@@ -414,7 +362,6 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
 
         $pdf->AddPage();
 
-        // Header Information
         $pdf->SetFont('helvetica', 'B', 12);
         $pdf->Cell(0, 6, "Name: " . strtoupper($teacherName), 0, 1);
         $pdf->SetFont('helvetica', '', 10);
@@ -423,11 +370,9 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
         $pdf->Cell(0, 5, "Total Students Evaluated: $totalStudents", 0, 1);
         $pdf->Ln(5);
 
-        // Table Header
         $pdf->SetFillColor(200, 200, 200);
         $pdf->SetFont('helvetica', 'B', 9);
         
-        // Category 1: KAKAYAHAN SA PAGTUTURO
         $pdf->SetFillColor(220, 220, 220);
         $pdf->Cell(10, 7, '', 1, 0, 'C', true);
         $pdf->Cell(145, 7, 'KAKAYAHAN SA PAGTUTURO', 1, 0, 'L', true);
@@ -443,7 +388,6 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
             $counter++;
         }
 
-        // Category 2: KASANAYAN SA PAMAMAHALA
         $pdf->SetFont('helvetica', 'B', 9);
         $pdf->SetFillColor(220, 220, 220);
         $pdf->Cell(10, 7, '', 1, 0, 'C', true);
@@ -460,7 +404,6 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
             $counter++;
         }
 
-        // Category 3: MGA KASANAYAN SA PAGGABAY
         $pdf->SetFont('helvetica', 'B', 9);
         $pdf->SetFillColor(220, 220, 220);
         $pdf->Cell(10, 7, '', 1, 0, 'C', true);
@@ -477,7 +420,6 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
             $counter++;
         }
 
-        // Category 4: PERSONAL AT PANLIPUNANG KATANGIAN
         $pdf->SetFont('helvetica', 'B', 9);
         $pdf->SetFillColor(220, 220, 220);
         $pdf->Cell(10, 7, '', 1, 0, 'C', true);
@@ -494,7 +436,6 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
             $counter++;
         }
 
-        // TOTAL
         $pdf->SetFont('helvetica', 'B', 11);
         $pdf->SetFillColor(255, 200, 150);
         $pdf->Cell(155, 8, 'TOTAL', 1, 0, 'R', true);
@@ -502,7 +443,6 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
 
         $pdf->Ln(5);
 
-        // Rating Legend
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 6, 'RATING SCALE:', 0, 1);
         $pdf->SetFont('helvetica', '', 9);
@@ -512,7 +452,6 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
         $pdf->Cell(0, 5, '1.50 - 2.49 = Fair', 0, 1);
         $pdf->Cell(0, 5, '1.00 - 1.49 = Poor', 0, 1);
 
-        // Save PDF
         $pdf->Output($outputPath, 'F');
         return true;
 
