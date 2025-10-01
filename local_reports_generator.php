@@ -16,6 +16,12 @@ use Dompdf\Options;
 // TCPDF Class Extension
 class EvaluationPDF extends TCPDF {
     public function Header() {
+        // Add logo
+        $logoPath = __DIR__ . '/logo.png'; // Adjust if your logo has different extension
+        if (file_exists($logoPath)) {
+            $this->Image($logoPath, 15, 10, 25, 0, '', '', 'T', false, 300, '', false, false, 0, false, false, false);
+        }
+        
         $this->SetFont('helvetica', 'B', 14);
         $this->Cell(0, 10, 'PHILIPPINE TECHNOLOGICAL INSTITUTE', 0, 1, 'C');
         $this->SetFont('helvetica', '', 10);
@@ -40,7 +46,7 @@ try {
         mkdir($reportsDir, 0777, true);
     }
 
-    // Get unique teacher-program-section combinations
+    // Get unique teacher-program-section combinations for individual reports
     $stmt = $pdo->query("
         SELECT DISTINCT 
             teacher_name, 
@@ -51,11 +57,22 @@ try {
     ");
     $combinations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Get unique teacher-program combinations for summary reports
+    $summaryStmt = $pdo->query("
+        SELECT DISTINCT 
+            teacher_name, 
+            program
+        FROM evaluations 
+        ORDER BY teacher_name, program
+    ");
+    $summaryCombinations = $summaryStmt->fetchAll(PDO::FETCH_ASSOC);
+
     $teachersProcessed = [];
     $individualReports = 0;
     $summaryReports = 0;
     $totalFiles = 0;
 
+    // Generate individual reports by section
     foreach ($combinations as $combo) {
         $teacherName = $combo['teacher_name'];
         $program = $combo['program'];
@@ -87,16 +104,25 @@ try {
         $evaluations = $evalStmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($evaluations as $eval) {
-            $filename = $programDir . 'Individual_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $eval['student_name']) . '.pdf';
+            $filename = $programDir . 'Individual_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $eval['student_name']) . '_' . $section . '.pdf';
             if (generateIndividualReport($eval, $filename)) {
                 $individualReports++;
                 $totalFiles++;
             }
         }
+    }
 
-        // Generate summary report
-        $summaryFilename = $programDir . 'Summary_' . $program . '_' . $section . '.pdf';
-        if (generateSummaryReport($pdo, $teacherName, $program, $section, $summaryFilename)) {
+    // Generate summary reports by program (entire program, all sections combined)
+    foreach ($summaryCombinations as $combo) {
+        $teacherName = $combo['teacher_name'];
+        $program = $combo['program'];
+
+        $teacherDir = $reportsDir . $teacherName . '/';
+        $programDir = $teacherDir . $program . '/';
+
+        // Generate summary report for entire program
+        $summaryFilename = $programDir . 'Summary_' . $program . '_ALL_SECTIONS.pdf';
+        if (generateSummaryReport($pdo, $teacherName, $program, $summaryFilename)) {
             $summaryReports++;
             $totalFiles++;
         }
@@ -214,6 +240,29 @@ function generateIndividualReport($evaluation, $outputPath) {
 
         $pdf->Ln(5);
 
+        // Comments Section
+        if (!empty($evaluation['positive_comment']) || !empty($evaluation['negative_comment'])) {
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 6, 'STUDENT COMMENTS:', 0, 1);
+            $pdf->SetFont('helvetica', '', 9);
+            
+            if (!empty($evaluation['positive_comment'])) {
+                $pdf->SetFont('helvetica', 'B', 9);
+                $pdf->Cell(0, 5, 'Positive Feedback:', 0, 1);
+                $pdf->SetFont('helvetica', '', 9);
+                $pdf->MultiCell(0, 5, $evaluation['positive_comment'], 0, 'L');
+                $pdf->Ln(2);
+            }
+            
+            if (!empty($evaluation['negative_comment'])) {
+                $pdf->SetFont('helvetica', 'B', 9);
+                $pdf->Cell(0, 5, 'Areas for Improvement:', 0, 1);
+                $pdf->SetFont('helvetica', '', 9);
+                $pdf->MultiCell(0, 5, $evaluation['negative_comment'], 0, 'L');
+                $pdf->Ln(2);
+            }
+        }
+
         // Rating Legend
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 6, 'RATING SCALE:', 0, 1);
@@ -233,20 +282,25 @@ function generateIndividualReport($evaluation, $outputPath) {
     }
 }
 
-// Function to generate summary report
-function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPath) {
+// Function to generate summary report for ENTIRE PROGRAM (all sections combined)
+function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
     try {
-        // Get all evaluations for this teacher, program, and section
+        // Get ALL evaluations for this teacher and program (all sections)
         $stmt = $pdo->prepare("
             SELECT * FROM evaluations 
-            WHERE teacher_name = ? AND program = ? AND section = ?
+            WHERE teacher_name = ? AND program = ?
         ");
-        $stmt->execute([$teacherName, $program, $section]);
+        $stmt->execute([$teacherName, $program]);
         $evaluations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($evaluations)) {
             return false;
         }
+
+        // Get all sections for this program
+        $sections = array_unique(array_column($evaluations, 'section'));
+        sort($sections);
+        $sectionsText = implode(', ', $sections);
 
         // Calculate detailed statistics
         $totalStudents = count($evaluations);
@@ -324,7 +378,7 @@ function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPa
 
         $pdf->SetCreator(PDF_CREATOR);
         $pdf->SetAuthor(PDF_AUTHOR);
-        $pdf->SetTitle("Summary Report - $teacherName - $program $section");
+        $pdf->SetTitle("Summary Report - $teacherName - $program");
 
         $pdf->SetHeaderData('', 0, "PHILIPPINE TECHNOLOGICAL INSTITUTE", 
                            "GMA-BRANCH [2nd Semester 2024-2025]\nFACULTY EVALUATION CRITERIA");
@@ -340,7 +394,8 @@ function generateSummaryReport($pdo, $teacherName, $program, $section, $outputPa
         $pdf->SetFont('helvetica', 'B', 12);
         $pdf->Cell(0, 6, "Name: " . strtoupper($teacherName), 0, 1);
         $pdf->SetFont('helvetica', '', 10);
-        $pdf->Cell(0, 5, "Program: $program | Section: $section", 0, 1);
+        $pdf->Cell(0, 5, "Program: $program (ALL SECTIONS)", 0, 1);
+        $pdf->Cell(0, 5, "Sections Included: $sectionsText", 0, 1);
         $pdf->Cell(0, 5, "Total Students Evaluated: $totalStudents", 0, 1);
         $pdf->Ln(5);
 
