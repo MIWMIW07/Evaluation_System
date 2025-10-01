@@ -72,23 +72,29 @@ function insertAllTeacherAssignments($pdo) {
     
     $collegeTeachers = [
         // BSCS Programs
-        'BSCS-1M1' => ['MR. VELE', 'MR. RODRIGUEZ', 'MR. JIMENEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. LACERNA', 'MS. RENDORA', 'MR. ATIENZA'],
-        'BSCS-2N1' => ['MR. RODRIGUEZ', 'MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MR. JIMENEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. GORDON'],
-        'BSCS-3M1' => ['MR. PATALEN', 'MS. DIMAPILIS', 'MR. V. GORDON', 'MS. DIMAPILIS', 'MS. DIMAPILIS', 'MR. JIMENEZ'],
-        'BSCS-4N1' => ['MS. DIMAPILIS', 'MS. DIMAPILIS', 'MS. DIMAPILIS', 'MR. ELLO', 'MR. V. GORDON', 'MR. PATALEN'],
+        'BSCS-1M1' => ['MR. VELE', 'MR. RODRIGUEZ', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. LACERNA', 'MR. ATIENZA'],
+        'BSCS-2N1' => ['MR. RODRIGUEZ', 'MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MR. JIMENEZ', 'MS. RENDORA', 'MR. GORDON'],
+        'BSCS-3M1' => ['MR. PATALEN', 'MS. DIMAPILIS', 'MR. V. GORDON', 'MR. JIMENEZ'],
+        'BSCS-4N1' => ['MS. DIMAPILIS', 'MR. ELLO', 'MR. V. GORDON', 'MR. PATALEN'],
+        'BSCS-1SC' => ['MR. VELE', 'MR. RODRIGUEZ', 'MR. ESPEÑA'],
+        'BSCS-2SC' => ['MR. ICABANDE', 'MR. PATIAM', 'MR. ESPEÑA'],
         
         // BSOA Programs  
-        'BSOA-1M1' => ['MR. VELE', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. IGHARAS', 'MS. OCTAVO', 'MS. RENDORA', 'MS. RENDORA', 'MR. ATIENZA'],
-        'BSOA-2N1' => ['MR. LACERNA', 'MS. RENDORA', 'MS. VELE', 'MR. CALCEÑA', 'MS. CARMONA', 'MS. IGHARAS', 'MS. RENDORA', 'MS. RENDORA'],
+        'BSOA-1M1' => ['MR. VELE', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. IGHARAS', 'MS. OCTAVO', 'MS. RENDORA', 'MR. ATIENZA'],
+        'BSOA-2N1' => ['MR. LACERNA', 'MS. RENDORA', 'MS. VELE', 'MR. CALCEÑA', 'MS. CARMONA', 'MS. IGHARAS'],
         'BSOA-3M1' => ['MR. MATILA', 'MR. ELLO', 'MS. IGHARAS', 'MR. CALCEÑA', 'MR. V. GORDON'],
-        'BSOA-4N1' => ['MR. CALCEÑA', 'MS. IGHARAS', 'MS. IGHARAS', 'MR. CALCEÑA'],
+        'BSOA-4N1' => ['MR. CALCEÑA', 'MS. IGHARAS'],
+        'BSOA-1SC' => ['MR. VELE', 'MS. DIMAPILIS', 'MR. RODRIGUEZ', 'MS. IGHARAS', 'MS. GENTEROY'],
+        'BSOA-2SC' => ['MR. ICABANDE', 'MS. GENTEROY' 'MS. DIMAPILIS', 'MS. OCTAVO'],
         
         // EDUC Programs
-        'EDUC-1M1' => ['MR. VELE', 'MR. MATILA', 'MR. V. GORDON', 'MS. TESORO', 'MR. LACERNA', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. RENDORA', 'MS. RENDORA', 'MR. ATIENZA'],
-        'EDUC-2N1' => ['MS. VELE', 'MR. VALENZUELA', 'MR. ICABANDE', 'MR. ELLO', 'MR. VALENZUELA', 'MR. ORNACHO', 'MR. MATILA', 'MS. OCTAVO', 'MS. RENDORA'],
-        'EDUC-3M1' => ['MS. OCTAVO', 'MR. VALENZUELA', 'MR. MATILA', 'MR. CALCEÑA', 'MS. MAGNO', 'MS. MAGNO', 'MS. TESORO', 'MS. CARMONA'],
-        'EDUC-4M1' => ['MS. TESORO', 'MR. ELLO', 'MS. TESORO', 'MS. TESORO'],
+        'EDUC-1M1' => ['MR. VELE', 'MR. MATILA', 'MR. V. GORDON', 'MS. TESORO', 'MR. LACERNA', 'MR. RODRIGUEZ', 'MS. RENDORA', 'MR. ATIENZA'],
+        'EDUC-2N1' => ['MS. VELE', 'MR. VALENZUELA', 'MR. ICABANDE', 'MR. ELLO', 'MR. ORNACHO', 'MR. MATILA', 'MS. OCTAVO', 'MS. RENDORA'],
+        'EDUC-3M1' => ['MS. OCTAVO', 'MR. VALENZUELA', 'MR. MATILA', 'MR. CALCEÑA', 'MS. MAGNO', 'MS. TESORO', 'MS. CARMONA'],
+        'EDUC-4M1' => ['MR. ELLO', 'MS. TESORO'],
         'EDUC-4N1' => ['MS. TESORO'],
+        'EDUC-1SC' => ['MR. ICABANDE', 'MR. LACERNA', 'MR. ORNACHO', 'MR. MATILA', 'MR. VELE', 'MS. DIMAPILIS'],
+        'EDUC-2SC' => ['MR. LACERNA', 'MR. VELE', 'MR. PATIAM', 'MS. OCTAVO', 'MR. ORNACHO'],
     ];
     
     foreach ($collegeTeachers as $section => $teachers) {
@@ -420,4 +426,5 @@ try {
     exit(1);
 }
 ?>
+
 
