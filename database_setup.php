@@ -113,7 +113,7 @@ function insertAllTeacherAssignments($pdo) {
     
     $shs11Teachers = [
         // HE Sections
-        'HE1M1' => ['MS. TINGSON', 'MS. LAGUADOR', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MR. UMALI', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
+        'HE1M1' => ['MS. TINGSON', 'MS. LAGUADOR', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
         'HE1M2' => ['MS. TINGSON', 'MRS. YABUT', 'MR. SANTOS', 'MR. ORNACHO', 'MR. ALCEDO', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
         'HE1M3' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MR. ALCEDO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
         'HE1M4' => ['MS. TINGSON', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. ROQUIOS', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. R. GORDON', 'MR. GARCIA'],
@@ -125,23 +125,23 @@ function insertAllTeacherAssignments($pdo) {
         // ICT Sections
         'ICT1M1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MR. R. GORDON', 'MS. RENDORA', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
         'ICT1M2' => ['MS. ROQUIOS', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MRS. TESORO', 'MS. RENDORA', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
-        'ICT1N1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. RODRIGUEZ', 'MS. ANGELES', 'MS. TINGSON', 'MR. R. GORDON', 'MR. UMALI', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
+        'ICT1N1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. RODRIGUEZ', 'MS. ANGELES', 'MS. TINGSON', 'MR. R. GORDON', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
         'ICT1N2' => ['MS. ROQUIOS', 'MS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MR. ALCEDO', 'MS. RENDORA', 'MR. UMALI', 'MR. JIMENEZ', 'MR. V. GORDON'],
         
         // HUMSS Sections
-        'HUMSS1M1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. ROQUIOS', 'MS. LAGUADOR', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
-        'HUMSS1M2' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. ROQUIOS', 'MR. R. GORDON', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1M1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. LAGUADOR', 'MS. RENDORA', 'MR. ALCEDO'],
+        'HUMSS1M2' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MR. R. GORDON', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
         'HUMSS1M3' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. TESORO', 'MR. UMALI', 'MS. LAGUADOR', 'MR. ALCEDO'],
-        'HUMSS1M4' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MR. UMALI', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1M4' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MR. UMALI', 'MR. ALCEDO'],
         'HUMSS1M5' => ['MS. ROQUIOS', 'MRS. YABUT', 'MS. GAJIRAN', 'MS. ANGELES', 'MS. TINGSON', 'MR. R. GORDON', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
-        'HUMSS1N1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
-        'HUMSS1N2' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
+        'HUMSS1N1' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MS. RENDORA', 'MR. ALCEDO'],
+        'HUMSS1N2' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MS. LAGUADOR', 'MS. RENDORA', 'MR. ALCEDO'],
         'HUMSS1N3' => ['MS. ROQUIOS', 'MRS. YABUT', 'MR. SANTOS', 'MS. ANGELES', 'MS. TINGSON', 'MR. R. GORDON', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. ALCEDO'],
         
         // ABM Sections
         'ABM1M1' => ['MS. TINGSON', 'MS. RIVERA', 'MS. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MR. UMALI', 'MS. LAGUADOR', 'MR. CALCEÑA', 'MS. GAJIRAN'],
-        'ABM1M2' => ['MS. TINGSON', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MR. UMALI', 'MS. LAGUADOR', 'MR. CALCEÑA', 'MS. GAJIRAN'],
-        'ABM1N1' => ['MS. TINGSON', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MS. RENDORA', 'MS. LAGUADOR', 'MR. CALCEÑA', 'MS. GAJIRAN'],
+        'ABM1M2' => ['MS. TINGSON', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MR. UMALI', 'MR. CALCEÑA', 'MS. GAJIRAN'],
+        'ABM1N1' => ['MS. TINGSON', 'MS. LAGUADOR', 'MR. SANTOS', 'MS. ANGELES', 'MR. ALCEDO', 'MS. TESORO', 'MS. RENDORA', 'MR. CALCEÑA', 'MS. GAJIRAN'],
     ];
     
     foreach ($shs11Teachers as $section => $teachers) {
@@ -170,10 +170,10 @@ function insertAllTeacherAssignments($pdo) {
         'HE3N4' => ['MS. CARMONA', 'MR. BATILES', 'MR. ICABANDE', 'MR. PATIAM', 'MS. RENDORA', 'MS. MAGNO'],
         
         // ICT3 Sections (Grade 12)
-        'ICT3M1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. RENDORA', 'MR. V. GORDON'],
-        'ICT3M2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
-        'ICT3N1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
-        'ICT3N2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
+        'ICT3M1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. RENDORA', 'MR. V. GORDON'],
+        'ICT3M2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
+        'ICT3N1' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
+        'ICT3N2' => ['MS. LIBRES', 'MR. LACERNA', 'MR. ICABANDE', 'MR. UMALI', 'MR. V. GORDON'],
         
         // HUMSS3 Sections (Grade 12)
         'HUMSS3M1' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. GARCIA', 'MR. BATILES'],
@@ -186,8 +186,8 @@ function insertAllTeacherAssignments($pdo) {
         'HUMSS3N4' => ['MS. CARMONA', 'MR. LACERNA', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MR. GARCIA'],
         
         // ABM3 Sections (Grade 12)
-        'ABM3M1' => ['MS. CARMONA', 'MR. BATILES', 'MS. RIVERA', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA', 'MR. CALCEÑA'],
-        'ABM3M2' => ['MS. CARMONA', 'MR. BATILES', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. CALCEÑA', 'MR. CALCEÑA'],
+        'ABM3M1' => ['MS. CARMONA', 'MR. BATILES', 'MS. RIVERA', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA'],
+        'ABM3M2' => ['MS. CARMONA', 'MR. BATILES', 'MS. LIBRES', 'MR. PATIAM', 'MS. RENDORA', 'MR. CALCEÑA'],
         'ABM3N1' => ['MS. CARMONA', 'MR. BATILES', 'MS. LIBRES', 'MR. PATIAM', 'MR. UMALI', 'MR. CALCEÑA'],
     ];
     
@@ -208,15 +208,15 @@ function insertAllTeacherAssignments($pdo) {
     $shsSCTeachers = [
         // Grade 11 SC
         'HE-11SC' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. UMALI', 'MS. GENTEROY'],
-        'ICT-11SC' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. JIMENEZ', 'MR. JIMENEZ'],
-        'HUMSS-11SC' => ['MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MS. VELE', 'MR. MATILA'],
-        'ABM-11SC' => ['MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MS. VELE', 'MR. VALENZUELA', 'MR. RODRIGUEZ'],
+        'ICT-11SC' => ['MR. LACERNA', 'MR. RODRIGUEZ', 'MR. VALENZUELA', 'MR. MATILA', 'MR. JIMENEZ'],
+        'HUMSS-11SC' => ['MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MR. MATILA'],
+        'ABM-11SC' => ['MR. ICABANDE', 'MR. PATIAM', 'MS. VELE', 'MR. VALENZUELA', 'MR. RODRIGUEZ'],
         
         // Grade 12 SC
         'HE-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MS. GENTEROY'],
-        'ICT-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MR. JIMENEZ', 'MR. JIMENEZ'],
+        'ICT-12SC' => ['MR. VELE', 'MR. ICABANDE', 'MR. PATIAM', 'MR. JIMENEZ'],
         'HUMSS-12SC' => ['MR. LACERNA', 'MR. UMALI', 'MR. PATIAM', 'MR. ICABANDE', 'MR. VELE'],
-        'ABM-12SC' => ['MR. LACERNA', 'MR. UMALI', 'MR. PATIAM', 'MS. IGHARAS', 'MS. IGHARAS'],
+        'ABM-12SC' => ['MR. LACERNA', 'MR. UMALI', 'MR. PATIAM', 'MS. IGHARAS'],
     ];
     
     foreach ($shsSCTeachers as $section => $teachers) {
@@ -426,5 +426,6 @@ try {
     exit(1);
 }
 ?>
+
 
 
