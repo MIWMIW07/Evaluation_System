@@ -1,43 +1,47 @@
 <?php
 // local_reports_generator.php
-error_reporting(E_ALL);
-ini_set('display_errors', 0); // Don't display errors to output (breaks JSON)
+error_reporting(0); // Suppress all errors from output
+ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/error_log.txt');
 
-header('Content-Type: application/json');
-
-require_once 'includes/db_connection.php';
-require_once 'vendor/autoload.php';
-
-use Dompdf\Dompdf;
-use Dompdf\Options;
-
-// TCPDF Class Extension
-class EvaluationPDF extends TCPDF {
-    public function Header() {
-        // Add logo
-        $logoPath = __DIR__ . '/logo.png'; // Adjust if your logo has different extension
-        if (file_exists($logoPath)) {
-            $this->Image($logoPath, 15, 10, 25, 0, '', '', 'T', false, 300, '', false, false, 0, false, false, false);
-        }
-        
-        $this->SetFont('helvetica', 'B', 14);
-        $this->Cell(0, 10, 'PHILIPPINE TECHNOLOGICAL INSTITUTE', 0, 1, 'C');
-        $this->SetFont('helvetica', '', 10);
-        $this->Cell(0, 5, 'GMA-BRANCH [2nd Semester 2024-2025]', 0, 1, 'C');
-        $this->Cell(0, 5, 'FACULTY EVALUATION CRITERIA', 0, 1, 'C');
-        $this->Ln(5);
-    }
-    
-    public function Footer() {
-        $this->SetY(-15);
-        $this->SetFont('helvetica', 'I', 8);
-        $this->Cell(0, 10, 'Page ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(), 0, 0, 'C');
-    }
-}
+// Start output buffering to catch any stray output
+ob_start();
 
 try {
+    header('Content-Type: application/json');
+    
+    require_once 'includes/db_connection.php';
+    
+    // Check if TCPDF is available
+    if (!class_exists('TCPDF')) {
+        require_once __DIR__ . '/vendor/tecnickcom/tcpdf/tcpdf.php';
+    }
+    
+    // TCPDF Class Extension
+    class EvaluationPDF extends TCPDF {
+        public function Header() {
+            // Add logo
+            $logoPath = __DIR__ . '/logo.png';
+            if (file_exists($logoPath)) {
+                $this->Image($logoPath, 15, 10, 25, 0, '', '', 'T', false, 300, '', false, false, 0, false, false, false);
+            }
+            
+            $this->SetFont('helvetica', 'B', 14);
+            $this->Cell(0, 10, 'PHILIPPINE TECHNOLOGICAL INSTITUTE', 0, 1, 'C');
+            $this->SetFont('helvetica', '', 10);
+            $this->Cell(0, 5, 'GMA-BRANCH [2nd Semester 2024-2025]', 0, 1, 'C');
+            $this->Cell(0, 5, 'FACULTY EVALUATION CRITERIA', 0, 1, 'C');
+            $this->Ln(5);
+        }
+        
+        public function Footer() {
+            $this->SetY(-15);
+            $this->SetFont('helvetica', 'I', 8);
+            $this->Cell(0, 10, 'Page ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(), 0, 0, 'C');
+        }
+    }
+
     $pdo = getPDO();
     
     // Create reports directory structure
@@ -128,6 +132,9 @@ try {
         }
     }
 
+    // Clear any buffered output before sending JSON
+    ob_end_clean();
+    
     echo json_encode([
         'success' => true,
         'message' => 'Reports generated successfully!',
@@ -139,10 +146,17 @@ try {
     ]);
 
 } catch (Exception $e) {
+    // Clear any buffered output
+    ob_end_clean();
+    
     error_log("Report Generation Error: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    
+    header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
-        'error' => $e->getMessage()
+        'error' => $e->getMessage(),
+        'details' => 'Check error_log.txt for more information'
     ]);
 }
 
@@ -152,11 +166,8 @@ function generateIndividualReport($evaluation, $outputPath) {
         $pdf = new EvaluationPDF('P', 'mm', 'A4', true, 'UTF-8', false);
         
         $pdf->SetCreator(PDF_CREATOR);
-        $pdf->SetAuthor(PDF_AUTHOR);
+        $pdf->SetAuthor('Teacher Evaluation System');
         $pdf->SetTitle("Evaluation - " . $evaluation['student_name']);
-        
-        $pdf->SetHeaderData('', 0, "PHILIPPINE TECHNOLOGICAL INSTITUTE", 
-                           "GMA-BRANCH [2nd Semester 2024-2025]\nFACULTY EVALUATION CRITERIA");
         
         $pdf->SetMargins(10, 30, 10);
         $pdf->SetHeaderMargin(10);
@@ -377,11 +388,8 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
         $pdf = new EvaluationPDF('P', 'mm', 'A4', true, 'UTF-8', false);
 
         $pdf->SetCreator(PDF_CREATOR);
-        $pdf->SetAuthor(PDF_AUTHOR);
+        $pdf->SetAuthor('Teacher Evaluation System');
         $pdf->SetTitle("Summary Report - $teacherName - $program");
-
-        $pdf->SetHeaderData('', 0, "PHILIPPINE TECHNOLOGICAL INSTITUTE", 
-                           "GMA-BRANCH [2nd Semester 2024-2025]\nFACULTY EVALUATION CRITERIA");
 
         $pdf->SetMargins(10, 30, 10);
         $pdf->SetHeaderMargin(10);
