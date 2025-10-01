@@ -232,7 +232,7 @@ function formatBytes($bytes) {
     <div class="container">
         <div class="header">
             <h1>📥 Download Evaluation Reports</h1>
-            <a href="admin_dashboard.php" class="back-btn">← Back to Dashboard</a>
+            <a href="admin.php" class="back-btn">← Back to Dashboard</a>
         </div>
 
         <?php if (empty($zipFiles) && empty($reportFolders)): ?>
