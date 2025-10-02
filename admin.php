@@ -55,12 +55,29 @@ try {
         ORDER BY avg_score DESC
     ")->fetchAll(PDO::FETCH_ASSOC);
     
+    // Get student names for each teacher and program
+    $teacherStudents = $pdo->query("
+        SELECT 
+            teacher_name,
+            program,
+            student_name,
+            section,
+            submitted_at,
+            (q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
+             q2_1 + q2_2 + q2_3 + q2_4 + 
+             q3_1 + q3_2 + q3_3 + q3_4 + 
+             q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20 as avg_score
+        FROM evaluations 
+        ORDER BY teacher_name, program, submitted_at DESC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+    
 } catch (Exception $e) {
     error_log("Admin Dashboard Error: " . $e->getMessage());
     $totalEvals = 0;
     $recentEvals = [];
     $teacherStats = [];
     $graphData = [];
+    $teacherStudents = [];
 }
 
 // Group teacher stats by teacher name for folder-style display
@@ -71,6 +88,21 @@ foreach ($teacherStats as $stat) {
         $groupedTeacherStats[$teacherName] = [];
     }
     $groupedTeacherStats[$teacherName][] = $stat;
+}
+
+// Group students by teacher and program
+$groupedStudents = [];
+foreach ($teacherStudents as $student) {
+    $teacherName = $student['teacher_name'];
+    $program = $student['program'];
+    
+    if (!isset($groupedStudents[$teacherName])) {
+        $groupedStudents[$teacherName] = [];
+    }
+    if (!isset($groupedStudents[$teacherName][$program])) {
+        $groupedStudents[$teacherName][$program] = [];
+    }
+    $groupedStudents[$teacherName][$program][] = $student;
 }
 
 // Calculate overall average rating for quick stats
@@ -738,13 +770,13 @@ ob_end_clean(); // Clean the output buffer
         
         .folder-content.active {
             padding: 20px;
-            max-height: 500px;
+            max-height: 1000px;
         }
         
         .program-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
         }
         
         .program-card {
@@ -771,6 +803,79 @@ ob_end_clean(); // Clean the output buffer
         
         .program-card p strong {
             color: var(--dark-maroon);
+        }
+        
+        /* Student List Styles */
+        .student-list {
+            margin-top: 15px;
+        }
+        
+        .student-list h6 {
+            color: var(--primary-maroon);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .student-list-container {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            background: var(--light-gold);
+        }
+        
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.85rem;
+        }
+        
+        .student-item:last-child {
+            border-bottom: none;
+        }
+        
+        .student-name {
+            font-weight: 500;
+            color: var(--neutral-dark);
+        }
+        
+        .student-details {
+            display: flex;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .student-score {
+            font-weight: bold;
+            color: var(--primary-maroon);
+        }
+        
+        .student-section {
+            background: var(--primary-gold);
+            color: var(--neutral-dark);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+        
+        .student-date {
+            color: #6c757d;
+            font-size: 0.75rem;
+        }
+        
+        .no-students {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 10px;
         }
         
         @media (max-width: 768px) {
@@ -811,6 +916,17 @@ ob_end_clean(); // Clean the output buffer
             
             .program-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .student-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .student-details {
+                width: 100%;
+                justify-content: space-between;
             }
         }
     </style>
@@ -1105,6 +1221,33 @@ ob_end_clean(); // Clean the output buffer
                                             <p><strong>Rating:</strong> 
                                                 <span class="rating-badge <?php echo $ratingClass; ?>"><?php echo $ratingText; ?></span>
                                             </p>
+                                            
+                                            <!-- Student List for this program -->
+                                            <div class="student-list">
+                                                <h6><i class="fas fa-users"></i> Students (<?php echo $program['eval_count']; ?>)</h6>
+                                                <div class="student-list-container">
+                                                    <?php 
+                                                    $studentsInProgram = $groupedStudents[$teacherName][$program['program']] ?? [];
+                                                    if (!empty($studentsInProgram)): 
+                                                        foreach ($studentsInProgram as $student): 
+                                                            $studentAvgScore = number_format($student['avg_score'], 1);
+                                                    ?>
+                                                            <div class="student-item">
+                                                                <div class="student-name"><?php echo htmlspecialchars($student['student_name']); ?></div>
+                                                                <div class="student-details">
+                                                                    <span class="student-section"><?php echo htmlspecialchars($student['section']); ?></span>
+                                                                    <span class="student-score"><?php echo $studentAvgScore; ?>/5.0</span>
+                                                                    <span class="student-date"><?php echo date('M j', strtotime($student['submitted_at'])); ?></span>
+                                                                </div>
+                                                            </div>
+                                                    <?php 
+                                                        endforeach;
+                                                    else: 
+                                                    ?>
+                                                        <div class="no-students">No students found for this program</div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
