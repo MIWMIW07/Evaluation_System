@@ -1066,6 +1066,18 @@ ob_end_clean(); // Clean the output buffer
                             echo 'N/A';
                         }
                     ?></p>
+                </div>
+                <div class="graph-summary-card">
+                    <h4>Average Rating</h4>
+                    <p id="averageRating"><?php 
+                        if (!empty($graphData)) {
+                            $avgRating = array_sum(array_column($graphData, 'avg_score')) / count($graphData);
+                            echo number_format($avgRating, 1) . '%';
+                        } else {
+                            echo 'N/A';
+                        }
+                    ?></p>
+                </div>
                 <div class="graph-summary-card">
                     <h4>Teachers Shown</h4>
                     <p id="teachersShown"><?php echo count($graphData); ?></p>
@@ -1487,22 +1499,6 @@ ob_end_clean(); // Clean the output buffer
         }
     }
 
-    // Refresh evaluations (regular refresh without loading)
-    function refreshEvaluations() {
-        location.reload();
-    }
-
-    // Initialize the chart when the page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeChart();
-        
-        // Open the first folder by default
-        const firstFolder = document.querySelector('.folder-header');
-        if (firstFolder) {
-            toggleFolder(firstFolder);
-        }
-    });
-
         // Update current time in real-time
 function updateCurrentTime() {
     const now = new Date();
@@ -1524,10 +1520,26 @@ function updateCurrentTime() {
 updateCurrentTime();
 setInterval(updateCurrentTime, 1000);
 
+    // Refresh evaluations (regular refresh without loading)
+    function refreshEvaluations() {
+        location.reload();
+    }
+
+    // Initialize the chart when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeChart();
+        
+        // Open the first folder by default
+        const firstFolder = document.querySelector('.folder-header');
+        if (firstFolder) {
+            toggleFolder(firstFolder);
+        }
+    });
+
     // Auto-refresh every 30 seconds to show new evaluations
     setInterval(() => {
         refreshEvaluations();
     }, 30000);
     </script>
 </body>
-</html> gusto ko nakikita yung comments pati dun sa Teacher Performance Overview
+</html> 
