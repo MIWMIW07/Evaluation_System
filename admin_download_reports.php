@@ -763,7 +763,7 @@ function formatBytes($bytes) {
     setInterval(() => {
         refreshReports();
     }, 30000); // 30 seconds
-    /*
+    */
     </script>
 </body>
 </html>
