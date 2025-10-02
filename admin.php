@@ -30,10 +30,11 @@ try {
             teacher_name, 
             program,
             COUNT(*) as eval_count,
+            -- Calculate average score properly: (average of 20 questions on 1-5 scale) / 5 * 100
             AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
                  q2_1 + q2_2 + q2_3 + q2_4 + 
                  q3_1 + q3_2 + q3_3 + q3_4 + 
-                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20 * 100) as avg_score
+                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) * 20 as avg_score
         FROM evaluations 
         GROUP BY teacher_name, program 
         ORDER BY teacher_name, program
@@ -43,28 +44,15 @@ try {
     $graphData = $pdo->query("
         SELECT 
             teacher_name,
+            -- Calculate average score properly: (average of 20 questions on 1-5 scale) / 5 * 100
             AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
                  q2_1 + q2_2 + q2_3 + q2_4 + 
                  q3_1 + q3_2 + q3_3 + q3_4 + 
-                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20 * 100) as avg_score,
+                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) * 20 as avg_score,
             COUNT(*) as eval_count
         FROM evaluations 
         GROUP BY teacher_name
         ORDER BY avg_score DESC
-    ")->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Get teacher performance over time for line chart
-    $teacherPerformance = $pdo->query("
-        SELECT 
-            teacher_name,
-            DATE(submitted_at) as eval_date,
-            AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
-                 q2_1 + q2_2 + q2_3 + q2_4 + 
-                 q3_1 + q3_2 + q3_3 + q3_4 + 
-                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20 * 100) as avg_score
-        FROM evaluations 
-        GROUP BY teacher_name, DATE(submitted_at)
-        ORDER BY teacher_name, eval_date
     ")->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (Exception $e) {
@@ -73,7 +61,6 @@ try {
     $recentEvals = [];
     $teacherStats = [];
     $graphData = [];
-    $teacherPerformance = [];
 }
 
 // Group teacher stats by teacher name for folder-style display
@@ -84,6 +71,18 @@ foreach ($teacherStats as $stat) {
         $groupedTeacherStats[$teacherName] = [];
     }
     $groupedTeacherStats[$teacherName][] = $stat;
+}
+
+// Calculate overall average rating for quick stats
+$overallAvgRating = 0;
+if (!empty($teacherStats)) {
+    $totalScore = 0;
+    $totalEvaluations = 0;
+    foreach ($teacherStats as $stat) {
+        $totalScore += $stat['avg_score'] * $stat['eval_count'];
+        $totalEvaluations += $stat['eval_count'];
+    }
+    $overallAvgRating = $totalEvaluations > 0 ? $totalScore / $totalEvaluations : 0;
 }
 
 ob_end_clean(); // Clean the output buffer
@@ -881,18 +880,7 @@ ob_end_clean(); // Clean the output buffer
                     <i class="fas fa-chart-line"></i>
                 </div>
                 <div class="stat-number">
-                    <?php 
-                    $avgScore = 0;
-                    if (!empty($teacherStats)) {
-                        foreach ($teacherStats as $stat) {
-                            // Ensure score doesn't exceed 100%
-                            $score = min($stat['avg_score'], 100);
-                            $avgScore += $score;
-                        }
-                        $avgScore = $avgScore / count($teacherStats);
-                    }
-                    echo number_format($avgScore, 1);
-                    ?>%
+                    <?php echo number_format($overallAvgRating, 1); ?>%
                 </div>
                 <div class="stat-label">Average Rating</div>
             </div>
@@ -944,10 +932,7 @@ ob_end_clean(); // Clean the output buffer
                     <h4>Highest Rating</h4>
                     <p id="highestRating"><?php 
                         if (!empty($graphData)) {
-                            $maxRating = 0;
-                            foreach ($graphData as $data) {
-                                $maxRating = max($maxRating, min($data['avg_score'], 100));
-                            }
+                            $maxRating = max(array_column($graphData, 'avg_score'));
                             echo number_format($maxRating, 1) . '%';
                         } else {
                             echo 'N/A';
@@ -958,10 +943,7 @@ ob_end_clean(); // Clean the output buffer
                     <h4>Lowest Rating</h4>
                     <p id="lowestRating"><?php 
                         if (!empty($graphData)) {
-                            $minRating = 100;
-                            foreach ($graphData as $data) {
-                                $minRating = min($minRating, min($data['avg_score'], 100));
-                            }
+                            $minRating = min(array_column($graphData, 'avg_score'));
                             echo number_format($minRating, 1) . '%';
                         } else {
                             echo 'N/A';
@@ -972,11 +954,7 @@ ob_end_clean(); // Clean the output buffer
                     <h4>Average Rating</h4>
                     <p id="averageRating"><?php 
                         if (!empty($graphData)) {
-                            $avgRating = 0;
-                            foreach ($graphData as $data) {
-                                $avgRating += min($data['avg_score'], 100);
-                            }
-                            $avgRating = $avgRating / count($graphData);
+                            $avgRating = array_sum(array_column($graphData, 'avg_score')) / count($graphData);
                             echo number_format($avgRating, 1) . '%';
                         } else {
                             echo 'N/A';
@@ -1082,7 +1060,7 @@ ob_end_clean(); // Clean the output buffer
                         $totalScoreForTeacher = 0;
                         foreach ($programs as $program) {
                             $totalEvalsForTeacher += $program['eval_count'];
-                            $totalScoreForTeacher += min($program['avg_score'], 100) * $program['eval_count'];
+                            $totalScoreForTeacher += $program['avg_score'] * $program['eval_count'];
                         }
                         $overallAverage = $totalEvalsForTeacher > 0 ? $totalScoreForTeacher / $totalEvalsForTeacher : 0;
                     ?>
@@ -1100,20 +1078,19 @@ ob_end_clean(); // Clean the output buffer
                             <div class="folder-content">
                                 <div class="program-grid">
                                     <?php foreach ($programs as $program): 
-                                        // Ensure score doesn't exceed 100%
-                                        $programScore = min($program['avg_score'], 100);
+                                        $programScore = $program['avg_score'];
                                         
                                         $ratingClass = '';
-                                        if ($programScore >= 90) {
+                                        if ($programScore >= 80) {
                                             $ratingClass = 'rating-excellent';
                                             $ratingText = 'Excellent';
-                                        } elseif ($programScore >= 80) {
+                                        } elseif ($programScore >= 70) {
                                             $ratingClass = 'rating-good';
                                             $ratingText = 'Very Good';
-                                        } elseif ($programScore >= 70) {
+                                        } elseif ($programScore >= 60) {
                                             $ratingClass = 'rating-satisfactory';
                                             $ratingText = 'Good';
-                                        } elseif ($programScore >= 60) {
+                                        } elseif ($programScore >= 50) {
                                             $ratingClass = 'rating-satisfactory';
                                             $ratingText = 'Satisfactory';
                                         } else {
@@ -1173,7 +1150,7 @@ ob_end_clean(); // Clean the output buffer
             return `${name} (${item.eval_count})`;
         });
         
-        const data = filteredData.map(item => Math.min(item.avg_score, 100));
+        const data = filteredData.map(item => item.avg_score);
         
         // Create gradient for the line
         const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -1221,7 +1198,7 @@ ob_end_clean(); // Clean the output buffer
                 scales: {
                     y: {
                         beginAtZero: false,
-                        min: 50,
+                        min: 0,
                         max: 100,
                         title: {
                             display: true,
@@ -1269,9 +1246,9 @@ ob_end_clean(); // Clean the output buffer
         // Sort data
         filtered.sort((a, b) => {
             if (sortOrder === 'desc') {
-                return Math.min(b.avg_score, 100) - Math.min(a.avg_score, 100);
+                return b.avg_score - a.avg_score;
             } else {
-                return Math.min(a.avg_score, 100) - Math.min(b.avg_score, 100);
+                return a.avg_score - b.avg_score;
             }
         });
         
@@ -1294,7 +1271,7 @@ ob_end_clean(); // Clean the output buffer
             return;
         }
         
-        const scores = data.map(item => Math.min(item.avg_score, 100));
+        const scores = data.map(item => item.avg_score);
         const highest = Math.max(...scores);
         const lowest = Math.min(...scores);
         const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
