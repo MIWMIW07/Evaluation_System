@@ -55,7 +55,7 @@ try {
         ORDER BY avg_score DESC
     ")->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get student names for each teacher and program
+    // Get student names for each teacher and program - INCLUDING COMMENTS
     $teacherStudents = $pdo->query("
         SELECT 
             teacher_name,
@@ -63,6 +63,8 @@ try {
             student_name,
             section,
             submitted_at,
+            positive_comment,
+            negative_comment,
             (q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
              q2_1 + q2_2 + q2_3 + q2_4 + 
              q3_1 + q3_2 + q3_3 + q3_4 + 
@@ -878,6 +880,80 @@ ob_end_clean(); // Clean the output buffer
             padding: 10px;
         }
         
+        /* Comment Styles */
+        .student-comments {
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .comment-item {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 5px;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .positive-comment-item {
+            border-left: 3px solid var(--success);
+        }
+        
+        .negative-comment-item {
+            border-left: 3px solid var(--danger);
+        }
+        
+        .comment-label {
+            font-weight: bold;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+        
+        .positive-label {
+            color: var(--success);
+        }
+        
+        .negative-label {
+            color: var(--danger);
+        }
+        
+        .comment-text {
+            font-style: italic;
+            color: #555;
+        }
+        
+        .no-comment {
+            color: #999;
+            font-style: italic;
+            font-size: 0.75rem;
+        }
+        
+        .student-expand-btn {
+            background: none;
+            border: none;
+            color: var(--primary-maroon);
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        
+        .student-expand-btn:hover {
+            color: var(--dark-maroon);
+        }
+        
+        .student-expandable {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .student-expandable.active {
+            max-height: 300px;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -1067,17 +1143,6 @@ ob_end_clean(); // Clean the output buffer
                     ?></p>
                 </div>
                 <div class="graph-summary-card">
-                    <h4>Average Rating</h4>
-                    <p id="averageRating"><?php 
-                        if (!empty($graphData)) {
-                            $avgRating = array_sum(array_column($graphData, 'avg_score')) / count($graphData);
-                            echo number_format($avgRating, 1) . '%';
-                        } else {
-                            echo 'N/A';
-                        }
-                    ?></p>
-                </div>
-                <div class="graph-summary-card">
                     <h4>Teachers Shown</h4>
                     <p id="teachersShown"><?php echo count($graphData); ?></p>
                 </div>
@@ -1231,13 +1296,36 @@ ob_end_clean(); // Clean the output buffer
                                                     if (!empty($studentsInProgram)): 
                                                         foreach ($studentsInProgram as $student): 
                                                             $studentAvgScore = number_format($student['avg_score'], 1);
+                                                            $positiveComment = $student['positive_comment'] ?? '';
+                                                            $negativeComment = $student['negative_comment'] ?? '';
                                                     ?>
                                                             <div class="student-item">
-                                                                <div class="student-name"><?php echo htmlspecialchars($student['student_name']); ?></div>
-                                                                <div class="student-details">
-                                                                    <span class="student-section"><?php echo htmlspecialchars($student['section']); ?></span>
-                                                                    <span class="student-score"><?php echo $studentAvgScore; ?>/5.0</span>
-                                                                    <span class="student-date"><?php echo date('M j', strtotime($student['submitted_at'])); ?></span>
+                                                                <div>
+                                                                    <div class="student-name"><?php echo htmlspecialchars($student['student_name']); ?></div>
+                                                                    <div class="student-details">
+                                                                        <span class="student-section"><?php echo htmlspecialchars($student['section']); ?></span>
+                                                                        <span class="student-score"><?php echo $studentAvgScore; ?>/5.0</span>
+                                                                        <span class="student-date"><?php echo date('M j', strtotime($student['submitted_at'])); ?></span>
+                                                                    </div>
+                                                                </div>
+                                                                <button class="student-expand-btn" onclick="toggleStudentComments(this)">
+                                                                    <i class="fas fa-comment"></i> Comments
+                                                                </button>
+                                                            </div>
+                                                            <div class="student-expandable">
+                                                                <div class="student-comments">
+                                                                    <div class="comment-item positive-comment-item">
+                                                                        <div class="comment-label positive-label">Positive Feedback</div>
+                                                                        <div class="comment-text">
+                                                                            <?php echo !empty($positiveComment) ? htmlspecialchars($positiveComment) : '<span class="no-comment">No positive comment provided</span>'; ?>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="comment-item negative-comment-item">
+                                                                        <div class="comment-label negative-label">Areas for Improvement</div>
+                                                                        <div class="comment-text">
+                                                                            <?php echo !empty($negativeComment) ? htmlspecialchars($negativeComment) : '<span class="no-comment">No negative comment provided</span>'; ?>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                     <?php 
@@ -1430,6 +1518,39 @@ ob_end_clean(); // Clean the output buffer
         header.classList.toggle('active');
         const content = header.nextElementSibling;
         content.classList.toggle('active');
+    }
+    
+    // Toggle student comments
+    function toggleStudentComments(button) {
+        const studentItem = button.closest('.student-item');
+        const expandable = studentItem.nextElementSibling;
+        
+        // Close all other expandables in the same container
+        const container = studentItem.closest('.student-list-container');
+        const allExpandables = container.querySelectorAll('.student-expandable');
+        const allButtons = container.querySelectorAll('.student-expand-btn');
+        
+        allExpandables.forEach(item => {
+            if (item !== expandable) {
+                item.classList.remove('active');
+            }
+        });
+        
+        allButtons.forEach(btn => {
+            if (btn !== button) {
+                btn.innerHTML = '<i class="fas fa-comment"></i> Comments';
+            }
+        });
+        
+        // Toggle current expandable
+        expandable.classList.toggle('active');
+        
+        // Update button text
+        if (expandable.classList.contains('active')) {
+            button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Comments';
+        } else {
+            button.innerHTML = '<i class="fas fa-comment"></i> Comments';
+        }
     }
     
     // Show loading overlay for refresh
