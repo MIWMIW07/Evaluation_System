@@ -759,11 +759,11 @@ function formatBytes($bytes) {
 
     // Optional: Auto-refresh every 30 seconds
     // Uncomment the lines below if you want automatic refresh
-    
+    /*
     setInterval(() => {
         refreshReports();
     }, 30000); // 30 seconds
-    
+    /*
     </script>
 </body>
 </html>
