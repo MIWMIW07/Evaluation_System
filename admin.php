@@ -40,7 +40,7 @@ try {
         ORDER BY teacher_name, program
     ")->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get data for the average rate line graph with comments
+    // Get data for the average rate line graph
     $graphData = $pdo->query("
         SELECT 
             teacher_name,
@@ -63,33 +63,12 @@ try {
             student_name,
             section,
             submitted_at,
-            positive_comment,
-            negative_comment,
             (q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
              q2_1 + q2_2 + q2_3 + q2_4 + 
              q3_1 + q3_2 + q3_3 + q3_4 + 
              q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20 as avg_score
         FROM evaluations 
         ORDER BY teacher_name, program, submitted_at DESC
-    ")->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Get recent comments for Teacher Average Ratings section
-    $recentComments = $pdo->query("
-        SELECT 
-            teacher_name,
-            student_name,
-            program,
-            section,
-            positive_comment,
-            negative_comment,
-            submitted_at,
-            (q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
-             q2_1 + q2_2 + q2_3 + q2_4 + 
-             q3_1 + q3_2 + q3_3 + q3_4 + 
-             q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20 as avg_score
-        FROM evaluations 
-        ORDER BY submitted_at DESC 
-        LIMIT 15
     ")->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (Exception $e) {
@@ -99,7 +78,6 @@ try {
     $teacherStats = [];
     $graphData = [];
     $teacherStudents = [];
-    $recentComments = [];
 }
 
 // Group teacher stats by teacher name for folder-style display
@@ -137,17 +115,6 @@ if (!empty($teacherStats)) {
         $totalEvaluations += $stat['eval_count'];
     }
     $overallAvgRating = $totalEvaluations > 0 ? $totalScore / $totalEvaluations : 0;
-}
-
-// Calculate average ratings for graph summary
-$highestRating = 0;
-$lowestRating = 100;
-$averageRating = 0;
-if (!empty($graphData)) {
-    $scores = array_column($graphData, 'avg_score');
-    $highestRating = max($scores);
-    $lowestRating = min($scores);
-    $averageRating = array_sum($scores) / count($scores);
 }
 
 ob_end_clean(); // Clean the output buffer
@@ -911,109 +878,6 @@ ob_end_clean(); // Clean the output buffer
             padding: 10px;
         }
         
-        /* Comments Section Styles */
-        .comments-section {
-            margin-top: 30px;
-        }
-        
-        .comments-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            margin-top: 15px;
-        }
-        
-        .comment-card {
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            overflow: hidden;
-        }
-        
-        .comment-header {
-            background: var(--light-gold);
-            padding: 12px 15px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .comment-header h5 {
-            color: var(--primary-maroon);
-            margin: 0;
-            font-size: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .comment-teacher {
-            font-weight: bold;
-        }
-        
-        .comment-student {
-            font-size: 0.9rem;
-            color: var(--dark-maroon);
-        }
-        
-        .comment-body {
-            padding: 15px;
-        }
-        
-        .comment-positive, .comment-negative {
-            margin-bottom: 12px;
-        }
-        
-        .comment-label {
-            font-weight: bold;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .comment-label.positive {
-            color: var(--success);
-        }
-        
-        .comment-label.negative {
-            color: var(--danger);
-        }
-        
-        .comment-text {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            border-left: 3px solid #ddd;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-        
-        .comment-text.positive {
-            border-left-color: var(--success);
-        }
-        
-        .comment-text.negative {
-            border-left-color: var(--danger);
-        }
-        
-        .comment-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            color: #6c757d;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #e9ecef;
-        }
-        
-        .no-comments {
-            text-align: center;
-            color: #6c757d;
-            font-style: italic;
-            padding: 20px;
-            grid-column: 1 / -1;
-        }
-        
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -1063,10 +927,6 @@ ob_end_clean(); // Clean the output buffer
             .student-details {
                 width: 100%;
                 justify-content: space-between;
-            }
-            
-            .comments-grid {
-                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -1161,7 +1021,7 @@ ob_end_clean(); // Clean the output buffer
             </div>
         </div>
 
-        <!-- Teacher Average Ratings -->
+        <!-- Teacher Average Ratings Graph -->
         <div class="card">
             <h3><i class="fas fa-chart-line"></i> Teacher Average Ratings</h3>
             
@@ -1186,74 +1046,41 @@ ob_end_clean(); // Clean the output buffer
             <div class="graph-summary">
                 <div class="graph-summary-card">
                     <h4>Highest Rating</h4>
-                    <p id="highestRating"><?php echo number_format($highestRating, 1); ?>%</p>
+                    <p id="highestRating"><?php 
+                        if (!empty($graphData)) {
+                            $maxRating = max(array_column($graphData, 'avg_score'));
+                            echo number_format($maxRating, 1) . '%';
+                        } else {
+                            echo 'N/A';
+                        }
+                    ?></p>
                 </div>
                 <div class="graph-summary-card">
                     <h4>Lowest Rating</h4>
-                    <p id="lowestRating"><?php echo number_format($lowestRating, 1); ?>%</p>
+                    <p id="lowestRating"><?php 
+                        if (!empty($graphData)) {
+                            $minRating = min(array_column($graphData, 'avg_score'));
+                            echo number_format($minRating, 1) . '%';
+                        } else {
+                            echo 'N/A';
+                        }
+                    ?></p>
                 </div>
                 <div class="graph-summary-card">
                     <h4>Average Rating</h4>
-                    <p id="averageRating"><?php echo number_format($overallAvgRating, 1); ?>%</p>
+                    <p id="averageRating"><?php 
+                        if (!empty($graphData)) {
+                            $avgRating = array_sum(array_column($graphData, 'avg_score')) / count($graphData);
+                            echo number_format($avgRating, 1) . '%';
+                        } else {
+                            echo 'N/A';
+                        }
+                    ?></p>
                 </div>
                 <div class="graph-summary-card">
                     <h4>Teachers Shown</h4>
                     <p id="teachersShown"><?php echo count($graphData); ?></p>
                 </div>
-            </div>
-
-            <!-- Recent Comments Section -->
-            <div class="comments-section">
-                <h4><i class="fas fa-comments"></i> Recent Student Comments</h4>
-                <?php if (empty($recentComments)): ?>
-                    <p class="loading">No comments found.</p>
-                <?php else: ?>
-                    <div class="comments-grid">
-                        <?php foreach ($recentComments as $comment): 
-                            if (empty($comment['positive_comment']) && empty($comment['negative_comment'])) {
-                                continue; // Skip if no comments
-                            }
-                            $scorePercentage = ($comment['avg_score'] / 5) * 100;
-                        ?>
-                            <div class="comment-card">
-                                <div class="comment-header">
-                                    <h5>
-                                        <span class="comment-teacher"><?php echo htmlspecialchars($comment['teacher_name']); ?></span>
-                                        <span class="comment-student"><?php echo htmlspecialchars($comment['student_name']); ?> (<?php echo htmlspecialchars($comment['program']); ?>)</span>
-                                    </h5>
-                                </div>
-                                <div class="comment-body">
-                                    <?php if (!empty($comment['positive_comment'])): ?>
-                                        <div class="comment-positive">
-                                            <div class="comment-label positive">
-                                                <i class="fas fa-thumbs-up"></i> Positive Feedback
-                                            </div>
-                                            <div class="comment-text positive">
-                                                <?php echo htmlspecialchars($comment['positive_comment']); ?>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-                                    
-                                    <?php if (!empty($comment['negative_comment'])): ?>
-                                        <div class="comment-negative">
-                                            <div class="comment-label negative">
-                                                <i class="fas fa-thumbs-down"></i> Areas for Improvement
-                                            </div>
-                                            <div class="comment-text negative">
-                                                <?php echo htmlspecialchars($comment['negative_comment']); ?>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-                                    
-                                    <div class="comment-meta">
-                                        <span>Score: <?php echo number_format($comment['avg_score'], 1); ?>/5.0</span>
-                                        <span><?php echo date('M j, g:i A', strtotime($comment['submitted_at'])); ?></span>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
             </div>
         </div>
 
