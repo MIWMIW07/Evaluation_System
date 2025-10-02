@@ -40,11 +40,26 @@ try {
         LIMIT 5
     ")->fetchAll(PDO::FETCH_ASSOC);
     
+    // Get data for the average rate line graph
+    $graphData = $pdo->query("
+        SELECT 
+            teacher_name,
+            AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
+                 q2_1 + q2_2 + q2_3 + q2_4 + 
+                 q3_1 + q3_2 + q3_3 + q3_4 + 
+                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) * 100 as avg_score,
+            COUNT(*) as eval_count
+        FROM evaluations 
+        GROUP BY teacher_name
+        ORDER BY avg_score DESC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+    
 } catch (Exception $e) {
     error_log("Admin Dashboard Error: " . $e->getMessage());
     $totalEvals = 0;
     $recentEvals = [];
     $teacherStats = [];
+    $graphData = [];
 }
 ob_end_clean(); // Clean the output buffer
 ?>
@@ -56,6 +71,7 @@ ob_end_clean(); // Clean the output buffer
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Teacher Evaluation System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -508,6 +524,136 @@ ob_end_clean(); // Clean the output buffer
             background: rgba(255,255,255,0.3);
         }
         
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .graph-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .graph-controls select, .graph-controls input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            color: var(--neutral-dark);
+        }
+        
+        .graph-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .graph-summary-card {
+            background: var(--light-gold);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid var(--primary-gold);
+        }
+        
+        .graph-summary-card h4 {
+            color: var(--dark-maroon);
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .graph-summary-card p {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-maroon);
+        }
+        
+        /* Loading Overlay Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(128, 0, 32, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+        
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(212, 175, 55, 0.3);
+            border-top: 8px solid var(--primary-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        .loading-text {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .loading-progress {
+            width: 300px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .loading-progress-bar {
+            height: 100%;
+            background: var(--primary-gold);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .loading-details {
+            margin-top: 15px;
+            font-size: 1rem;
+            text-align: center;
+            max-width: 500px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn-loading {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-loading::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -530,6 +676,18 @@ ob_end_clean(); // Clean the output buffer
                 flex-direction: column;
                 text-align: center;
                 gap: 15px;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+            
+            .loading-progress {
+                width: 250px;
+            }
+            
+            .loading-text {
+                font-size: 1.2rem;
             }
         }
     </style>
@@ -562,7 +720,8 @@ ob_end_clean(); // Clean the output buffer
         <div class="debug-info">
             <strong><i class="fas fa-info-circle"></i> System Status:</strong> 
             Total evaluations in database: <?php echo $totalEvals; ?> | 
-            Recent evaluations found: <?php echo count($recentEvals); ?>
+            Recent evaluations found: <?php echo count($recentEvals); ?> |
+            Teachers in graph: <?php echo count($graphData); ?>
         </div>
 
         <!-- Quick Stats -->
@@ -632,11 +791,74 @@ ob_end_clean(); // Clean the output buffer
             </div>
         </div>
 
+        <!-- Teacher Average Ratings Graph -->
+        <div class="card">
+            <h3><i class="fas fa-chart-line"></i> Teacher Average Ratings</h3>
+            
+            <div class="graph-controls">
+                <select id="sortOrder" onchange="updateChart()">
+                    <option value="desc">Highest to Lowest</option>
+                    <option value="asc">Lowest to Highest</option>
+                </select>
+                <select id="minEvaluations" onchange="updateChart()">
+                    <option value="0">All Teachers</option>
+                    <option value="5">5+ Evaluations</option>
+                    <option value="10">10+ Evaluations</option>
+                    <option value="20">20+ Evaluations</option>
+                </select>
+                <input type="text" id="searchTeacher" placeholder="Search teacher..." onkeyup="updateChart()">
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="teacherRatingsChart"></canvas>
+            </div>
+            
+            <div class="graph-summary">
+                <div class="graph-summary-card">
+                    <h4>Highest Rating</h4>
+                    <p id="highestRating"><?php 
+                        if (!empty($graphData)) {
+                            $maxRating = max(array_column($graphData, 'avg_score'));
+                            echo number_format($maxRating, 1) . '%';
+                        } else {
+                            echo 'N/A';
+                        }
+                    ?></p>
+                </div>
+                <div class="graph-summary-card">
+                    <h4>Lowest Rating</h4>
+                    <p id="lowestRating"><?php 
+                        if (!empty($graphData)) {
+                            $minRating = min(array_column($graphData, 'avg_score'));
+                            echo number_format($minRating, 1) . '%';
+                        } else {
+                            echo 'N/A';
+                        }
+                    ?></p>
+                </div>
+                <div class="graph-summary-card">
+                    <h4>Average Rating</h4>
+                    <p id="averageRating"><?php 
+                        if (!empty($graphData)) {
+                            $avgRating = array_sum(array_column($graphData, 'avg_score')) / count($graphData);
+                            echo number_format($avgRating, 1) . '%';
+                        } else {
+                            echo 'N/A';
+                        }
+                    ?></p>
+                </div>
+                <div class="graph-summary-card">
+                    <h4>Teachers Shown</h4>
+                    <p id="teachersShown"><?php echo count($graphData); ?></p>
+                </div>
+            </div>
+        </div>
+
         <!-- Recent Evaluations -->
         <div class="card">
             <h3><i class="fas fa-history"></i> Recent Student Evaluations</h3>
             <div class="action-buttons">
-                <button class="btn btn-info" onclick="refreshEvaluations()">
+                <button class="btn btn-info" id="refreshListBtn" onclick="showRefreshLoading()">
                     <i class="fas fa-sync-alt"></i> Refresh List
                 </button>
             </div>
@@ -753,7 +975,200 @@ ob_end_clean(); // Clean the output buffer
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Refreshing Evaluation Data</div>
+        <div class="loading-progress">
+            <div class="loading-progress-bar" id="loadingProgressBar"></div>
+        </div>
+        <div class="loading-details">
+            <p>Please wait while we fetch the latest evaluation data...</p>
+            <p><small>This will only take a moment</small></p>
+        </div>
+    </div>
+
     <script>
+    // Prepare data for the chart
+    const graphData = <?php echo json_encode($graphData); ?>;
+    
+    // Initialize the chart
+    let teacherRatingsChart = null;
+    
+    function initializeChart() {
+        const ctx = document.getElementById('teacherRatingsChart').getContext('2d');
+        
+        // Process data based on current filters
+        const filteredData = filterData();
+        
+        // Extract labels and data
+        const labels = filteredData.map(item => {
+            const name = item.teacher_name.length > 20 
+                ? item.teacher_name.substring(0, 20) + '...' 
+                : item.teacher_name;
+            return `${name} (${item.eval_count})`;
+        });
+        
+        const data = filteredData.map(item => item.avg_score);
+        
+        // Create gradient for the line
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.8)');
+        gradient.addColorStop(1, 'rgba(212, 175, 55, 0.1)');
+        
+        // Create the chart
+        teacherRatingsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Average Rating (%)',
+                    data: data,
+                    backgroundColor: gradient,
+                    borderColor: 'rgba(212, 175, 55, 1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: 'rgba(128, 0, 32, 1)',
+                    pointBorderColor: 'rgba(255, 255, 255, 1)',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const teacherName = graphData[context.dataIndex].teacher_name;
+                                const evalCount = graphData[context.dataIndex].eval_count;
+                                return `${teacherName}: ${context.parsed.y.toFixed(1)}% (${evalCount} evaluations)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 50,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Average Rating (%)'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Teachers (Number of Evaluations)'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        updateSummaryStats(filteredData);
+    }
+    
+    function filterData() {
+        const sortOrder = document.getElementById('sortOrder').value;
+        const minEvaluations = parseInt(document.getElementById('minEvaluations').value);
+        const searchTerm = document.getElementById('searchTeacher').value.toLowerCase();
+        
+        let filtered = [...graphData];
+        
+        // Filter by minimum evaluations
+        if (minEvaluations > 0) {
+            filtered = filtered.filter(item => item.eval_count >= minEvaluations);
+        }
+        
+        // Filter by search term
+        if (searchTerm) {
+            filtered = filtered.filter(item => 
+                item.teacher_name.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Sort data
+        filtered.sort((a, b) => {
+            if (sortOrder === 'desc') {
+                return b.avg_score - a.avg_score;
+            } else {
+                return a.avg_score - b.avg_score;
+            }
+        });
+        
+        return filtered;
+    }
+    
+    function updateChart() {
+        if (teacherRatingsChart) {
+            teacherRatingsChart.destroy();
+        }
+        initializeChart();
+    }
+    
+    function updateSummaryStats(data) {
+        if (data.length === 0) {
+            document.getElementById('highestRating').textContent = 'N/A';
+            document.getElementById('lowestRating').textContent = 'N/A';
+            document.getElementById('averageRating').textContent = 'N/A';
+            document.getElementById('teachersShown').textContent = '0';
+            return;
+        }
+        
+        const highest = Math.max(...data.map(item => item.avg_score));
+        const lowest = Math.min(...data.map(item => item.avg_score));
+        const average = data.reduce((sum, item) => sum + item.avg_score, 0) / data.length;
+        
+        document.getElementById('highestRating').textContent = highest.toFixed(1) + '%';
+        document.getElementById('lowestRating').textContent = lowest.toFixed(1) + '%';
+        document.getElementById('averageRating').textContent = average.toFixed(1) + '%';
+        document.getElementById('teachersShown').textContent = data.length;
+    }
+    
+    // Show loading overlay for refresh
+    function showRefreshLoading() {
+        const overlay = document.getElementById('loadingOverlay');
+        const progressBar = document.getElementById('loadingProgressBar');
+        const refreshBtn = document.getElementById('refreshListBtn');
+        
+        // Show overlay
+        overlay.style.display = 'flex';
+        
+        // Add loading class to button
+        refreshBtn.classList.add('btn-loading');
+        refreshBtn.disabled = true;
+        
+        // Animate progress bar over 3 seconds
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 1;
+            progressBar.style.width = progress + '%';
+            
+            if (progress >= 100) {
+                clearInterval(interval);
+                // Reload the page after progress completes
+                setTimeout(() => {
+                    location.reload();
+                }, 300);
+            }
+        }, 30); // 30ms * 100 = 3000ms (3 seconds)
+    }
+    
     // Generate Local PDF Reports
     async function generateLocalReports() {
         let resultDiv = document.getElementById('reportResult');
@@ -791,10 +1206,15 @@ ob_end_clean(); // Clean the output buffer
         }
     }
 
-    // Refresh evaluations
+    // Refresh evaluations (regular refresh without loading)
     function refreshEvaluations() {
         location.reload();
     }
+
+    // Initialize the chart when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeChart();
+    });
 
     // Auto-refresh every 30 seconds to show new evaluations
     setInterval(() => {
