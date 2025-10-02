@@ -24,7 +24,7 @@ try {
         LIMIT 10
     ")->fetchAll(PDO::FETCH_ASSOC);
     
-    // Teacher statistics - FIXED QUERY
+    // Teacher statistics - FIXED QUERY with proper percentage calculation
     $teacherStats = $pdo->query("
         SELECT 
             teacher_name, 
@@ -33,11 +33,10 @@ try {
             AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
                  q2_1 + q2_2 + q2_3 + q2_4 + 
                  q3_1 + q3_2 + q3_3 + q3_4 + 
-                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) * 100 as avg_score
+                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20 * 100) as avg_score
         FROM evaluations 
         GROUP BY teacher_name, program 
-        ORDER BY eval_count DESC
-        LIMIT 5
+        ORDER BY teacher_name, program
     ")->fetchAll(PDO::FETCH_ASSOC);
     
     // Get data for the average rate line graph
@@ -47,11 +46,25 @@ try {
             AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
                  q2_1 + q2_2 + q2_3 + q2_4 + 
                  q3_1 + q3_2 + q3_3 + q3_4 + 
-                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) * 100 as avg_score,
+                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20 * 100) as avg_score,
             COUNT(*) as eval_count
         FROM evaluations 
         GROUP BY teacher_name
         ORDER BY avg_score DESC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Get teacher performance over time for line chart
+    $teacherPerformance = $pdo->query("
+        SELECT 
+            teacher_name,
+            DATE(submitted_at) as eval_date,
+            AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
+                 q2_1 + q2_2 + q2_3 + q2_4 + 
+                 q3_1 + q3_2 + q3_3 + q3_4 + 
+                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20 * 100) as avg_score
+        FROM evaluations 
+        GROUP BY teacher_name, DATE(submitted_at)
+        ORDER BY teacher_name, eval_date
     ")->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (Exception $e) {
@@ -60,7 +73,19 @@ try {
     $recentEvals = [];
     $teacherStats = [];
     $graphData = [];
+    $teacherPerformance = [];
 }
+
+// Group teacher stats by teacher name for folder-style display
+$groupedTeacherStats = [];
+foreach ($teacherStats as $stat) {
+    $teacherName = $stat['teacher_name'];
+    if (!isset($groupedTeacherStats[$teacherName])) {
+        $groupedTeacherStats[$teacherName] = [];
+    }
+    $groupedTeacherStats[$teacherName][] = $stat;
+}
+
 ob_end_clean(); // Clean the output buffer
 ?>
 
@@ -654,6 +679,101 @@ ob_end_clean(); // Clean the output buffer
             100% { left: 100%; }
         }
         
+        /* Folder Style for Teacher Performance */
+        .teacher-folder {
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid #e9ecef;
+        }
+        
+        .folder-header {
+            background: var(--light-gold);
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+        
+        .folder-header:hover {
+            background: #f5e8c8;
+        }
+        
+        .folder-header h4 {
+            color: var(--primary-maroon);
+            margin: 0;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .folder-icon {
+            color: var(--primary-gold);
+            transition: transform 0.3s ease;
+        }
+        
+        .folder-header.active .folder-icon {
+            transform: rotate(90deg);
+        }
+        
+        .folder-badge {
+            background: var(--primary-maroon);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .folder-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+        
+        .folder-content.active {
+            padding: 20px;
+            max-height: 500px;
+        }
+        
+        .program-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        
+        .program-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .program-card h5 {
+            color: var(--primary-maroon);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--light-gold);
+            padding-bottom: 5px;
+        }
+        
+        .program-card p {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .program-card p strong {
+            color: var(--dark-maroon);
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -688,6 +808,10 @@ ob_end_clean(); // Clean the output buffer
             
             .loading-text {
                 font-size: 1.2rem;
+            }
+            
+            .program-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -737,7 +861,7 @@ ob_end_clean(); // Clean the output buffer
                 <div class="stat-icon">
                     <i class="fas fa-chalkboard-teacher"></i>
                 </div>
-                <div class="stat-number"><?php echo count($teacherStats); ?></div>
+                <div class="stat-number"><?php echo count($groupedTeacherStats); ?></div>
                 <div class="stat-label">Teachers Evaluated</div>
             </div>
             <div class="stat-card">
@@ -761,7 +885,9 @@ ob_end_clean(); // Clean the output buffer
                     $avgScore = 0;
                     if (!empty($teacherStats)) {
                         foreach ($teacherStats as $stat) {
-                            $avgScore += $stat['avg_score'];
+                            // Ensure score doesn't exceed 100%
+                            $score = min($stat['avg_score'], 100);
+                            $avgScore += $score;
                         }
                         $avgScore = $avgScore / count($teacherStats);
                     }
@@ -818,7 +944,10 @@ ob_end_clean(); // Clean the output buffer
                     <h4>Highest Rating</h4>
                     <p id="highestRating"><?php 
                         if (!empty($graphData)) {
-                            $maxRating = max(array_column($graphData, 'avg_score'));
+                            $maxRating = 0;
+                            foreach ($graphData as $data) {
+                                $maxRating = max($maxRating, min($data['avg_score'], 100));
+                            }
                             echo number_format($maxRating, 1) . '%';
                         } else {
                             echo 'N/A';
@@ -829,7 +958,10 @@ ob_end_clean(); // Clean the output buffer
                     <h4>Lowest Rating</h4>
                     <p id="lowestRating"><?php 
                         if (!empty($graphData)) {
-                            $minRating = min(array_column($graphData, 'avg_score'));
+                            $minRating = 100;
+                            foreach ($graphData as $data) {
+                                $minRating = min($minRating, min($data['avg_score'], 100));
+                            }
                             echo number_format($minRating, 1) . '%';
                         } else {
                             echo 'N/A';
@@ -840,7 +972,11 @@ ob_end_clean(); // Clean the output buffer
                     <h4>Average Rating</h4>
                     <p id="averageRating"><?php 
                         if (!empty($graphData)) {
-                            $avgRating = array_sum(array_column($graphData, 'avg_score')) / count($graphData);
+                            $avgRating = 0;
+                            foreach ($graphData as $data) {
+                                $avgRating += min($data['avg_score'], 100);
+                            }
+                            $avgRating = $avgRating / count($graphData);
                             echo number_format($avgRating, 1) . '%';
                         } else {
                             echo 'N/A';
@@ -934,40 +1070,68 @@ ob_end_clean(); // Clean the output buffer
             <?php endif; ?>
         </div>
 
-        <!-- Teacher Statistics -->
+        <!-- Teacher Performance Overview -->
         <div class="card">
             <h3><i class="fas fa-trophy"></i> Teacher Performance Overview</h3>
-            <?php if (empty($teacherStats)): ?>
+            <?php if (empty($groupedTeacherStats)): ?>
                 <p class="loading">No teacher statistics available at this time.</p>
             <?php else: ?>
-                <div class="teacher-stats">
-                    <?php foreach ($teacherStats as $stat): 
-                        $ratingClass = '';
-                        if ($stat['avg_score'] >= 90) {
-                            $ratingClass = 'rating-excellent';
-                            $ratingText = 'Excellent';
-                        } elseif ($stat['avg_score'] >= 80) {
-                            $ratingClass = 'rating-good';
-                            $ratingText = 'Very Good';
-                        } elseif ($stat['avg_score'] >= 70) {
-                            $ratingClass = 'rating-satisfactory';
-                            $ratingText = 'Good';
-                        } elseif ($stat['avg_score'] >= 60) {
-                            $ratingClass = 'rating-satisfactory';
-                            $ratingText = 'Satisfactory';
-                        } else {
-                            $ratingClass = 'rating-needs-improvement';
-                            $ratingText = 'Needs Improvement';
+                <div class="teacher-folders">
+                    <?php foreach ($groupedTeacherStats as $teacherName => $programs): 
+                        $totalEvalsForTeacher = 0;
+                        $totalScoreForTeacher = 0;
+                        foreach ($programs as $program) {
+                            $totalEvalsForTeacher += $program['eval_count'];
+                            $totalScoreForTeacher += min($program['avg_score'], 100) * $program['eval_count'];
                         }
+                        $overallAverage = $totalEvalsForTeacher > 0 ? $totalScoreForTeacher / $totalEvalsForTeacher : 0;
                     ?>
-                        <div class="teacher-stat-card">
-                            <h4><?php echo htmlspecialchars($stat['teacher_name']); ?></h4>
-                            <p><strong>Program:</strong> <?php echo htmlspecialchars($stat['program']); ?></p>
-                            <p><strong>Evaluations:</strong> <?php echo $stat['eval_count']; ?></p>
-                            <p><strong>Average Score:</strong> <?php echo number_format($stat['avg_score'], 1); ?>%</p>
-                            <p><strong>Rating:</strong> 
-                                <span class="rating-badge <?php echo $ratingClass; ?>"><?php echo $ratingText; ?></span>
-                            </p>
+                        <div class="teacher-folder">
+                            <div class="folder-header" onclick="toggleFolder(this)">
+                                <h4>
+                                    <i class="fas fa-folder folder-icon"></i>
+                                    <?php echo htmlspecialchars($teacherName); ?>
+                                </h4>
+                                <div class="folder-badge">
+                                    <?php echo count($programs); ?> Program(s) | 
+                                    Overall: <?php echo number_format($overallAverage, 1); ?>%
+                                </div>
+                            </div>
+                            <div class="folder-content">
+                                <div class="program-grid">
+                                    <?php foreach ($programs as $program): 
+                                        // Ensure score doesn't exceed 100%
+                                        $programScore = min($program['avg_score'], 100);
+                                        
+                                        $ratingClass = '';
+                                        if ($programScore >= 90) {
+                                            $ratingClass = 'rating-excellent';
+                                            $ratingText = 'Excellent';
+                                        } elseif ($programScore >= 80) {
+                                            $ratingClass = 'rating-good';
+                                            $ratingText = 'Very Good';
+                                        } elseif ($programScore >= 70) {
+                                            $ratingClass = 'rating-satisfactory';
+                                            $ratingText = 'Good';
+                                        } elseif ($programScore >= 60) {
+                                            $ratingClass = 'rating-satisfactory';
+                                            $ratingText = 'Satisfactory';
+                                        } else {
+                                            $ratingClass = 'rating-needs-improvement';
+                                            $ratingText = 'Needs Improvement';
+                                        }
+                                    ?>
+                                        <div class="program-card">
+                                            <h5><?php echo htmlspecialchars($program['program']); ?></h5>
+                                            <p><strong>Evaluations:</strong> <?php echo $program['eval_count']; ?></p>
+                                            <p><strong>Average Score:</strong> <?php echo number_format($programScore, 1); ?>%</p>
+                                            <p><strong>Rating:</strong> 
+                                                <span class="rating-badge <?php echo $ratingClass; ?>"><?php echo $ratingText; ?></span>
+                                            </p>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -1009,7 +1173,7 @@ ob_end_clean(); // Clean the output buffer
             return `${name} (${item.eval_count})`;
         });
         
-        const data = filteredData.map(item => item.avg_score);
+        const data = filteredData.map(item => Math.min(item.avg_score, 100));
         
         // Create gradient for the line
         const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -1047,8 +1211,8 @@ ob_end_clean(); // Clean the output buffer
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                const teacherName = graphData[context.dataIndex].teacher_name;
-                                const evalCount = graphData[context.dataIndex].eval_count;
+                                const teacherName = filteredData[context.dataIndex].teacher_name;
+                                const evalCount = filteredData[context.dataIndex].eval_count;
                                 return `${teacherName}: ${context.parsed.y.toFixed(1)}% (${evalCount} evaluations)`;
                             }
                         }
@@ -1105,9 +1269,9 @@ ob_end_clean(); // Clean the output buffer
         // Sort data
         filtered.sort((a, b) => {
             if (sortOrder === 'desc') {
-                return b.avg_score - a.avg_score;
+                return Math.min(b.avg_score, 100) - Math.min(a.avg_score, 100);
             } else {
-                return a.avg_score - b.avg_score;
+                return Math.min(a.avg_score, 100) - Math.min(b.avg_score, 100);
             }
         });
         
@@ -1130,14 +1294,22 @@ ob_end_clean(); // Clean the output buffer
             return;
         }
         
-        const highest = Math.max(...data.map(item => item.avg_score));
-        const lowest = Math.min(...data.map(item => item.avg_score));
-        const average = data.reduce((sum, item) => sum + item.avg_score, 0) / data.length;
+        const scores = data.map(item => Math.min(item.avg_score, 100));
+        const highest = Math.max(...scores);
+        const lowest = Math.min(...scores);
+        const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
         
         document.getElementById('highestRating').textContent = highest.toFixed(1) + '%';
         document.getElementById('lowestRating').textContent = lowest.toFixed(1) + '%';
         document.getElementById('averageRating').textContent = average.toFixed(1) + '%';
         document.getElementById('teachersShown').textContent = data.length;
+    }
+    
+    // Toggle folder open/close
+    function toggleFolder(header) {
+        header.classList.toggle('active');
+        const content = header.nextElementSibling;
+        content.classList.toggle('active');
     }
     
     // Show loading overlay for refresh
@@ -1214,6 +1386,12 @@ ob_end_clean(); // Clean the output buffer
     // Initialize the chart when the page loads
     document.addEventListener('DOMContentLoaded', function() {
         initializeChart();
+        
+        // Open the first folder by default
+        const firstFolder = document.querySelector('.folder-header');
+        if (firstFolder) {
+            toggleFolder(firstFolder);
+        }
     });
 
     // Auto-refresh every 30 seconds to show new evaluations
