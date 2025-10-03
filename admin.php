@@ -1562,10 +1562,6 @@ ob_end_clean(); // Clean the output buffer
         }
     });
 
-    // Auto-refresh every 30 seconds to show new evaluations
-    setInterval(() => {
-        refreshEvaluations();
-    }, 30000);
     </script>
 </body>
 </html>
