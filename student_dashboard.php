@@ -1024,11 +1024,11 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
     <!-- Logout Confirmation Modal -->
     <div id="logoutModal" class="modal">
         <div class="modal-content">
-            <h2>🚪 Confirm Logout</h2>
+            <h2>LOGOUT</h2>
             <p>Are you sure you want to log out of the Teacher Evaluation System?</p>
             <div class="modal-actions">
-                <button id="cancelLogout" class="btn btn-secondary">❌ Cancel</button>
-                <a href="logout.php" class="btn">✅ Yes, Logout</a>
+                <button id="cancelLogout" class="btn btn-secondary">Cancel</button>
+                <a href="logout.php" class="btn">Yes</a>
             </div>
         </div>
     </div>
@@ -1056,7 +1056,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             text-align: center;
             width: 90%;
             max-width: 400px;
-            border: 3px solid #D4AF37;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             animation: slideUp 0.3s ease;
             position: relative;
@@ -1069,7 +1068,6 @@ $completion_percentage = $total_teachers > 0 ? round(($completed_evaluations / $
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(135deg, #800000 0%, #D4AF37 100%);
             border-radius: 15px 15px 0 0;
         }
 
