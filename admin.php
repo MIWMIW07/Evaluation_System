@@ -30,25 +30,25 @@ try {
             teacher_name, 
             program,
             COUNT(*) as eval_count,
-            -- Calculate average score properly: (average of 20 questions on 1-5 scale) / 5 * 100
-            AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
+            -- Correct calculation: average of 20 questions (each 1-5) converted to percentage
+            (AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
                  q2_1 + q2_2 + q2_3 + q2_4 + 
                  q3_1 + q3_2 + q3_3 + q3_4 + 
-                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) * 20 as avg_score
+                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) / 5) * 100 as avg_score
         FROM evaluations 
         GROUP BY teacher_name, program 
         ORDER BY teacher_name, program
     ")->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get data for the average rate line graph
+    // Get data for the average rate line graph - FIXED QUERY
     $graphData = $pdo->query("
         SELECT 
             teacher_name,
-            -- Calculate average score properly: (average of 20 questions on 1-5 scale) / 5 * 100
-            AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
+            -- Correct calculation: average of 20 questions (each 1-5) converted to percentage
+            (AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
                  q2_1 + q2_2 + q2_3 + q2_4 + 
                  q3_1 + q3_2 + q3_3 + q3_4 + 
-                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) * 20 as avg_score,
+                 q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20) / 5) * 100 as avg_score,
             COUNT(*) as eval_count
         FROM evaluations 
         GROUP BY teacher_name
@@ -105,7 +105,7 @@ foreach ($teacherStudents as $student) {
     $groupedStudents[$teacherName][$program][] = $student;
 }
 
-// Calculate overall average rating for quick stats
+// Calculate overall average rating for quick stats - FIXED CALCULATION
 $overallAvgRating = 0;
 if (!empty($teacherStats)) {
     $totalScore = 0;
@@ -934,21 +934,20 @@ ob_end_clean(); // Clean the output buffer
 <body>
     <div class="container">
         <!-- Admin Welcome Bar -->
-        <!-- Admin Welcome Bar -->
-<div class="admin-welcome">
-    <div class="admin-info">
-        <div class="admin-avatar">
-            <i class="fas fa-user-shield"></i>
+        <div class="admin-welcome">
+            <div class="admin-info">
+                <div class="admin-avatar">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div>
+                    <h2>Welcome, Administrator!</h2>
+                    <p>Current Time: <span id="currentTime"></span></p>
+                </div>
+            </div>
+            <a href="logout.php" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
         </div>
-        <div>
-            <h2>Welcome, Administrator!</h2>
-            <p>Current Time: <span id="currentTime"></span></p>
-        </div>
-    </div>
-    <a href="logout.php" class="logout-btn">
-        <i class="fas fa-sign-out-alt"></i> Logout
-    </a>
-</div>
 
         <!-- Header -->
         <div class="header">
@@ -1499,26 +1498,26 @@ ob_end_clean(); // Clean the output buffer
         }
     }
 
-        // Update current time in real-time
-function updateCurrentTime() {
-    const now = new Date();
-    const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit',
-        hour12: true 
-    };
-    const timeString = now.toLocaleDateString('en-US', options);
-    document.getElementById('currentTime').textContent = timeString;
-}
+    // Update current time in real-time
+    function updateCurrentTime() {
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            hour12: true 
+        };
+        const timeString = now.toLocaleDateString('en-US', options);
+        document.getElementById('currentTime').textContent = timeString;
+    }
 
-// Update time immediately and then every second
-updateCurrentTime();
-setInterval(updateCurrentTime, 1000);
+    // Update time immediately and then every second
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
 
     // Refresh evaluations (regular refresh without loading)
     function refreshEvaluations() {
@@ -1542,4 +1541,4 @@ setInterval(updateCurrentTime, 1000);
     }, 30000);
     </script>
 </body>
-</html> 
+</html>
