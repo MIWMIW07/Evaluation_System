@@ -1,5 +1,5 @@
 <?php
-// evaluation_form.php - Fixed version
+// evaluation_form.php - Fixed version with character restrictions
 session_start();
 
 // Check if user is logged in and is a student
@@ -119,9 +119,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode && $teacher_info) {
             $ratings["q4_$i"] = $rating;
         }
 
-        // Get comments
+        // Get comments with character validation
         $positive = trim($_POST['q5-positive-en'] ?? $_POST['q5-positive-tl'] ?? '');
         $negative = trim($_POST['q5-negative-en'] ?? $_POST['q5-negative-tl'] ?? '');
+        
+        // Validate comment length
+        if (strlen($positive) < 30) {
+            throw new Exception("Positive comments must be at least 30 characters long.");
+        }
+        
+        if (strlen($negative) < 30) {
+            throw new Exception("Negative comments/areas for improvement must be at least 30 characters long.");
+        }
+        
         $comments = "Positive: $positive\nNegative: $negative";
 
         // Insert evaluation using the updated table structure
@@ -659,6 +669,23 @@ if ($is_view_mode && $existing_evaluation) {
             box-shadow: 0 0 0 2px rgba(128, 0, 0, 0.1);
         }
 
+        .character-count {
+            text-align: right;
+            font-size: 14px;
+            margin-top: 5px;
+            color: #9c6c6c;
+        }
+
+        .character-count.error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .character-count.success {
+            color: #28a745;
+            font-weight: bold;
+        }
+
         .submit-btn {
             display: block;
             width: 200px;
@@ -869,10 +896,12 @@ if ($is_view_mode && $existing_evaluation) {
         <?php if (!$is_view_mode && $teacher_info && empty($error)): ?>
         <div class="instructions english">
             <p>Instructions: The following items describe the aspects of teacher's behavior in and out the classroom. Please choose the number that indicates the degree to which you feel each item is descriptive of him/her. Your rating will be the reference that may lead to the improvement of instructor, so kindly rate each item as thoughtfully and carefully as possible. This will be kept confidentially.</p>
+            <p style="margin-top: 10px; font-weight: bold; color: #800000;">Note: Positive and negative comments must be at least 30 characters long.</p>
         </div>
         
         <div class="instructions tagalog">
             <p>Mga Panuto: Ang mga sumusunod na aytem ay naglalarawan sa mga aspeto ng pag-uugali ng guro sa loob at labas ng silid-aralan. Paki piliin ang numero na nagpapakita ng antas kung saan naramdaman mo ang bawat aytem na naglalarawan sa kanya. Ang inyong rating ay magiging sanggunian na maaaring humantong sa pagpapabuti ng tagapagturo, kaya mangyaring i-rate ang bawat aytem nang maingat at maayos. Ito ay itatago nang kumpidensyal.</p>
+            <p style="margin-top: 10px; font-weight: bold; color: #800000;">Paalala: Ang positibo at negatibong komento ay dapat na hindi bababa sa 30 na karakter ang haba.</p>
         </div>
         
         <div class="rating-scale">
@@ -999,10 +1028,12 @@ if ($is_view_mode && $existing_evaluation) {
                 <div class="comments-section">
                     <h2>5. Comments</h2>
                     <h3>Positive Comments</h3>
-                    <textarea name="q5-positive-en" placeholder="What are the positive aspects about this teacher's performance?" required></textarea>
+                    <textarea name="q5-positive-en" placeholder="What are the positive aspects about this teacher's performance? (Minimum 30 characters)" required></textarea>
+                    <div class="character-count" id="positive-en-count">0/30 characters</div>
                     
                     <h3>Negative Comments / Areas for Improvement</h3>
-                    <textarea name="q5-negative-en" placeholder="What areas could this teacher improve on?" required></textarea>
+                    <textarea name="q5-negative-en" placeholder="What areas could this teacher improve on? (Minimum 30 characters)" required></textarea>
+                    <div class="character-count" id="negative-en-count">0/30 characters</div>
                 </div>
             </div>
             
@@ -1119,10 +1150,12 @@ if ($is_view_mode && $existing_evaluation) {
                 <div class="comments-section">
                     <h2>5. Komento</h2>
                     <h3>Positibong Komento</h3>
-                    <textarea name="q5-positive-tl" placeholder="Ano ang mga positibong aspeto tungkol sa pagganap ng guro na ito?"></textarea>
+                    <textarea name="q5-positive-tl" placeholder="Ano ang mga positibong aspeto tungkol sa pagganap ng guro na ito? (Hindi bababa sa 30 na karakter)"></textarea>
+                    <div class="character-count" id="positive-tl-count">0/30 characters</div>
                     
                     <h3>Negatibong Komento / Mga Lugar na Pagbubutihin</h3>
-                    <textarea name="q5-negative-tl" placeholder="Anong mga lugar ang maaaring pagbutihin ng guro na ito?"></textarea>
+                    <textarea name="q5-negative-tl" placeholder="Anong mga lugar ang maaaring pagbutihin ng guro na ito? (Hindi bababa sa 30 na karakter)"></textarea>
+                    <div class="character-count" id="negative-tl-count">0/30 characters</div>
                 </div>
             </div>
             
@@ -1161,6 +1194,12 @@ if ($is_view_mode && $existing_evaluation) {
             const progressText = document.getElementById('progress-text');
             const submitBtn = document.getElementById('submit-btn');
 
+            // Character count elements
+            const positiveEnCount = document.getElementById('positive-en-count');
+            const negativeEnCount = document.getElementById('negative-en-count');
+            const positiveTlCount = document.getElementById('positive-tl-count');
+            const negativeTlCount = document.getElementById('negative-tl-count');
+
             // Helper: sync radio selection and comments from English to Tagalog
             function syncEnglishToTagalog() {
                 // Sync radio buttons
@@ -1179,8 +1218,14 @@ if ($is_view_mode && $existing_evaluation) {
                 const negativeEn = form.querySelector('textarea[name="q5-negative-en"]');
                 const negativeTl = form.querySelector('textarea[name="q5-negative-tl"]');
                 
-                if (positiveEn && positiveTl) positiveTl.value = positiveEn.value;
-                if (negativeEn && negativeTl) negativeTl.value = negativeEn.value;
+                if (positiveEn && positiveTl) {
+                    positiveTl.value = positiveEn.value;
+                    updateCharacterCount(positiveTl, positiveTlCount);
+                }
+                if (negativeEn && negativeTl) {
+                    negativeTl.value = negativeEn.value;
+                    updateCharacterCount(negativeTl, negativeTlCount);
+                }
             }
 
             // Helper: sync radio selection and comments from Tagalog to English
@@ -1201,8 +1246,14 @@ if ($is_view_mode && $existing_evaluation) {
                 const negativeTl = form.querySelector('textarea[name="q5-negative-tl"]');
                 const negativeEn = form.querySelector('textarea[name="q5-negative-en"]');
                 
-                if (positiveTl && positiveEn) positiveEn.value = positiveTl.value;
-                if (negativeTl && negativeEn) negativeEn.value = negativeTl.value;
+                if (positiveTl && positiveEn) {
+                    positiveEn.value = positiveTl.value;
+                    updateCharacterCount(positiveEn, positiveEnCount);
+                }
+                if (negativeTl && negativeEn) {
+                    negativeEn.value = negativeTl.value;
+                    updateCharacterCount(negativeEn, negativeEnCount);
+                }
             }
 
             // Language toggle
@@ -1236,6 +1287,58 @@ if ($is_view_mode && $existing_evaluation) {
                 tagalogContent.forEach(el => el.style.display = 'none');
             }
 
+            // Update character count
+            function updateCharacterCount(textarea, countElement) {
+                const length = textarea.value.length;
+                countElement.textContent = `${length}/30 characters`;
+                
+                if (length < 30) {
+                    countElement.classList.remove('success');
+                    countElement.classList.add('error');
+                } else {
+                    countElement.classList.remove('error');
+                    countElement.classList.add('success');
+                }
+            }
+
+            // Initialize character counts
+            const positiveEn = form.querySelector('textarea[name="q5-positive-en"]');
+            const negativeEn = form.querySelector('textarea[name="q5-negative-en"]');
+            const positiveTl = form.querySelector('textarea[name="q5-positive-tl"]');
+            const negativeTl = form.querySelector('textarea[name="q5-negative-tl"]');
+            
+            if (positiveEn) {
+                updateCharacterCount(positiveEn, positiveEnCount);
+                positiveEn.addEventListener('input', () => {
+                    updateCharacterCount(positiveEn, positiveEnCount);
+                    updateProgress();
+                });
+            }
+            
+            if (negativeEn) {
+                updateCharacterCount(negativeEn, negativeEnCount);
+                negativeEn.addEventListener('input', () => {
+                    updateCharacterCount(negativeEn, negativeEnCount);
+                    updateProgress();
+                });
+            }
+            
+            if (positiveTl) {
+                updateCharacterCount(positiveTl, positiveTlCount);
+                positiveTl.addEventListener('input', () => {
+                    updateCharacterCount(positiveTl, positiveTlCount);
+                    updateProgress();
+                });
+            }
+            
+            if (negativeTl) {
+                updateCharacterCount(negativeTl, negativeTlCount);
+                negativeTl.addEventListener('input', () => {
+                    updateCharacterCount(negativeTl, negativeTlCount);
+                    updateProgress();
+                });
+            }
+
             // Update progress bar - FIXED VERSION
             function updateProgress() {
                 if (!form) return;
@@ -1263,8 +1366,8 @@ if ($is_view_mode && $existing_evaluation) {
                     const negativeEn = form.querySelector('textarea[name="q5-negative-en"]');
                     
                     totalFields += 2;
-                    if (positiveEn && positiveEn.value.trim()) completedFields++;
-                    if (negativeEn && negativeEn.value.trim()) completedFields++;
+                    if (positiveEn && positiveEn.value.trim().length >= 30) completedFields++;
+                    if (negativeEn && negativeEn.value.trim().length >= 30) completedFields++;
                 } else {
                     // Check Tagalog radio buttons
                     const tagalogRadios = form.querySelectorAll('input[type="radio"][name*="_tl"]');
@@ -1282,8 +1385,8 @@ if ($is_view_mode && $existing_evaluation) {
                     const negativeTl = form.querySelector('textarea[name="q5-negative-tl"]');
                     
                     totalFields += 2;
-                    if (positiveTl && positiveTl.value.trim()) completedFields++;
-                    if (negativeTl && negativeTl.value.trim()) completedFields++;
+                    if (positiveTl && positiveTl.value.trim().length >= 30) completedFields++;
+                    if (negativeTl && negativeTl.value.trim().length >= 30) completedFields++;
                 }
 
                 const progress = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
@@ -1359,17 +1462,17 @@ if ($is_view_mode && $existing_evaluation) {
                     const positiveEn = form.querySelector('textarea[name="q5-positive-en"]');
                     const negativeEn = form.querySelector('textarea[name="q5-negative-en"]');
                     
-                    if (!positiveEn || !positiveEn.value.trim()) {
+                    if (!positiveEn || positiveEn.value.trim().length < 30) {
                         valid = false;
-                        errors.push('Please provide positive comments');
+                        errors.push('Positive comments must be at least 30 characters long');
                         if (positiveEn) positiveEn.style.border = '2px solid red';
                     } else if (positiveEn) {
                         positiveEn.style.border = '';
                     }
                     
-                    if (!negativeEn || !negativeEn.value.trim()) {
+                    if (!negativeEn || negativeEn.value.trim().length < 30) {
                         valid = false;
-                        errors.push('Please provide areas for improvement');
+                        errors.push('Negative comments/areas for improvement must be at least 30 characters long');
                         if (negativeEn) negativeEn.style.border = '2px solid red';
                     } else if (negativeEn) {
                         negativeEn.style.border = '';
