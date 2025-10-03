@@ -226,36 +226,37 @@ function generateIndividualReport($evaluation, $outputPath) {
 
         $pdf->Ln(5);
 
-        if (!empty($evaluation['positive_comment']) || !empty($evaluation['negative_comment'])) {
+        // REPLACED RATING SCALE WITH COMMENTS TABLE
+        $positiveComments = !empty(trim($evaluation['positive_comments'] ?? '')) ? $evaluation['positive_comments'] : '';
+        $negativeComments = !empty(trim($evaluation['negative_comments'] ?? '')) ? $evaluation['negative_comments'] : '';
+
+        if (!empty($positiveComments) || !empty($negativeComments)) {
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 6, 'STUDENT COMMENTS:', 0, 1);
+            $pdf->Ln(2);
+
+            // Table header
+            $pdf->SetFont('helvetica', 'B', 9);
+            $pdf->SetFillColor(200, 230, 200); // Light green for positive
+            $pdf->Cell(95, 7, 'POSITIVE FEEDBACK', 1, 0, 'C', true);
+            $pdf->SetFillColor(255, 200, 200); // Light red for negative
+            $pdf->Cell(95, 7, 'AREAS FOR IMPROVEMENT', 1, 1, 'C', true);
+
+            // Calculate row height based on content
+            $positiveHeight = $pdf->getStringHeight(95, $positiveComments, true, true, '', 1);
+            $negativeHeight = $pdf->getStringHeight(95, $negativeComments, true, true, '', 1);
+            $rowHeight = max($positiveHeight, $negativeHeight, 10); // Minimum height of 10
+
+            // Comments content
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->MultiCell(95, $rowHeight, $positiveComments, 1, 'L', false, 0);
+            $pdf->MultiCell(95, $rowHeight, $negativeComments, 1, 'L', false, 1);
+        } else {
             $pdf->SetFont('helvetica', 'B', 10);
             $pdf->Cell(0, 6, 'STUDENT COMMENTS:', 0, 1);
             $pdf->SetFont('helvetica', '', 9);
-            
-            if (!empty($evaluation['positive_comment'])) {
-                $pdf->SetFont('helvetica', 'B', 9);
-                $pdf->Cell(0, 5, 'Positive Feedback:', 0, 1);
-                $pdf->SetFont('helvetica', '', 9);
-                $pdf->MultiCell(0, 5, $evaluation['positive_comment'], 0, 'L');
-                $pdf->Ln(2);
-            }
-            
-            if (!empty($evaluation['negative_comment'])) {
-                $pdf->SetFont('helvetica', 'B', 9);
-                $pdf->Cell(0, 5, 'Areas for Improvement:', 0, 1);
-                $pdf->SetFont('helvetica', '', 9);
-                $pdf->MultiCell(0, 5, $evaluation['negative_comment'], 0, 'L');
-                $pdf->Ln(2);
-            }
+            $pdf->Cell(0, 6, 'No comments provided by student.', 0, 1, 'C');
         }
-
-        $pdf->SetFont('helvetica', 'B', 10);
-        $pdf->Cell(0, 6, 'RATING SCALE:', 0, 1);
-        $pdf->SetFont('helvetica', '', 9);
-        $pdf->Cell(0, 5, '4.50 - 5.00 = Outstanding', 0, 1);
-        $pdf->Cell(0, 5, '3.50 - 4.49 = Very Satisfactory', 0, 1);
-        $pdf->Cell(0, 5, '2.50 - 3.49 = Satisfactory', 0, 1);
-        $pdf->Cell(0, 5, '1.50 - 2.49 = Fair', 0, 1);
-        $pdf->Cell(0, 5, '1.00 - 1.49 = Poor', 0, 1);
 
         $pdf->Output($outputPath, 'F');
         return true;
@@ -443,14 +444,99 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
 
         $pdf->Ln(5);
 
+        // REPLACED RATING SCALE WITH COMMENTS SUMMARY TABLE
         $pdf->SetFont('helvetica', 'B', 10);
-        $pdf->Cell(0, 6, 'RATING SCALE:', 0, 1);
-        $pdf->SetFont('helvetica', '', 9);
-        $pdf->Cell(0, 5, '4.50 - 5.00 = Outstanding', 0, 1);
-        $pdf->Cell(0, 5, '3.50 - 4.49 = Very Satisfactory', 0, 1);
-        $pdf->Cell(0, 5, '2.50 - 3.49 = Satisfactory', 0, 1);
-        $pdf->Cell(0, 5, '1.50 - 2.49 = Fair', 0, 1);
-        $pdf->Cell(0, 5, '1.00 - 1.49 = Poor', 0, 1);
+        $pdf->Cell(0, 6, 'STUDENT COMMENTS SUMMARY:', 0, 1);
+        $pdf->Ln(2);
+
+        // Collect all comments
+        $allPositiveComments = [];
+        $allNegativeComments = [];
+
+        foreach ($evaluations as $eval) {
+            $positiveComment = !empty(trim($eval['positive_comments'] ?? '')) ? $eval['positive_comments'] : null;
+            $negativeComment = !empty(trim($eval['negative_comments'] ?? '')) ? $eval['negative_comments'] : null;
+
+            if ($positiveComment) {
+                $allPositiveComments[] = [
+                    'comment' => $positiveComment,
+                    'student' => $eval['student_name'],
+                    'section' => $eval['section']
+                ];
+            }
+
+            if ($negativeComment) {
+                $allNegativeComments[] = [
+                    'comment' => $negativeComment,
+                    'student' => $eval['student_name'],
+                    'section' => $eval['section']
+                ];
+            }
+        }
+
+        // Calculate statistics
+        $totalWithPositive = count($allPositiveComments);
+        $totalWithNegative = count($allNegativeComments);
+        $totalWithAnyComment = count(array_filter($evaluations, function($eval) {
+            return !empty(trim($eval['positive_comments'] ?? '')) || !empty(trim($eval['negative_comments'] ?? ''));
+        }));
+
+        // Comments Statistics
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->Cell(0, 6, 'Comments Statistics:', 0, 1);
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(0, 5, "Evaluations with Positive Comments: $totalWithPositive ($totalStudents total)", 0, 1);
+        $pdf->Cell(0, 5, "Evaluations with Negative Comments: $totalWithNegative ($totalStudents total)", 0, 1);
+        $pdf->Cell(0, 5, "Evaluations with Any Comments: $totalWithAnyComment ($totalStudents total)", 0, 1);
+        $pdf->Ln(3);
+
+        // Display comments in a table if there are any
+        if (!empty($allPositiveComments) || !empty($allNegativeComments)) {
+            // Table header
+            $pdf->SetFont('helvetica', 'B', 8);
+            $pdf->SetFillColor(200, 230, 200); // Light green for positive
+            $pdf->Cell(95, 6, 'POSITIVE FEEDBACK COMMENTS', 1, 0, 'C', true);
+            $pdf->SetFillColor(255, 200, 200); // Light red for negative
+            $pdf->Cell(95, 6, 'AREAS FOR IMPROVEMENT COMMENTS', 1, 1, 'C', true);
+
+            $pdf->SetFont('helvetica', '', 7);
+            
+            // Determine max rows to display
+            $maxRows = max(count($allPositiveComments), count($allNegativeComments));
+            $maxRows = min($maxRows, 20); // Limit to 20 rows to prevent overflow
+
+            for ($i = 0; $i < $maxRows; $i++) {
+                $positiveData = $allPositiveComments[$i] ?? null;
+                $negativeData = $allNegativeComments[$i] ?? null;
+
+                $positiveText = $positiveData ? 
+                    "[" . $positiveData['student'] . " - " . $positiveData['section'] . "]\n" . 
+                    substr($positiveData['comment'], 0, 80) . (strlen($positiveData['comment']) > 80 ? '...' : '') : 
+                    '';
+
+                $negativeText = $negativeData ? 
+                    "[" . $negativeData['student'] . " - " . $negativeData['section'] . "]\n" . 
+                    substr($negativeData['comment'], 0, 80) . (strlen($negativeData['comment']) > 80 ? '...' : '') : 
+                    '';
+
+                // Calculate row height
+                $positiveHeight = $pdf->getStringHeight(95, $positiveText, true, true, '', 1);
+                $negativeHeight = $pdf->getStringHeight(95, $negativeText, true, true, '', 1);
+                $rowHeight = max($positiveHeight, $negativeHeight, 8);
+
+                $pdf->MultiCell(95, $rowHeight, $positiveText, 1, 'L', false, 0);
+                $pdf->MultiCell(95, $rowHeight, $negativeText, 1, 'L', false, 1);
+            }
+
+            // Note if there are more comments
+            if (count($allPositiveComments) > 20 || count($allNegativeComments) > 20) {
+                $pdf->SetFont('helvetica', 'I', 7);
+                $pdf->Cell(0, 5, '* Displaying first 20 comments only. See individual reports for complete comments.', 0, 1, 'C');
+            }
+        } else {
+            $pdf->SetFont('helvetica', '', 9);
+            $pdf->Cell(0, 6, 'No comments provided by students.', 0, 1, 'C');
+        }
 
         $pdf->Output($outputPath, 'F');
         return true;
