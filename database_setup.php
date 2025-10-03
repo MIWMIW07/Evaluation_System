@@ -285,9 +285,9 @@ try {
     echo "✓ Teacher assignments table created<br><br>";
 
     // ==============================
-    // Evaluations Table
+    // Evaluations Table - UPDATED with separate comment fields
     // ==============================
-    echo "📊 Creating evaluations table...<br>";
+    echo "📊 Creating evaluations table (with separate comment fields)...<br>";
     $pdo->exec("
         CREATE TABLE evaluations (
             id SERIAL PRIMARY KEY,
@@ -325,8 +325,10 @@ try {
             q4_5 SMALLINT CHECK (q4_5 BETWEEN 1 AND 5),
             q4_6 SMALLINT CHECK (q4_6 BETWEEN 1 AND 5),
             
-            -- Comments and timestamps
-            comments TEXT,
+            -- SEPARATED COMMENTS FIELDS FOR EASIER QUERYING
+            positive_comments TEXT,
+            negative_comments TEXT,
+            
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             
@@ -338,8 +340,10 @@ try {
         CREATE INDEX idx_teacher_eval ON evaluations(teacher_name);
         CREATE INDEX idx_section_eval ON evaluations(section);
         CREATE INDEX idx_program_eval ON evaluations(program);
+        CREATE INDEX idx_positive_comments ON evaluations USING gin(to_tsvector('english', positive_comments));
+        CREATE INDEX idx_negative_comments ON evaluations USING gin(to_tsvector('english', negative_comments));
     ");
-    echo "✓ Evaluations table created<br><br>";
+    echo "✓ Evaluations table created with separate comment fields<br><br>";
 
     // ==============================
     // Insert ALL Real Teacher Assignments
@@ -393,7 +397,7 @@ try {
     echo "<p><strong>Tables Created:</strong></p>";
     echo "<ul>";
     echo "<li>📋 <code>teacher_assignments</code> - All real teacher-section assignments</li>";
-    echo "<li>📊 <code>evaluations</code> - Student evaluation responses storage</li>";
+    echo "<li>📊 <code>evaluations</code> - Student evaluation responses storage <strong>(with separate positive/negative comment fields)</strong></li>";
     echo "</ul>";
     
     echo "<p><strong>Data Sources:</strong></p>";
@@ -403,11 +407,19 @@ try {
     echo "<li>📊 <strong>Evaluations:</strong> Database evaluations table</li>";
     echo "</ul>";
     
+    echo "<p><strong>New Feature:</strong></p>";
+    echo "<ul>";
+    echo "<li>✅ <strong>Separate Comment Fields:</strong> <code>positive_comments</code> and <code>negative_comments</code> for easier querying and analysis</li>";
+    echo "<li>✅ <strong>Full-Text Search:</strong> Indexed comments for fast searching</li>";
+    echo "<li>✅ <strong>Better Reporting:</strong> Easy to generate reports on positive feedback vs areas for improvement</li>";
+    echo "</ul>";
+    
     echo "<p><strong>Ready to use:</strong></p>";
     echo "<ol>";
     echo "<li>✅ All teacher assignments are loaded</li>";
     echo "<li>✅ Your BSCS3M1 section should now show teachers</li>";
     echo "<li>✅ Students can now evaluate their assigned teachers</li>";
+    echo "<li>✅ Separate comment fields for better analysis</li>";
     echo "</ol>";
     echo "</div>";
     
@@ -426,7 +438,3 @@ try {
     exit(1);
 }
 ?>
-
-
-
-
