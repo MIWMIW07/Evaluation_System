@@ -1,5 +1,5 @@
 <?php
-// evaluation_form.php - Fixed version with character restrictions
+// evaluation_form.php - Updated version with separate positive/negative comments
 session_start();
 
 // Check if user is logged in and is a student
@@ -119,60 +119,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_view_mode && $teacher_info) {
             $ratings["q4_$i"] = $rating;
         }
 
-        // Get comments with character validation
-        $positive = trim($_POST['q5-positive-en'] ?? $_POST['q5-positive-tl'] ?? '');
-        $negative = trim($_POST['q5-negative-en'] ?? $_POST['q5-negative-tl'] ?? '');
+        // Get comments with character validation - SEPARATE FIELDS
+        $positive_comments = trim($_POST['q5-positive-en'] ?? $_POST['q5-positive-tl'] ?? '');
+        $negative_comments = trim($_POST['q5-negative-en'] ?? $_POST['q5-negative-tl'] ?? '');
         
         // Validate comment length
-        if (strlen($positive) < 30) {
+        if (strlen($positive_comments) < 30) {
             throw new Exception("Positive comments must be at least 30 characters long.");
         }
         
-        if (strlen($negative) < 30) {
+        if (strlen($negative_comments) < 30) {
             throw new Exception("Negative comments/areas for improvement must be at least 30 characters long.");
         }
-        
-        $comments = "Positive: $positive\nNegative: $negative";
 
-        // Insert evaluation using the updated table structure
-        $insert_sql = "INSERT INTO evaluations (
-    student_username, student_name, teacher_name, section, program,
-    q1_1, q1_2, q1_3, q1_4, q1_5, q1_6,
-    q2_1, q2_2, q2_3, q2_4,
-    q3_1, q3_2, q3_3, q3_4,
-    q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
-    comments
-) VALUES (
-    ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?,
-    ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?,
-    ?
-)";
-
-        $params = [
-            $_SESSION['username'],
-            $_SESSION['full_name'] ?? '',
-            $teacher_name,
-            $_SESSION['section'] ?? '',
-            $_SESSION['program'] ?? '',
-            $ratings['q1_1'], $ratings['q1_2'], $ratings['q1_3'], $ratings['q1_4'], $ratings['q1_5'], $ratings['q1_6'],
-            $ratings['q2_1'], $ratings['q2_2'], $ratings['q2_3'], $ratings['q2_4'],
-            $ratings['q3_1'], $ratings['q3_2'], $ratings['q3_3'], $ratings['q3_4'],
-            $ratings['q4_1'], $ratings['q4_2'], $ratings['q4_3'], $ratings['q4_4'], $ratings['q4_5'], $ratings['q4_6'],
-            $comments
+        // Use the updated saveEvaluation function with separate comment fields
+        $evaluationData = [
+            'student_username' => $_SESSION['username'],
+            'student_name' => $_SESSION['full_name'] ?? '',
+            'teacher_name' => $teacher_name,
+            'section' => $_SESSION['section'] ?? '',
+            'program' => $_SESSION['program'] ?? '',
+            'q1_1' => $ratings['q1_1'], 'q1_2' => $ratings['q1_2'], 'q1_3' => $ratings['q1_3'],
+            'q1_4' => $ratings['q1_4'], 'q1_5' => $ratings['q1_5'], 'q1_6' => $ratings['q1_6'],
+            'q2_1' => $ratings['q2_1'], 'q2_2' => $ratings['q2_2'], 'q2_3' => $ratings['q2_3'], 'q2_4' => $ratings['q2_4'],
+            'q3_1' => $ratings['q3_1'], 'q3_2' => $ratings['q3_2'], 'q3_3' => $ratings['q3_3'], 'q3_4' => $ratings['q3_4'],
+            'q4_1' => $ratings['q4_1'], 'q4_2' => $ratings['q4_2'], 'q4_3' => $ratings['q4_3'],
+            'q4_4' => $ratings['q4_4'], 'q4_5' => $ratings['q4_5'], 'q4_6' => $ratings['q4_6'],
+            'positive_comments' => $positive_comments,
+            'negative_comments' => $negative_comments
         ];
 
-        $stmt = $pdo->prepare($insert_sql);
-        $result = $stmt->execute($params);
+        $result = saveEvaluation($evaluationData);
 
         if ($result) {
             $success = "Evaluation submitted successfully! Thank you for your feedback.";
             // Reload to show in view mode
             $check_stmt = $pdo->prepare("
                 SELECT * FROM evaluations 
-                WHERE student_username = ? AND teacher_name =  ? AND section = ?
+                WHERE student_username = ? AND teacher_name = ? AND section = ?
             ");
             $check_stmt->execute([$student_username, $teacher_name, $student_section]);
             $existing_evaluation = $check_stmt->fetch(PDO::FETCH_ASSOC);
@@ -768,6 +752,30 @@ if ($is_view_mode && $existing_evaluation) {
             background: #5E0C0C;
         }
 
+        /* View mode styles for separate comments */
+        .comments-display {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f5eb;
+            border-radius: 8px;
+        }
+
+        .positive-comments {
+            border-left: 4px solid #28a745;
+            padding-left: 15px;
+            margin-bottom: 20px;
+        }
+
+        .negative-comments {
+            border-left: 4px solid #dc3545;
+            padding-left: 15px;
+        }
+
+        .comments-display h3 {
+            color: #800000;
+            margin-bottom: 10px;
+        }
+
         /* Responsive design */
         @media (max-width: 768px) {
             .rating-options {
@@ -889,6 +897,20 @@ if ($is_view_mode && $existing_evaluation) {
                 <?php if ($average_rating > 0): ?>
                 <p>Average Rating: <strong><?php echo $average_rating; ?>/5.0</strong> (<?php echo $performance_level; ?>)</p>
                 <?php endif; ?>
+                
+                <!-- Display separate comments in view mode -->
+                <div class="comments-display">
+                    <div class="positive-comments">
+                        <h3>📝 Positive Comments</h3>
+                        <p><?php echo safe_display($existing_evaluation['positive_comments'] ?? 'No positive comments provided.'); ?></p>
+                    </div>
+                    
+                    <div class="negative-comments">
+                        <h3>💡 Areas for Improvement</h3>
+                        <p><?php echo safe_display($existing_evaluation['negative_comments'] ?? 'No improvement suggestions provided.'); ?></p>
+                    </div>
+                </div>
+                
                 <a href="student_dashboard.php" class="back-link">← Back to Dashboard</a>
             </div>
         <?php endif; ?>
