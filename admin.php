@@ -55,7 +55,7 @@ try {
         ORDER BY avg_score DESC
     ")->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get student names for each teacher and program
+    // Get student names for each teacher and program - UPDATED TO INCLUDE COMMENTS
     $teacherStudents = $pdo->query("
         SELECT 
             teacher_name,
@@ -63,6 +63,8 @@ try {
             student_name,
             section,
             submitted_at,
+            positive_comments,
+            negative_comments,
             (q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 + 
              q2_1 + q2_2 + q2_3 + q2_4 + 
              q3_1 + q3_2 + q3_3 + q3_4 + 
@@ -820,7 +822,7 @@ ob_end_clean(); // Clean the output buffer
         }
         
         .student-list-container {
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
             border: 1px solid #e9ecef;
             border-radius: 5px;
@@ -830,9 +832,8 @@ ob_end_clean(); // Clean the output buffer
         
         .student-item {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 10px;
+            flex-direction: column;
+            padding: 10px;
             border-bottom: 1px solid #e9ecef;
             font-size: 0.85rem;
         }
@@ -844,6 +845,7 @@ ob_end_clean(); // Clean the output buffer
         .student-name {
             font-weight: 500;
             color: var(--neutral-dark);
+            margin-bottom: 5px;
         }
         
         .student-details {
@@ -851,6 +853,7 @@ ob_end_clean(); // Clean the output buffer
             gap: 10px;
             font-size: 0.8rem;
             color: #6c757d;
+            margin-bottom: 8px;
         }
         
         .student-score {
@@ -869,6 +872,27 @@ ob_end_clean(); // Clean the output buffer
         .student-date {
             color: #6c757d;
             font-size: 0.75rem;
+        }
+        
+        .student-comments {
+            width: 100%;
+            margin-top: 5px;
+            font-size: 0.75rem;
+            border-top: 1px dashed #e9ecef;
+            padding-top: 8px;
+        }
+        
+        .positive-comment {
+            color: var(--success);
+            margin-bottom: 3px;
+        }
+        
+        .negative-comment {
+            color: var(--danger);
+        }
+        
+        .student-comments strong {
+            font-weight: 600;
         }
         
         .no-students {
@@ -1120,15 +1144,15 @@ ob_end_clean(); // Clean the output buffer
                                 <td><?php echo htmlspecialchars($eval['teacher_name'] ?? 'N/A'); ?></td>
                                 <td><?php echo htmlspecialchars($eval['program'] ?? 'N/A'); ?></td>
                                 <td><?php echo htmlspecialchars($eval['section'] ?? 'N/A'); ?></td>
-                                <td class="comment-cell positive-comment" title="<?php echo htmlspecialchars($eval['positive_comment'] ?? ''); ?>">
+                                <td class="comment-cell positive-comment" title="<?php echo htmlspecialchars($eval['positive_comments'] ?? ''); ?>">
                                     <?php 
-                                    $positiveComment = $eval['positive_comment'] ?? '';
+                                    $positiveComment = $eval['positive_comments'] ?? '';
                                     echo !empty($positiveComment) ? htmlspecialchars($positiveComment) : '-';
                                     ?>
                                 </td>
-                                <td class="comment-cell negative-comment" title="<?php echo htmlspecialchars($eval['negative_comment'] ?? ''); ?>">
+                                <td class="comment-cell negative-comment" title="<?php echo htmlspecialchars($eval['negative_comments'] ?? ''); ?>">
                                     <?php 
-                                    $negativeComment = $eval['negative_comment'] ?? '';
+                                    $negativeComment = $eval['negative_comments'] ?? '';
                                     echo !empty($negativeComment) ? htmlspecialchars($negativeComment) : '-';
                                     ?>
                                 </td>
@@ -1227,6 +1251,23 @@ ob_end_clean(); // Clean the output buffer
                                                                     <span class="student-section"><?php echo htmlspecialchars($student['section']); ?></span>
                                                                     <span class="student-score"><?php echo $studentAvgScore; ?>/5.0</span>
                                                                     <span class="student-date"><?php echo date('M j', strtotime($student['submitted_at'])); ?></span>
+                                                                </div>
+                                                                <!-- Comments Section -->
+                                                                <div class="student-comments">
+                                                                    <div class="positive-comment">
+                                                                        <strong>Positive:</strong> 
+                                                                        <?php 
+                                                                        $positiveComment = $student['positive_comments'] ?? '';
+                                                                        echo !empty($positiveComment) ? htmlspecialchars(substr($positiveComment, 0, 50) . (strlen($positiveComment) > 50 ? '...' : '')) : '-';
+                                                                        ?>
+                                                                    </div>
+                                                                    <div class="negative-comment">
+                                                                        <strong>To Improve:</strong> 
+                                                                        <?php 
+                                                                        $negativeComment = $student['negative_comments'] ?? '';
+                                                                        echo !empty($negativeComment) ? htmlspecialchars(substr($negativeComment, 0, 50) . (strlen($negativeComment) > 50 ? '...' : '')) : '-';
+                                                                        ?>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                     <?php 
