@@ -1262,7 +1262,7 @@ ob_end_clean(); // Clean the output buffer
                                                                         ?>
                                                                     </div>
                                                                     <div class="negative-comment">
-                                                                        <strong>To Improve:</strong> 
+                                                                        <strong>Negative:</strong> 
                                                                         <?php 
                                                                         $negativeComment = $student['negative_comments'] ?? '';
                                                                         echo !empty($negativeComment) ? htmlspecialchars(substr($negativeComment, 0, 50) . (strlen($negativeComment) > 50 ? '...' : '')) : '-';
