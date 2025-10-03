@@ -1067,17 +1067,6 @@ ob_end_clean(); // Clean the output buffer
                     ?></p>
                 </div>
                 <div class="graph-summary-card">
-                    <h4>Average Rating</h4>
-                    <p id="averageRating"><?php 
-                        if (!empty($graphData)) {
-                            $avgRating = array_sum(array_column($graphData, 'avg_score')) / count($graphData);
-                            echo number_format($avgRating, 1) . '%';
-                        } else {
-                            echo 'N/A';
-                        }
-                    ?></p>
-                </div>
-                <div class="graph-summary-card">
                     <h4>Teachers Shown</h4>
                     <p id="teachersShown"><?php echo count($graphData); ?></p>
                 </div>
@@ -1409,7 +1398,6 @@ ob_end_clean(); // Clean the output buffer
         if (data.length === 0) {
             document.getElementById('highestRating').textContent = 'N/A';
             document.getElementById('lowestRating').textContent = 'N/A';
-            document.getElementById('averageRating').textContent = 'N/A';
             document.getElementById('teachersShown').textContent = '0';
             return;
         }
@@ -1417,11 +1405,9 @@ ob_end_clean(); // Clean the output buffer
         const scores = data.map(item => item.avg_score);
         const highest = Math.max(...scores);
         const lowest = Math.min(...scores);
-        const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
         
         document.getElementById('highestRating').textContent = highest.toFixed(1) + '%';
         document.getElementById('lowestRating').textContent = lowest.toFixed(1) + '%';
-        document.getElementById('averageRating').textContent = average.toFixed(1) + '%';
         document.getElementById('teachersShown').textContent = data.length;
     }
     
