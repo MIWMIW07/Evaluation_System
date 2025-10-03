@@ -174,14 +174,14 @@ function saveEvaluation($evaluationData) {
                 q2_1, q2_2, q2_3, q2_4,
                 q3_1, q3_2, q3_3, q3_4,
                 q4_1, q4_2, q4_3, q4_4, q4_5, q4_6,
-                comments, created_at, submitted_at
+                positive_comments, negative_comments, created_at, submitted_at
             ) VALUES (
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?,
-                ?, NOW(), NOW()
+                ?, ?, NOW(), NOW()
             )
             ON CONFLICT (student_username, teacher_name, section) 
             DO UPDATE SET
@@ -191,7 +191,9 @@ function saveEvaluation($evaluationData) {
                 q3_1 = EXCLUDED.q3_1, q3_2 = EXCLUDED.q3_2, q3_3 = EXCLUDED.q3_3, q3_4 = EXCLUDED.q3_4,
                 q4_1 = EXCLUDED.q4_1, q4_2 = EXCLUDED.q4_2, q4_3 = EXCLUDED.q4_3,
                 q4_4 = EXCLUDED.q4_4, q4_5 = EXCLUDED.q4_5, q4_6 = EXCLUDED.q4_6,
-                comments = EXCLUDED.comments, submitted_at = NOW()
+                positive_comments = EXCLUDED.positive_comments, 
+                negative_comments = EXCLUDED.negative_comments, 
+                submitted_at = NOW()
         ");
         
         return $stmt->execute([
@@ -206,7 +208,8 @@ function saveEvaluation($evaluationData) {
             $evaluationData['q3_1'], $evaluationData['q3_2'], $evaluationData['q3_3'], $evaluationData['q3_4'],
             $evaluationData['q4_1'], $evaluationData['q4_2'], $evaluationData['q4_3'],
             $evaluationData['q4_4'], $evaluationData['q4_5'], $evaluationData['q4_6'],
-            $evaluationData['comments'] ?? ''
+            $evaluationData['positive_comments'] ?? '',
+            $evaluationData['negative_comments'] ?? ''
         ]);
     } catch (Exception $e) {
         error_log("Save evaluation error: " . $e->getMessage());
@@ -227,6 +230,128 @@ function addTeacherAssignment($teacherName, $section, $program) {
     } catch (Exception $e) {
         error_log("Add teacher assignment error: " . $e->getMessage());
         return false;
+    }
+}
+
+// New functions for working with separated comments
+function getTeacherPositiveComments($teacherName) {
+    try {
+        $pdo = getPDO();
+        $stmt = $pdo->prepare("
+            SELECT positive_comments, student_name, section, submitted_at 
+            FROM evaluations 
+            WHERE teacher_name = ? AND positive_comments IS NOT NULL AND positive_comments != ''
+            ORDER BY submitted_at DESC
+        ");
+        $stmt->execute([$teacherName]);
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Get positive comments error: " . $e->getMessage());
+        return [];
+    }
+}
+
+function getTeacherNegativeComments($teacherName) {
+    try {
+        $pdo = getPDO();
+        $stmt = $pdo->prepare("
+            SELECT negative_comments, student_name, section, submitted_at 
+            FROM evaluations 
+            WHERE teacher_name = ? AND negative_comments IS NOT NULL AND negative_comments != ''
+            ORDER BY submitted_at DESC
+        ");
+        $stmt->execute([$teacherName]);
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Get negative comments error: " . $e->getMessage());
+        return [];
+    }
+}
+
+function getEvaluationStatistics($teacherName = null) {
+    try {
+        $pdo = getPDO();
+        
+        if ($teacherName) {
+            // Statistics for specific teacher
+            $stmt = $pdo->prepare("
+                SELECT 
+                    COUNT(*) as total_evaluations,
+                    AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 +
+                         q2_1 + q2_2 + q2_3 + q2_4 +
+                         q3_1 + q3_2 + q3_3 + q3_4 +
+                         q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20.0) as average_rating,
+                    COUNT(CASE WHEN positive_comments IS NOT NULL AND positive_comments != '' THEN 1 END) as positive_feedback_count,
+                    COUNT(CASE WHEN negative_comments IS NOT NULL AND negative_comments != '' THEN 1 END) as negative_feedback_count
+                FROM evaluations 
+                WHERE teacher_name = ?
+            ");
+            $stmt->execute([$teacherName]);
+            return $stmt->fetch();
+        } else {
+            // Overall statistics
+            $stmt = $pdo->query("
+                SELECT 
+                    COUNT(*) as total_evaluations,
+                    COUNT(DISTINCT teacher_name) as total_teachers_evaluated,
+                    COUNT(DISTINCT student_username) as total_students_participated,
+                    AVG((q1_1 + q1_2 + q1_3 + q1_4 + q1_5 + q1_6 +
+                         q2_1 + q2_2 + q2_3 + q2_4 +
+                         q3_1 + q3_2 + q3_3 + q3_4 +
+                         q4_1 + q4_2 + q4_3 + q4_4 + q4_5 + q4_6) / 20.0) as overall_average_rating
+                FROM evaluations
+            ");
+            return $stmt->fetch();
+        }
+    } catch (Exception $e) {
+        error_log("Get evaluation statistics error: " . $e->getMessage());
+        return [];
+    }
+}
+
+function searchComments($searchTerm, $commentType = 'both') {
+    try {
+        $pdo = getPDO();
+        
+        switch ($commentType) {
+            case 'positive':
+                $stmt = $pdo->prepare("
+                    SELECT teacher_name, positive_comments as comments, student_name, section, submitted_at, 'positive' as type
+                    FROM evaluations 
+                    WHERE positive_comments ILIKE ? 
+                    ORDER BY submitted_at DESC
+                ");
+                break;
+            case 'negative':
+                $stmt = $pdo->prepare("
+                    SELECT teacher_name, negative_comments as comments, student_name, section, submitted_at, 'negative' as type
+                    FROM evaluations 
+                    WHERE negative_comments ILIKE ? 
+                    ORDER BY submitted_at DESC
+                ");
+                break;
+            default:
+                $stmt = $pdo->prepare("
+                    SELECT teacher_name, positive_comments as comments, student_name, section, submitted_at, 'positive' as type
+                    FROM evaluations 
+                    WHERE positive_comments ILIKE ?
+                    UNION ALL
+                    SELECT teacher_name, negative_comments as comments, student_name, section, submitted_at, 'negative' as type
+                    FROM evaluations 
+                    WHERE negative_comments ILIKE ?
+                    ORDER BY submitted_at DESC
+                ");
+                $searchTerm = "%$searchTerm%";
+                $stmt->execute([$searchTerm, $searchTerm]);
+                return $stmt->fetchAll();
+        }
+        
+        $searchTerm = "%$searchTerm%";
+        $stmt->execute([$searchTerm]);
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Search comments error: " . $e->getMessage());
+        return [];
     }
 }
 ?>
