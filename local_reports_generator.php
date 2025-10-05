@@ -176,105 +176,110 @@ try {
         
         // Add cover page method matching the screenshot
         public function AddEvaluationCoverPage($teacherName, $program, $teachingScore, $managementScore, $guidanceScore, $personalScore, $overallScore) {
-            $this->AddPage();
-            
-            // Title
-            $this->SetFont('helvetica', 'B', 16);
-            $this->Cell(0, 15, 'Teacher Evaluation by the students result', 0, 1, 'C');
-            $this->Ln(10);
-            
-            // Evaluation Table
-            $this->SetFont('helvetica', 'B', 11);
-            
-            // Table Header
-            $this->SetFillColor(200, 200, 200);
-            $this->Cell(50, 10, 'Indicators', 1, 0, 'C', true);
-            $this->Cell(25, 10, 'Rating', 1, 0, 'C', true);
-            $this->Cell(45, 10, 'Description', 1, 0, 'C', true);
-            $this->Cell(70, 10, 'Interpretation', 1, 1, 'C', true);
-            
-            $this->SetFont('helvetica', '', 9);
-            
-            // Teaching Competencies Row
-            $this->Cell(50, 8, '1. Teaching Competencies', 1, 0, 'L');
-            $this->Cell(25, 8, $teachingScore, 1, 0, 'C');
-            $this->Cell(45, 8, getRatingDescription($teachingScore), 1, 0, 'C');
-            $this->MultiCell(70, 4, getTeachingInterpretation($teachingScore), 1, 'L');
-            
-            // Management Skills Row
-            $this->Cell(50, 8, '2. Management Skills', 1, 0, 'L');
-            $this->Cell(25, 8, $managementScore, 1, 0, 'C');
-            $this->Cell(45, 8, getRatingDescription($managementScore), 1, 0, 'C');
-            $this->MultiCell(70, 4, getManagementInterpretation($managementScore), 1, 'L');
-            
-            // Guidance Skills Row
-            $this->Cell(50, 8, '3. Guidance Skills', 1, 0, 'L');
-            $this->Cell(25, 8, $guidanceScore, 1, 0, 'C');
-            $this->Cell(45, 8, getRatingDescription($guidanceScore), 1, 0, 'C');
-            $this->MultiCell(70, 4, getGuidanceInterpretation($guidanceScore), 1, 'L');
-            
-            // Personal and Social Qualities/Skills Row
-            $this->Cell(50, 8, '4. Personal and Social Qualities/Skills', 1, 0, 'L');
-            $this->Cell(25, 8, $personalScore, 1, 0, 'C');
-            $this->Cell(45, 8, getRatingDescription($personalScore), 1, 0, 'C');
-            $this->MultiCell(70, 4, getPersonalInterpretation($personalScore), 1, 'L');
-            
-            // Overall Performance Row (bold)
-            $this->SetFont('helvetica', 'B', 9);
-            $this->SetFillColor(220, 220, 220);
-            $this->Cell(50, 8, 'Overall Performance', 1, 0, 'L', true);
-            $this->Cell(25, 8, $overallScore, 1, 0, 'C', true);
-            $this->Cell(45, 8, getRatingDescription($overallScore), 1, 0, 'C', true);
-            $this->MultiCell(70, 4, getOverallInterpretation($overallScore), 1, 'L', true);
-            
-            $this->Ln(8);
-            
-            // Rating Scale
-            $this->SetFont('helvetica', '', 9);
-            $this->Cell(0, 6, 'Rating used: 5 - Outstanding 4 - Very Satisfactory 3 - Satisfactory 2 - Fair 1 - Poor', 0, 1, 'L');
-            
-            $this->Ln(15);
-            
-            // Signature Sections
-            $currentY = $this->GetY();
-            
-            // Tabulated by section (Left side)
-            $this->SetFont('helvetica', 'B', 11);
-            $this->Cell(80, 8, 'Tabulated by :', 0, 1, 'L');
-            $this->Ln(5);
-            
-            // Add Joanne P. Castro signature
-            $signature1Path = __DIR__ . '/images/Picture1.png';
-            $signature1Added = $this->safeImage($signature1Path, 20, $this->GetY(), 40, 15);
-            
-            $this->SetY($this->GetY() + 18);
-            $this->SetFont('helvetica', 'B', 10);
-            $this->Cell(80, 6, 'Joanne P. Castro', 0, 1, 'L');
-            $this->SetFont('helvetica', '', 9);
-            $this->Cell(80, 6, 'Guidance Associate', 0, 1, 'L');
-            
-            // Reset Y position for second signature
-            $this->SetY($currentY);
-            
-            // Noted by section (Right side)
-            $this->SetX(110);
-            $this->SetFont('helvetica', 'B', 11);
-            $this->Cell(80, 8, 'Noted by :', 0, 1, 'L');
-            $this->SetX(110);
-            $this->Ln(5);
-            
-            // Add Myra V. Jumantoc signature
-            $signature2Path = __DIR__ . '/images/Picture2.png';
-            $signature2Added = $this->safeImage($signature2Path, 120, $this->GetY(), 40, 15);
-            
-            $this->SetY($this->GetY() + 18);
-            $this->SetX(110);
-            $this->SetFont('helvetica', 'B', 10);
-            $this->Cell(80, 6, 'Myra V. Jumantoc', 0, 1, 'L');
-            $this->SetX(110);
-            $this->SetFont('helvetica', '', 9);
-            $this->Cell(80, 6, 'HR Head', 0, 1, 'L');
-        }
+    $this->AddPage();
+    
+    // Title
+    $this->SetFont('helvetica', 'B', 16);
+    $this->Cell(0, 15, 'Teacher Evaluation by the students result', 0, 1, 'C');
+    $this->Ln(10);
+    
+    // Evaluation Table - with adjusted column widths
+    $this->SetFont('helvetica', 'B', 11);
+    
+    // Table Header
+    $this->SetFillColor(200, 200, 200);
+    $this->Cell(45, 10, 'Indicators', 1, 0, 'C', true); // Reduced from 50 to 45
+    $this->Cell(25, 10, 'Rating', 1, 0, 'C', true);
+    $this->Cell(40, 10, 'Description', 1, 0, 'C', true); // Reduced from 45 to 40
+    $this->Cell(80, 10, 'Interpretation', 1, 1, 'C', true); // Increased from 70 to 80
+    
+    $this->SetFont('helvetica', '', 9);
+    
+    // Teaching Competencies Row
+    $this->Cell(45, 8, '1. Teaching Competencies', 1, 0, 'L');
+    $this->Cell(25, 8, $teachingScore, 1, 0, 'C');
+    $this->Cell(40, 8, getRatingDescription($teachingScore), 1, 0, 'C');
+    $this->MultiCell(80, 4, getTeachingInterpretation($teachingScore), 1, 'L');
+    
+    // Management Skills Row
+    $this->Cell(45, 8, '2. Management Skills', 1, 0, 'L');
+    $this->Cell(25, 8, $managementScore, 1, 0, 'C');
+    $this->Cell(40, 8, getRatingDescription($managementScore), 1, 0, 'C');
+    $this->MultiCell(80, 4, getManagementInterpretation($managementScore), 1, 'L');
+    
+    // Guidance Skills Row
+    $this->Cell(45, 8, '3. Guidance Skills', 1, 0, 'L');
+    $this->Cell(25, 8, $guidanceScore, 1, 0, 'C');
+    $this->Cell(40, 8, getRatingDescription($guidanceScore), 1, 0, 'C');
+    $this->MultiCell(80, 4, getGuidanceInterpretation($guidanceScore), 1, 'L');
+    
+    // Personal and Social Qualities/Skills Row - FIXED
+    // Use MultiCell for the first cell to handle the long text
+    $this->SetFont('helvetica', '', 8); // Smaller font for this long text
+    $this->MultiCell(45, 4, '4. Personal and Social Qualities/Skills', 1, 'L', 0, 0);
+    $this->SetFont('helvetica', '', 9); // Reset font size
+    $this->Cell(25, 8, $personalScore, 1, 0, 'C');
+    $this->Cell(40, 8, getRatingDescription($personalScore), 1, 0, 'C');
+    $this->MultiCell(80, 4, getPersonalInterpretation($personalScore), 1, 'L');
+    
+    // Reset font for the last row
+    $this->SetFont('helvetica', 'B', 9);
+    
+    // Overall Performance Row (bold)
+    $this->SetFillColor(220, 220, 220);
+    $this->Cell(45, 8, 'Overall Performance', 1, 0, 'L', true);
+    $this->Cell(25, 8, $overallScore, 1, 0, 'C', true);
+    $this->Cell(40, 8, getRatingDescription($overallScore), 1, 0, 'C', true);
+    $this->MultiCell(80, 4, getOverallInterpretation($overallScore), 1, 'L', true);
+    
+    $this->Ln(8);
+    
+    // Rating Scale
+    $this->SetFont('helvetica', '', 9);
+    $this->Cell(0, 6, 'Rating used: 5 - Outstanding 4 - Very Satisfactory 3 - Satisfactory 2 - Fair 1 - Poor', 0, 1, 'L');
+    
+    $this->Ln(15);
+    
+    // Signature Sections - Clean layout as requested
+    $currentY = $this->GetY();
+    
+    // Tabulated by section (Left side)
+    $this->SetFont('helvetica', 'B', 11);
+    $this->Cell(80, 8, 'Tabulated by :', 0, 1, 'L');
+    $this->Ln(8); // Reduced space
+    
+    // Add Joanne P. Castro signature
+    $signature1Path = __DIR__ . '/images/Picture1.png';
+    $signature1Added = $this->safeImage($signature1Path, 20, $this->GetY(), 40, 15);
+    
+    $this->SetY($this->GetY() + 18);
+    $this->SetFont('helvetica', 'B', 10);
+    $this->Cell(80, 6, 'Joanne P. Castro', 0, 1, 'L');
+    $this->SetFont('helvetica', '', 9);
+    $this->Cell(80, 6, 'Guidance Associate', 0, 1, 'L');
+    
+    // Reset Y position for second signature
+    $this->SetY($currentY);
+    
+    // Noted by section (Right side)
+    $this->SetX(110);
+    $this->SetFont('helvetica', 'B', 11);
+    $this->Cell(80, 8, 'Noted by :', 0, 1, 'L');
+    $this->SetX(110);
+    $this->Ln(8); // Reduced space
+    
+    // Add Myra V. Jumantoc signature
+    $signature2Path = __DIR__ . '/images/Picture2.png';
+    $signature2Added = $this->safeImage($signature2Path, 120, $this->GetY(), 40, 15);
+    
+    $this->SetY($this->GetY() + 18);
+    $this->SetX(110);
+    $this->SetFont('helvetica', 'B', 10);
+    $this->Cell(80, 6, 'Myra V. Jumantoc', 0, 1, 'L');
+    $this->SetX(110);
+    $this->SetFont('helvetica', '', 9);
+    $this->Cell(80, 6, 'HR Head', 0, 1, 'L');
+}
     }
 
     $pdo = getPDO();
@@ -688,7 +693,8 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
             $pdf->Cell(10, 6, '1.' . $counter, 1, 0, 'C');
             $pdf->MultiCell(135, 6, $questions[$q]['label'], 1, 'L'); // Reduced width
             $pdf->SetXY($pdf->GetX() + 145, $pdf->GetY() - 6); // Adjusted X position
-            $pdf->Cell(45, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C'); // Increased width
+            // CHANGED: Use customRound to get single number instead of decimal
+            $pdf->Cell(45, 6, customRound($questions[$q]['avg']), 1, 1, 'C'); // Increased width
             $counter++;
         }
 
@@ -704,7 +710,8 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
             $pdf->Cell(10, 6, '2.' . $counter, 1, 0, 'C');
             $pdf->MultiCell(135, 6, $questions[$q]['label'], 1, 'L');
             $pdf->SetXY($pdf->GetX() + 145, $pdf->GetY() - 6);
-            $pdf->Cell(45, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            // CHANGED: Use customRound to get single number instead of decimal
+            $pdf->Cell(45, 6, customRound($questions[$q]['avg']), 1, 1, 'C');
             $counter++;
         }
 
@@ -720,7 +727,8 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
             $pdf->Cell(10, 6, '3.' . $counter, 1, 0, 'C');
             $pdf->MultiCell(135, 6, $questions[$q]['label'], 1, 'L');
             $pdf->SetXY($pdf->GetX() + 145, $pdf->GetY() - 6);
-            $pdf->Cell(45, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            // CHANGED: Use customRound to get single number instead of decimal
+            $pdf->Cell(45, 6, customRound($questions[$q]['avg']), 1, 1, 'C');
             $counter++;
         }
 
@@ -736,14 +744,16 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
             $pdf->Cell(10, 6, '4.' . $counter, 1, 0, 'C');
             $pdf->MultiCell(135, 6, $questions[$q]['label'], 1, 'L');
             $pdf->SetXY($pdf->GetX() + 145, $pdf->GetY() - 6);
-            $pdf->Cell(45, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            // CHANGED: Use customRound to get single number instead of decimal
+            $pdf->Cell(45, 6, customRound($questions[$q]['avg']), 1, 1, 'C');
             $counter++;
         }
 
         $pdf->SetFont('helvetica', 'B', 11);
         $pdf->SetFillColor(255, 200, 150);
         $pdf->Cell(145, 8, 'OVERALL AVERAGE', 1, 0, 'R', true); // Adjusted width
-        $pdf->Cell(45, 8, number_format($overallScore, 2), 1, 1, 'C', true); // Adjusted width
+        // CHANGED: Use $overallScore directly (already rounded) instead of number_format
+        $pdf->Cell(45, 8, $overallScore, 1, 1, 'C', true); // Adjusted width
 
         $pdf->Ln(5);
 
