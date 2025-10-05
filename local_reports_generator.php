@@ -419,6 +419,7 @@ function generateIndividualReport($evaluation, $outputPath) {
         $pdf->SetAuthor('Teacher Evaluation System');
         $pdf->SetTitle("Evaluation - " . $evaluation['student_name']);
         
+        // Set margins for cover page
         $pdf->SetMargins(10, 40, 10);
         $pdf->SetHeaderMargin(10);
         $pdf->SetFooterMargin(10);
@@ -449,7 +450,9 @@ function generateIndividualReport($evaluation, $outputPath) {
         // Start detailed evaluation content on page 2
         $pdf->AddPage();
         
-        // [Keep all the detailed content from your previous function]
+        // Reset margins for detailed content to ensure everything fits
+        $pdf->SetMargins(10, 20, 10);
+        
         $pdf->SetFont('helvetica', 'B', 12);
         $pdf->Cell(0, 6, "Name: " . strtoupper($evaluation['teacher_name']), 0, 1);
         $pdf->SetFont('helvetica', '', 10);
@@ -458,7 +461,7 @@ function generateIndividualReport($evaluation, $outputPath) {
         $pdf->Cell(0, 5, "Date: " . date('F j, Y', strtotime($evaluation['submitted_at'])), 0, 1);
         $pdf->Ln(5);
 
-        // English questions
+        // English questions - same as your original
         $questions = [
             'TEACHING COMPETENCE' => [
                 'q1_1' => 'Analyzes and explains lessons without reading from the book in class',
@@ -521,11 +524,11 @@ function generateIndividualReport($evaluation, $outputPath) {
         $pdf->SetFont('helvetica', 'B', 11);
         $pdf->SetFillColor(255, 200, 150);
         $pdf->Cell(165, 8, 'AVERAGE SCORE', 1, 0, 'R', true);
-        $pdf->Cell(25, 8, $roundedAverage, 1, 1, 'C', true);
+        $pdf->Cell(25, 8, number_format($averageScore, 2), 1, 1, 'C', true);
 
         $pdf->Ln(5);
 
-        // Comments section
+        // Comments section - same as your original
         $positiveComments = !empty(trim($evaluation['positive_comments'] ?? '')) ? $evaluation['positive_comments'] : '';
         $negativeComments = !empty(trim($evaluation['negative_comments'] ?? '')) ? $evaluation['negative_comments'] : '';
 
@@ -534,22 +537,22 @@ function generateIndividualReport($evaluation, $outputPath) {
             $pdf->Cell(0, 6, 'STUDENT COMMENTS:', 0, 1);
             $pdf->Ln(2);
 
-            if (!empty($positiveComments)) {
-                $pdf->SetFont('helvetica', 'B', 9);
-                $pdf->SetFillColor(200, 230, 200);
-                $pdf->Cell(0, 7, 'POSITIVE FEEDBACK', 1, 1, 'L', true);
-                $pdf->SetFont('helvetica', '', 8);
-                $pdf->MultiCell(0, 5, $positiveComments, 1, 'L');
-                $pdf->Ln(3);
-            }
+            // Table header
+            $pdf->SetFont('helvetica', 'B', 9);
+            $pdf->SetFillColor(200, 230, 200); // Light green for positive
+            $pdf->Cell(95, 7, 'POSITIVE FEEDBACK', 1, 0, 'C', true);
+            $pdf->SetFillColor(255, 200, 200); // Light red for negative
+            $pdf->Cell(95, 7, 'AREAS FOR IMPROVEMENT', 1, 1, 'C', true);
 
-            if (!empty($negativeComments)) {
-                $pdf->SetFont('helvetica', 'B', 9);
-                $pdf->SetFillColor(255, 200, 200);
-                $pdf->Cell(0, 7, 'AREAS FOR IMPROVEMENT', 1, 1, 'L', true);
-                $pdf->SetFont('helvetica', '', 8);
-                $pdf->MultiCell(0, 5, $negativeComments, 1, 'L');
-            }
+            // Calculate row height based on content
+            $positiveHeight = $pdf->getStringHeight(95, $positiveComments, true, true, '', 1);
+            $negativeHeight = $pdf->getStringHeight(95, $negativeComments, true, true, '', 1);
+            $rowHeight = max($positiveHeight, $negativeHeight, 10); // Minimum height of 10
+
+            // Comments content
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->MultiCell(95, $rowHeight, $positiveComments, 1, 'L', false, 0);
+            $pdf->MultiCell(95, $rowHeight, $negativeComments, 1, 'L', false, 1);
         } else {
             $pdf->SetFont('helvetica', 'B', 10);
             $pdf->Cell(0, 6, 'STUDENT COMMENTS:', 0, 1);
@@ -587,7 +590,7 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
 
         $totalStudents = count($evaluations);
         
-        // Calculate average scores for each question
+        // Calculate average scores for each question - same as your original
         $questions = [
             'q1_1' => ['sum' => 0, 'label' => 'Analyzes and explains lessons without reading from the book in class'],
             'q1_2' => ['sum' => 0, 'label' => 'Uses audio-visual and devices to support teaching'],
@@ -645,6 +648,7 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
         $pdf->SetAuthor('Teacher Evaluation System');
         $pdf->SetTitle("Summary Report - $teacherName - $program");
 
+        // Set margins for cover page
         $pdf->SetMargins(10, 40, 10);
         $pdf->SetHeaderMargin(10);
         $pdf->SetFooterMargin(10);
@@ -658,6 +662,9 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
 
         // Start detailed content on page 2
         $pdf->AddPage();
+        
+        // Reset margins for detailed content
+        $pdf->SetMargins(10, 20, 10);
 
         $pdf->SetFont('helvetica', 'B', 12);
         $pdf->Cell(0, 6, "Name: " . strtoupper($teacherName), 0, 1);
@@ -667,8 +674,173 @@ function generateSummaryReport($pdo, $teacherName, $program, $outputPath) {
         $pdf->Cell(0, 5, "Total Students Evaluated: $totalStudents", 0, 1);
         $pdf->Ln(5);
 
-        // Rest of the detailed summary report content...
-        // [Keep the existing detailed table content from your previous summary report function]
+        // Detailed criteria table - same as your original summary report
+        $pdf->SetFillColor(200, 200, 200);
+        $pdf->SetFont('helvetica', 'B', 9);
+        
+        $pdf->SetFillColor(220, 220, 220);
+        $pdf->Cell(10, 7, '', 1, 0, 'C', true);
+        $pdf->Cell(145, 7, 'TEACHING COMPETENCE', 1, 0, 'L', true);
+        $pdf->Cell(25, 7, 'SCORE', 1, 1, 'C', true);
+
+        $pdf->SetFont('helvetica', '', 8);
+        $counter = 1;
+        foreach (['q1_1', 'q1_2', 'q1_3', 'q1_4', 'q1_5', 'q1_6'] as $q) {
+            $pdf->Cell(10, 6, '1.' . $counter, 1, 0, 'C');
+            $pdf->MultiCell(145, 6, $questions[$q]['label'], 1, 'L');
+            $pdf->SetXY($pdf->GetX() + 155, $pdf->GetY() - 6);
+            $pdf->Cell(25, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            $counter++;
+        }
+
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->SetFillColor(220, 220, 220);
+        $pdf->Cell(10, 7, '', 1, 0, 'C', true);
+        $pdf->Cell(145, 7, 'MANAGEMENT SKILLS', 1, 0, 'L', true);
+        $pdf->Cell(25, 7, '', 1, 1, 'C', true);
+
+        $pdf->SetFont('helvetica', '', 8);
+        $counter = 1;
+        foreach (['q2_1', 'q2_2', 'q2_3', 'q2_4'] as $q) {
+            $pdf->Cell(10, 6, '2.' . $counter, 1, 0, 'C');
+            $pdf->MultiCell(145, 6, $questions[$q]['label'], 1, 'L');
+            $pdf->SetXY($pdf->GetX() + 155, $pdf->GetY() - 6);
+            $pdf->Cell(25, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            $counter++;
+        }
+
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->SetFillColor(220, 220, 220);
+        $pdf->Cell(10, 7, '', 1, 0, 'C', true);
+        $pdf->Cell(145, 7, 'GUIDANCE SKILLS', 1, 0, 'L', true);
+        $pdf->Cell(25, 7, '', 1, 1, 'C', true);
+
+        $pdf->SetFont('helvetica', '', 8);
+        $counter = 1;
+        foreach (['q3_1', 'q3_2', 'q3_3', 'q3_4'] as $q) {
+            $pdf->Cell(10, 6, '3.' . $counter, 1, 0, 'C');
+            $pdf->MultiCell(145, 6, $questions[$q]['label'], 1, 'L');
+            $pdf->SetXY($pdf->GetX() + 155, $pdf->GetY() - 6);
+            $pdf->Cell(25, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            $counter++;
+        }
+
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->SetFillColor(220, 220, 220);
+        $pdf->Cell(10, 7, '', 1, 0, 'C', true);
+        $pdf->Cell(145, 7, 'PERSONAL AND SOCIAL ATTRIBUTES', 1, 0, 'L', true);
+        $pdf->Cell(25, 7, '', 1, 1, 'C', true);
+
+        $pdf->SetFont('helvetica', '', 8);
+        $counter = 1;
+        foreach (['q4_1', 'q4_2', 'q4_3', 'q4_4', 'q4_5', 'q4_6'] as $q) {
+            $pdf->Cell(10, 6, '4.' . $counter, 1, 0, 'C');
+            $pdf->MultiCell(145, 6, $questions[$q]['label'], 1, 'L');
+            $pdf->SetXY($pdf->GetX() + 155, $pdf->GetY() - 6);
+            $pdf->Cell(25, 6, number_format($questions[$q]['avg'], 2), 1, 1, 'C');
+            $counter++;
+        }
+
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->SetFillColor(255, 200, 150);
+        $pdf->Cell(155, 8, 'OVERALL AVERAGE', 1, 0, 'R', true);
+        $pdf->Cell(25, 8, number_format($overallScore, 2), 1, 1, 'C', true);
+
+        $pdf->Ln(5);
+
+        // Comments summary section - same as your original
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->Cell(0, 6, 'STUDENT COMMENTS SUMMARY:', 0, 1);
+        $pdf->Ln(2);
+
+        // Collect all comments
+        $allPositiveComments = [];
+        $allNegativeComments = [];
+
+        foreach ($evaluations as $eval) {
+            $positiveComment = !empty(trim($eval['positive_comments'] ?? '')) ? $eval['positive_comments'] : null;
+            $negativeComment = !empty(trim($eval['negative_comments'] ?? '')) ? $eval['negative_comments'] : null;
+
+            if ($positiveComment) {
+                $allPositiveComments[] = [
+                    'comment' => $positiveComment,
+                    'student' => $eval['student_name'],
+                    'section' => $eval['section']
+                ];
+            }
+
+            if ($negativeComment) {
+                $allNegativeComments[] = [
+                    'comment' => $negativeComment,
+                    'student' => $eval['student_name'],
+                    'section' => $eval['section']
+                ];
+            }
+        }
+
+        // Calculate statistics
+        $totalWithPositive = count($allPositiveComments);
+        $totalWithNegative = count($allNegativeComments);
+        $totalWithAnyComment = count(array_filter($evaluations, function($eval) {
+            return !empty(trim($eval['positive_comments'] ?? '')) || !empty(trim($eval['negative_comments'] ?? ''));
+        }));
+
+        // Comments Statistics
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->Cell(0, 6, 'Comments Statistics:', 0, 1);
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(0, 5, "Evaluations with Positive Comments: $totalWithPositive ($totalStudents total)", 0, 1);
+        $pdf->Cell(0, 5, "Evaluations with Negative Comments: $totalWithNegative ($totalStudents total)", 0, 1);
+        $pdf->Cell(0, 5, "Evaluations with Any Comments: $totalWithAnyComment ($totalStudents total)", 0, 1);
+        $pdf->Ln(3);
+
+        // Display comments in a table if there are any
+        if (!empty($allPositiveComments) || !empty($allNegativeComments)) {
+            // Table header
+            $pdf->SetFont('helvetica', 'B', 8);
+            $pdf->SetFillColor(200, 230, 200); // Light green for positive
+            $pdf->Cell(95, 6, 'POSITIVE FEEDBACK COMMENTS', 1, 0, 'C', true);
+            $pdf->SetFillColor(255, 200, 200); // Light red for negative
+            $pdf->Cell(95, 6, 'AREAS FOR IMPROVEMENT COMMENTS', 1, 1, 'C', true);
+
+            $pdf->SetFont('helvetica', '', 7);
+            
+            // Determine max rows to display
+            $maxRows = max(count($allPositiveComments), count($allNegativeComments));
+            $maxRows = min($maxRows, 20); // Limit to 20 rows to prevent overflow
+
+            for ($i = 0; $i < $maxRows; $i++) {
+                $positiveData = $allPositiveComments[$i] ?? null;
+                $negativeData = $allNegativeComments[$i] ?? null;
+
+                $positiveText = $positiveData ? 
+                    "[" . $positiveData['student'] . " - " . $positiveData['section'] . "]\n" . 
+                    substr($positiveData['comment'], 0, 80) . (strlen($positiveData['comment']) > 80 ? '...' : '') : 
+                    '';
+
+                $negativeText = $negativeData ? 
+                    "[" . $negativeData['student'] . " - " . $negativeData['section'] . "]\n" . 
+                    substr($negativeData['comment'], 0, 80) . (strlen($negativeData['comment']) > 80 ? '...' : '') : 
+                    '';
+
+                // Calculate row height
+                $positiveHeight = $pdf->getStringHeight(95, $positiveText, true, true, '', 1);
+                $negativeHeight = $pdf->getStringHeight(95, $negativeText, true, true, '', 1);
+                $rowHeight = max($positiveHeight, $negativeHeight, 8);
+
+                $pdf->MultiCell(95, $rowHeight, $positiveText, 1, 'L', false, 0);
+                $pdf->MultiCell(95, $rowHeight, $negativeText, 1, 'L', false, 1);
+            }
+
+            // Note if there are more comments
+            if (count($allPositiveComments) > 20 || count($allNegativeComments) > 20) {
+                $pdf->SetFont('helvetica', 'I', 7);
+                $pdf->Cell(0, 5, '* Displaying first 20 comments only. See individual reports for complete comments.', 0, 1, 'C');
+            }
+        } else {
+            $pdf->SetFont('helvetica', '', 9);
+            $pdf->Cell(0, 6, 'No comments provided by students.', 0, 1, 'C');
+        }
 
         $pdf->Output($outputPath, 'F');
         return ['success' => true, 'image_errors' => $imageErrors];
