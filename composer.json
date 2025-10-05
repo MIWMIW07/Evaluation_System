@@ -3,7 +3,12 @@
     "description": "Teacher Evaluation System with Google Sheets and Drive Integration",
     "type": "project",
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.2",
+        "ext-gd": "*",
+        "ext-zip": "*",
+        "ext-mbstring": "*",
+        "ext-pdo": "*",
+        "ext-pdo_pgsql": "*",
         "google/apiclient": "^2.15",
         "tecnickcom/tcpdf": "^6.6"
     },
