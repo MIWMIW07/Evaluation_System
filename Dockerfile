@@ -13,16 +13,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install required PHP extensions for PostgreSQL AND GD for images
+# Install required PHP extensions for PostgreSQL
 RUN apt-get update && apt-get install -y libpq-dev \
     && docker-php-ext-install pdo_pgsql
 
-# Install GD extension for image processing (CRITICAL FOR PNG SUPPORT)
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd
-
-# Install additional PHP extensions
-RUN docker-php-ext-install zip mbstring
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -53,19 +47,17 @@ RUN if [ -f "composer.json" ]; then \
         echo "No composer.json found, skipping dependency installation"; \
     fi
 
-# Create necessary directories and set proper permissions
-RUN mkdir -p /var/www/html/reports /var/www/html/images \
-    && chown -R www-data:www-data /var/www/html \
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
-    && chmod 777 /var/www/html/reports
+    && mkdir -p /var/www/html/reports \
+    && chown www-data:www-data /var/www/html/reports
 
 # Create a startup script to handle dynamic port
 RUN echo '#!/bin/bash' > /start.sh \
     && echo 'PORT=${PORT:-80}' >> /start.sh \
     && echo 'sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf' >> /start.sh \
     && echo 'sed -i "s/<VirtualHost \\*:80>/<VirtualHost *:$PORT>/" /etc/apache2/sites-available/000-default.conf' >> /start.sh \
-    && echo 'echo "GD Extension loaded: $(php -r \"echo extension_loaded(\\\"gd\\\") ? \\\"YES\\\" : \\\"NO\\\";\")"' >> /start.sh \
-    && echo 'echo "PNG Support: $(php -r \"\$g = gd_info(); echo isset(\\\$g[\\\"PNG Support\\\"]) ? \\\$g[\\\"PNG Support\\\"] : \\\"NO\\\";\")"' >> /start.sh \
     && echo 'apache2-foreground' >> /start.sh \
     && chmod +x /start.sh
 
@@ -74,3 +66,5 @@ EXPOSE 80
 
 # Start with our custom script
 CMD ["/start.sh"]
+
+
