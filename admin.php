@@ -9,6 +9,15 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     exit;
 }
 
+function customRound($score) {
+    $decimal = $score - floor($score);
+    if ($decimal <= 0.5) {
+        return floor($score);
+    } else {
+        return ceil($score);
+    }
+}
+
 // Get evaluation statistics
 try {
     $pdo = getPDO();
