@@ -27,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     // Admin login
                     $_SESSION['user_id'] = 'admin';
                     $_SESSION['user_type'] = 'admin';
-                    $_SESSION['username'] = 'admin';
+                    $_SESSION['username'] = 'GUIDANCE';
                     $_SESSION['full_name'] = 'System Administrator';
                     
                     $redirect_url = "admin.php";
