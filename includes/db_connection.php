@@ -49,7 +49,7 @@ class HybridDataManager {
     }
 
     public function authenticateUser($username, $password) {
-        if ($username === 'admin' && $password === 'admin123') {
+        if ($username === 'admin' && $password === 'guidanceservice2025') {
             return ['id' => 'admin', 'type' => 'admin'];
         }
 
@@ -355,3 +355,4 @@ function searchComments($searchTerm, $commentType = 'both') {
     }
 }
 ?>
+
